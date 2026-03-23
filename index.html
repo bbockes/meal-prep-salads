@@ -1,0 +1,2189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meal Prep Salads</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f5f0;
+      --surface: #ffffff;
+      --text: #1a1a18;
+      --muted: #7a7a72;
+      --border: #e8e4dc;
+
+      /* Cuisine accent colors */
+      --american: #c0392b;
+      --asian: #e67e22;
+      --italian: #27ae60;
+      --french: #2980b9;
+      --middle-eastern: #8e44ad;
+      --spanish: #d35400;
+      --all: #2c3e50;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 28px 48px 0;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.65rem;
+      letter-spacing: -0.02em;
+    }
+    header span {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 300;
+    }
+
+    /* ── Nav ── */
+    nav {
+      padding: 20px 48px 0;
+      display: flex;
+      gap: 0;
+      border-bottom: 1.5px solid var(--border);
+    }
+    nav button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--muted);
+      padding: 10px 20px 12px;
+      position: relative;
+      transition: color 0.2s;
+      letter-spacing: 0.01em;
+    }
+    nav button::after {
+      content: '';
+      position: absolute;
+      bottom: -1.5px;
+      left: 0; right: 0;
+      height: 2.5px;
+      background: var(--accent, var(--all));
+      transform: scaleX(0);
+      transition: transform 0.2s ease;
+      border-radius: 2px;
+    }
+    nav button.active {
+      color: var(--text);
+    }
+    nav button.active::after {
+      transform: scaleX(1);
+    }
+    nav button:hover { color: var(--text); }
+
+    /* ── Card Strip ── */
+    .card-strip-wrapper {
+      padding: 28px 48px 0;
+      overflow: visible;
+    }
+    .card-strip {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding: 6px 0 6px 6px;
+      scrollbar-width: none;
+    }
+    .card-strip::-webkit-scrollbar { display: none; }
+
+    .recipe-card {
+      flex: 0 0 200px;
+      height: 140px;
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: 2.5px solid transparent;
+      background: var(--card-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .recipe-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.15) 100%);
+    }
+    .recipe-card:hover {
+      transform: translateY(-3px);
+    }
+    .recipe-card.selected {
+      border-color: rgba(255,255,255,0.7);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--card-accent) 40%, transparent);
+    }
+    .recipe-card .card-label {
+      position: relative;
+      z-index: 1;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.05rem;
+      line-height: 1.3;
+      text-align: center;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.25);
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Recipe Detail ── */
+    .recipe-detail {
+      margin: 28px 48px 48px;
+      background: var(--surface);
+      border-radius: 18px;
+      border: 1.5px solid var(--border);
+      padding: 32px 36px;
+      animation: fadeUp 0.3s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .detail-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .detail-meta { display: flex; align-items: center; gap: 10px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--text);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .cuisine-badge {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 11px;
+      border-radius: 20px;
+      color: var(--detail-accent);
+      background: color-mix(in srgb, var(--detail-accent) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--detail-accent) 30%, transparent);
+    }
+    .detail-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.75rem;
+      letter-spacing: -0.02em;
+      margin-top: 6px;
+    }
+    .copy-actions { display: flex; gap: 8px; }
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--text);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .copy-btn:hover {
+      background: var(--bg);
+      border-color: var(--muted);
+    }
+    .copy-btn.active {
+      background: var(--text);
+      color: #fff;
+      border-color: var(--text);
+    }
+    .copy-btn.active:hover {
+      background: #333;
+      border-color: #333;
+    }
+    .amount {
+      font-weight: 700;
+      color: var(--detail-accent);
+    }
+    .copy-btn svg { flex-shrink: 0; }
+
+    .detail-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 36px;
+    }
+    @media (max-width: 680px) {
+      .detail-body { grid-template-columns: 1fr; }
+      header, nav, .card-strip-wrapper, .recipe-detail { padding-left: 20px; padding-right: 20px; }
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .ingredients-list { list-style: none; }
+    .ingredients-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: #333;
+    }
+    .ingredients-list li:last-child { border-bottom: none; }
+    .bullet {
+      margin-top: 7px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--detail-accent, var(--muted));
+      flex-shrink: 0;
+    }
+
+    .steps-list { list-style: none; }
+    .steps-list li {
+      display: flex;
+      gap: 14px;
+      padding: 8px 0;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #333;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .empty-state {
+      margin: 28px 48px 48px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      padding: 48px 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Meal Prep Salads</h1>
+</header>
+
+<nav id="nav"></nav>
+<div class="card-strip-wrapper"><div class="card-strip" id="cardStrip"></div></div>
+<div id="recipeDetail"></div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const ACCENT = {
+  American:      '#c0392b',
+  Asian:         '#e67e22',
+  Mediterranean: '#2e86ab',
+  French:        '#5c4a8f',
+  'Spanish & Mexican': '#d35400',
+};
+
+const RECIPES = [
+  // ── AMERICAN ─────────────────────────────────────────────────────────────
+  {
+    id: 1, cuisine: 'American', name: 'Guacamole Greens',
+    ingredients: [
+      '2 cups rotisserie chicken, shredded',
+      '3 cups mixed greens + romaine',
+      '1 avocado, cubed',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup pickled red onions',
+      '1 cup shredded cabbage (bagged slaw mix)',
+      '½ cup tortilla chips, crushed',
+      'Sauce: ¼ cup ranch + 1 tbsp lime juice + 2 tbsp cilantro + hot sauce to taste',
+    ],
+    steps: [
+      'Toss greens + cabbage together.',
+      'Add chicken, avocado, tomatoes, and pickled onions.',
+      'Drizzle sauce over everything.',
+      'Squeeze fresh lime on top.',
+      'Finish with crushed tortilla chips.',
+    ],
+  },
+  {
+    id: 2, cuisine: 'American', name: 'BBQ Chicken Salad',
+    ingredients: [
+      '2 cups rotisserie or grilled chicken, shredded',
+      '3 cups romaine + kale mix',
+      '1 cup shredded cabbage',
+      '¼ cup pickled red onions',
+      '1 cup cherry tomatoes, halved',
+      '1 apple, thinly sliced',
+      '½ cup tortilla chips, crushed',
+      'Sauce: 3 tbsp BBQ sauce + 3 tbsp ranch',
+    ],
+    steps: [
+      'Toss greens + cabbage in a large bowl.',
+      'Add chicken, apples, tomatoes, and pickled onions.',
+      'Drizzle BBQ ranch dressing and toss.',
+      'Top with crushed tortilla chips.',
+      'Serve immediately.',
+    ],
+  },
+  {
+    id: 3, cuisine: 'American', name: 'Buffalo Chicken',
+    ingredients: [
+      '2 cups rotisserie chicken, shredded',
+      '3 tbsp buffalo sauce',
+      '3 cups romaine + kale, chopped',
+      '¼ cup pickled red onions',
+      '1 cup cherry tomatoes, halved',
+      '½ cup shredded carrots',
+      '¼ cup feta crumbles',
+      '½ cup garlic croutons',
+      'Sauce: ¼ cup Caesar dressing + 2 tbsp buffalo sauce',
+    ],
+    steps: [
+      'Toss chicken in buffalo sauce.',
+      'Dress greens with Caesar-buffalo mixture.',
+      'Add chicken, onions, tomatoes, and carrots.',
+      'Sprinkle feta and fresh cilantro.',
+      'Top with croutons and serve.',
+    ],
+  },
+  {
+    id: 4, cuisine: 'American', name: 'Winter Harvest Salad',
+    ingredients: [
+      '2 cups kale + 2 cups arugula',
+      '2 cups rotisserie chicken, shredded',
+      '2 cups pre-cut butternut squash',
+      '1 cup shredded cabbage',
+      '2 oz goat cheese, crumbled',
+      '¼ cup sliced almonds',
+      '½ cup cooked wild rice',
+      'Sauce: 3 tbsp apple cider vinaigrette',
+    ],
+    steps: [
+      'Roast squash at 425°F for ~20 min with oil + salt.',
+      'Sauté cabbage with a splash of balsamic (5 min).',
+      'Massage kale with dressing, mix with arugula.',
+      'Add chicken, squash, cabbage, and wild rice.',
+      'Top with goat cheese and almonds.',
+    ],
+  },
+  {
+    id: 5, cuisine: 'American', name: 'Kale Caesar',
+    ingredients: [
+      '2 cups rotisserie chicken, shredded',
+      '2 cups romaine, chopped',
+      '2 cups shredded kale',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup shaved parmesan',
+      '3 tbsp Caesar dressing',
+      '½ cup parmesan crisps',
+      '½ lime',
+    ],
+    steps: [
+      'Shred or slice chicken.',
+      'Massage kale with a little Caesar dressing for 30–60 sec.',
+      'Toss kale + romaine with dressing.',
+      'Add chicken, tomatoes, and parmesan.',
+      'Squeeze lime over top and finish with parmesan crisps.',
+    ],
+  },
+  {
+    id: 6, cuisine: 'American', name: 'Chicken Cobb Salad',
+    ingredients: [
+      '2 cups rotisserie chicken, shredded',
+      '2 hard-boiled eggs, halved',
+      '4 strips pre-cooked bacon, crumbled',
+      '3 cups mixed greens',
+      '1 cup cherry tomatoes, halved',
+      '1 avocado, sliced',
+      '2 tbsp blue cheese crumbles (optional)',
+      'Sauce: 3 tbsp red wine vinaigrette',
+    ],
+    steps: [
+      'Arrange greens on a large platter.',
+      'Top in rows with chicken, eggs, bacon, tomatoes, and avocado.',
+      'Add blue cheese crumbles if using.',
+      'Drizzle red wine vinaigrette over everything.',
+      'Serve immediately.',
+    ],
+  },
+  {
+    id: 7, cuisine: 'American', name: 'Chicken Avocado Ranch',
+    ingredients: [
+      '3 cups romaine + spring mix',
+      '2 cups blackened chicken (rotisserie + Cajun seasoning)',
+      '1 avocado, sliced',
+      '¼ cup pickled red onions',
+      '1 apple, thinly sliced',
+      '½ cup tortilla chips, crushed',
+      '½ cup cooked white rice',
+      'Sauce: 3 tbsp ranch + 1 tbsp lemon juice + herbs',
+    ],
+    steps: [
+      'Toss greens with ranch dressing.',
+      'Add chicken, apples, pickled onions, and rice.',
+      'Layer avocado on top.',
+      'Top with crushed tortilla chips.',
+      'Serve right away.',
+    ],
+  },
+  {
+    id: 8, cuisine: 'American', name: 'Super Green Goddess',
+    ingredients: [
+      '3 cups baby spinach + kale mix',
+      '1 can chickpeas, drained',
+      '1 cup pre-cut sweet potato cubes',
+      '1 cup broccoli florets',
+      '1 cup shredded cabbage',
+      '½ cup shredded carrots',
+      '¼ cup roasted almonds',
+      'Sauce: 3 tbsp green goddess dressing',
+    ],
+    steps: [
+      'Roast sweet potatoes + broccoli at 425°F for ~20 min.',
+      'Toss greens, cabbage, and carrots in a bowl.',
+      'Add chickpeas.',
+      'Add roasted veggies and almonds.',
+      'Toss with green goddess dressing.',
+    ],
+  },
+  {
+    id: 9, cuisine: 'American', name: 'Simple Green Salad',
+    ingredients: [
+      '1 head butter lettuce, torn',
+      '1 Persian cucumber, thinly sliced',
+      '1 avocado, sliced',
+      '¼ cup shaved parmesan',
+      '2 tbsp pepitas',
+      '¼ cup microgreens (optional)',
+      '½ cup tamari almonds',
+      'Sauce: 3 tbsp lemon vinaigrette (or 3 tbsp olive oil + 1½ tbsp lemon + ½ tsp Dijon)',
+    ],
+    steps: [
+      'Tear lettuce into a large bowl.',
+      'Drizzle with dressing and toss to coat.',
+      'Top with cucumber, avocado, parmesan, pepitas, and almonds.',
+      'Finish with microgreens and flaky salt.',
+      'Serve immediately.',
+    ],
+  },
+  {
+    id: 10, cuisine: 'American', name: 'Beet & Goat Cheese',
+    ingredients: [
+      '1 package pre-cooked beets (Love Beets)',
+      '2 cups arugula or spring mix',
+      '½ green apple, thinly sliced',
+      '¼ cup toasted walnuts',
+      '2 oz goat cheese, crumbled',
+      '½ shallot, thinly sliced',
+      'Sauce: 3 tbsp balsamic vinaigrette',
+    ],
+    steps: [
+      'Slice pre-cooked beets into rounds.',
+      'Arrange greens on a platter.',
+      'Layer beets, apple, shallot, and walnuts on top.',
+      'Crumble goat cheese over everything.',
+      'Drizzle balsamic and finish with flaky salt.',
+    ],
+  },
+  {
+    id: 11, cuisine: 'American', name: 'Homemade Caesar',
+    ingredients: [
+      '1 large head romaine, chopped',
+      '½ cup shaved parmesan',
+      '1 cup store-bought croutons',
+      '1 cup mayo',
+      '¼ cup olive oil',
+      '2 tbsp lemon juice',
+      '2 tsp Dijon + 1 grated garlic clove',
+      '1 tsp Worcestershire + salt & pepper',
+    ],
+    steps: [
+      'Whisk all dressing ingredients together, thin with water if needed.',
+      'Toss romaine with dressing and half the parmesan.',
+      'Top with croutons and remaining parmesan.',
+      'Serve immediately.',
+      'Optional: add anchovies for authentic depth.',
+    ],
+  },
+  {
+    id: 12, cuisine: 'American', name: 'Healthy Taco Salad',
+    ingredients: [
+      '1 head romaine, chopped',
+      '1 cup shredded red cabbage',
+      '½ cup black beans, drained',
+      '1 avocado, sliced',
+      '½ cup cherry tomatoes or pico de gallo',
+      'Jalapeño slices (optional)',
+      '½ cup tortilla strips',
+      'Taco "meat": 8 oz shiitake mushrooms + ½ cup walnuts + 1 tbsp tamari + 1 tsp taco seasoning',
+      'Sauce: ½ avocado + ¼ cup Greek yogurt + 1 lime + handful cilantro + 1 garlic clove',
+    ],
+    steps: [
+      'Sauté mushrooms 3–4 min; add walnuts, toast 1 min; stir in tamari + taco seasoning.',
+      'Build salad: romaine, cabbage, beans, taco meat, tomatoes, avocado.',
+      'Add jalapeño if using.',
+      'Top with tortilla strips and cilantro dressing.',
+      'Finish with lime wedges.',
+    ],
+  },
+  {
+    id: 13, cuisine: 'American', name: 'Wedge Salad',
+    ingredients: [
+      '1 head iceberg lettuce, cut into 4 wedges',
+      '¼ cup bottled blue cheese dressing',
+      '¼ cup pre-cooked bacon bits',
+      '1 cup cherry tomatoes, halved',
+      '2 tbsp fresh chives, chopped',
+    ],
+    steps: [
+      'Cut iceberg into 4 wedges and place on plates.',
+      'Pour blue cheese dressing generously over each wedge.',
+      'Scatter bacon bits and halved cherry tomatoes on top.',
+      'Finish with fresh chives.',
+      'Serve cold.',
+    ],
+  },
+  {
+    id: 14, cuisine: 'American', name: 'Smoky Chipotle Lime',
+    ingredients: [
+      '2 cups romaine + 1 cup shredded cabbage',
+      '2 cups cooked chicken, sliced',
+      '½ cup black beans, drained',
+      '½ cup corn kernels',
+      '1 cup cherry tomatoes, halved',
+      '1 avocado, sliced',
+      '½ cup tortilla chips, crushed',
+      'Sauce: ¼ cup Greek yogurt + 1 tbsp lime juice + 1 chipotle pepper in adobo',
+    ],
+    steps: [
+      'Toss greens + cabbage together.',
+      'Add chicken, beans, charred corn, and tomatoes.',
+      'Add avocado slices.',
+      'Drizzle chipotle lime dressing.',
+      'Top with chips and a squeeze of lime.',
+    ],
+  },
+  {
+    id: 15, cuisine: 'American', name: 'Steak Honey Crunch',
+    ingredients: [
+      '3 cups romaine + arugula',
+      '6 oz steak, cooked and sliced thin',
+      '½ cup cooked quinoa',
+      '¼ cup pickled red onions',
+      '1 cup cherry tomatoes, halved',
+      '½ cup garlic croutons',
+      'Sauce: 2 tbsp honey + 1 tbsp Dijon + 2 tbsp olive oil + 1 tbsp vinegar',
+    ],
+    steps: [
+      'Toss greens + quinoa with honey Dijon dressing.',
+      'Add sliced steak, tomatoes, and pickled onions.',
+      'Top with garlic croutons.',
+      'Drizzle extra dressing.',
+      'Optional: finish with hot honey.',
+    ],
+  },
+  {
+    id: 16, cuisine: 'American', name: 'Citrus Shrimp Avocado',
+    ingredients: [
+      '3 cups spring mix + arugula',
+      '8 oz cooked shrimp',
+      '1 avocado, sliced',
+      '1 cup orange segments',
+      '1 cucumber, sliced',
+      '¼ cup red onion, thinly sliced',
+      '½ cup cooked quinoa',
+      'Sauce: 2 tbsp olive oil + 1 tbsp lemon + 1 tbsp orange juice + 1 tsp honey',
+    ],
+    steps: [
+      'Toss greens + quinoa with citrus dressing.',
+      'Add shrimp, avocado, orange segments, cucumber, and onion.',
+      'Gently toss to combine.',
+      'Season with salt and pepper.',
+      'Optional: add fresh mint or basil.',
+    ],
+  },
+  {
+    id: 17, cuisine: 'American', name: 'Peach-Pecan Kale',
+    ingredients: [
+      '3 cups bagged kale',
+      '2 peaches, sliced (or 1 can, drained)',
+      '¼ cup candied pecans',
+      '2 oz gouda, cubed',
+      'Sauce: 3 tbsp honey vinaigrette',
+    ],
+    steps: [
+      'Massage kale with a little dressing until softened.',
+      'Add peaches, gouda, and candied pecans.',
+      'Toss gently.',
+      'Drizzle extra honey vinaigrette.',
+      'Optional: add prosciutto on top.',
+    ],
+  },
+  {
+    id: 18, cuisine: 'American', name: 'Summer Goddess Chicken',
+    ingredients: [
+      '2 cups rotisserie chicken, shredded',
+      '1 head butter lettuce, torn',
+      '1 cup green beans, microwaved',
+      '½ cup frozen corn, thawed',
+      '¼ cup crispy fried onions',
+      'Sauce: 3 tbsp green goddess dressing',
+    ],
+    steps: [
+      'Toss chicken, green beans, and corn with dressing.',
+      'Serve over butter lettuce.',
+      'Top with crispy fried onions.',
+      'Optional: add avocado slices.',
+      'Serve immediately.',
+    ],
+  },
+
+  // ── ASIAN ─────────────────────────────────────────────────────────────────
+  {
+    id: 19, cuisine: 'Asian', name: 'Sesame Ginger Crunch',
+    ingredients: [
+      '2 cups shredded purple cabbage',
+      '½ cup edamame, shelled',
+      '½ cup shredded carrots',
+      '1 cucumber, sliced',
+      '3 scallions, sliced',
+      '¼ cup crispy wonton strips',
+      '1 tbsp sesame seeds',
+      'Sauce: 3 tbsp sesame ginger dressing',
+    ],
+    steps: [
+      'Combine cabbage, carrots, and edamame in a bowl.',
+      'Add cucumber and scallions.',
+      'Pour sesame ginger dressing and toss well.',
+      'Top with wonton strips.',
+      'Garnish with sesame seeds.',
+    ],
+  },
+  {
+    id: 20, cuisine: 'Asian', name: 'Thai Crunch Peanut',
+    ingredients: [
+      '2 cups napa cabbage + 1 cup romaine, shredded',
+      '2 cups rotisserie chicken, shredded',
+      '½ cup shredded carrots',
+      '1 bell pepper, thinly sliced',
+      '½ cup edamame, shelled',
+      '3 scallions, sliced',
+      '¼ cup crushed peanuts',
+      '¼ cup wonton strips',
+      'Sauce: 3 tbsp peanut sauce + 1 tbsp lime juice + 1 tbsp soy + 1 tsp honey',
+    ],
+    steps: [
+      'Toss cabbage, carrots, bell peppers, and edamame.',
+      'Add chicken and scallions.',
+      'Drizzle peanut sauce and toss to coat.',
+      'Top with crushed peanuts and wonton strips.',
+      'Finish with a squeeze of lime.',
+    ],
+  },
+  {
+    id: 21, cuisine: 'Asian', name: 'Chicken Noodle Peanut',
+    ingredients: [
+      '2 cups rotisserie chicken, shredded',
+      '4 oz ramen or lo mein noodles, cooked',
+      '2 cups shredded lettuce',
+      '1 cucumber, cut into matchsticks',
+      '1 tsp chili crisp',
+      '¼ cup crushed peanuts',
+      'Sauce: 2 tbsp peanut butter + 1 tbsp soy sauce + 1 tsp chili crisp + 1 tbsp rice vinegar',
+    ],
+    steps: [
+      'Cook noodles, toss with a little oil to prevent sticking.',
+      'Combine chicken, lettuce, and cucumber.',
+      'Add noodles and peanut sauce.',
+      'Toss well to combine.',
+      'Top with crushed peanuts and extra chili crisp.',
+    ],
+  },
+  {
+    id: 22, cuisine: 'Asian', name: 'Watermelon & Snap Pea',
+    ingredients: [
+      '3 cups pre-cut watermelon, cubed',
+      '2 cups sugar snap peas',
+      '1 tsp chili crisp',
+      '1 tbsp soy sauce',
+      '1 tsp sesame oil',
+      '¼ cup crispy fried onions',
+      '¼ cup fresh mint or basil',
+    ],
+    steps: [
+      'Mix chili crisp, soy sauce, and sesame oil for dressing.',
+      'Toss snap peas with dressing.',
+      'Plate watermelon as the base.',
+      'Add snap pea mixture on top.',
+      'Finish with fresh herbs and fried onions.',
+    ],
+  },
+  {
+    id: 23, cuisine: 'Asian', name: 'Crunchy Ramen Cabbage',
+    ingredients: [
+      '3 cups bagged coleslaw mix',
+      '1 package instant ramen noodles, uncooked and crushed',
+      '¼ cup sliced almonds',
+      '3 scallions, sliced',
+      'Sauce: 3 tbsp sesame dressing + 1 tsp rice vinegar',
+    ],
+    steps: [
+      'Toss coleslaw mix with sesame dressing.',
+      'Add crushed dry ramen and sliced almonds.',
+      'Mix and serve immediately for maximum crunch.',
+      'Top with scallions.',
+      'Optional: add shredded rotisserie chicken.',
+    ],
+  },
+  {
+    id: 24, cuisine: 'Asian', name: 'Shredded Daikon',
+    ingredients: [
+      '2 cups pre-shredded daikon (or shredded carrots)',
+      '2 tbsp rice vinegar',
+      '1 tsp sesame oil',
+      '1 tsp sugar',
+      '1 garlic clove, minced',
+      '1 tsp chili crisp',
+      '1 tsp sesame seeds',
+    ],
+    steps: [
+      'Combine daikon, rice vinegar, sesame oil, sugar, garlic, and chili crisp.',
+      'Toss well and let sit 10–15 min for a quick pickle effect.',
+      'Top with sesame seeds.',
+      'Serve chilled or at room temp.',
+      'Optional: add sliced cucumber for extra crunch.',
+    ],
+  },
+  {
+    id: 25, cuisine: 'Asian', name: 'Shroomami',
+    ingredients: [
+      '2 cups kale + 1 cup spinach',
+      '6 oz baked tofu, sliced',
+      '1 cup shiitake mushrooms, sautéed',
+      '1 cucumber, sliced',
+      '¼ cup fresh basil',
+      '1 cup shredded cabbage',
+      '¼ cup almonds',
+      '½ cup cooked wild rice',
+      'Sauce: 1 tbsp miso + 1 tbsp soy + 1 tsp sesame oil + 1 tsp ginger + 1 tsp honey',
+    ],
+    steps: [
+      'Sauté mushrooms until deeply browned.',
+      'Toss greens + cabbage with miso dressing.',
+      'Add tofu, mushrooms, cucumber, and wild rice.',
+      'Top with almonds and fresh basil.',
+      'Optional: add a splash of rice vinegar.',
+    ],
+  },
+  {
+    id: 26, cuisine: 'Asian', name: 'Kale & Carrot Ginger',
+    ingredients: [
+      '1 bunch curly kale, stems removed',
+      '1 small carrot, grated',
+      '1 small beet, grated',
+      '1 avocado, cubed',
+      '2 tbsp dried cranberries',
+      '¼ cup pepitas',
+      '1 can roasted chickpeas',
+      'Sauce: ½ cup shredded carrots blended with 3 tbsp rice vinegar + 2 tbsp olive oil + 1 tsp ginger',
+    ],
+    steps: [
+      'Massage kale with 1 tsp olive oil + lemon + salt until tender.',
+      'Add grated carrot, beet, cranberries, pepitas, and half the avocado.',
+      'Toss with carrot ginger dressing.',
+      'Top with remaining avocado and roasted chickpeas.',
+      'Garnish with sesame seeds.',
+    ],
+  },
+  {
+    id: 27, cuisine: 'Asian', name: 'Salmon Taco Salad',
+    ingredients: [
+      '2 cups spring mix + romaine',
+      '6 oz salmon fillet',
+      '1 avocado, sliced',
+      '1 cup shredded cabbage',
+      '¼ cup fresh cilantro',
+      '½ cup tortilla chips, crushed',
+      '½ cup cooked quinoa',
+      'Sauce: ¼ cup yogurt + 1 tbsp lime juice + 1 tsp hot sauce + 1 tbsp cilantro',
+    ],
+    steps: [
+      'Cook salmon (pan-sear or bake).',
+      'Toss greens + quinoa in a bowl.',
+      'Add cabbage, avocado, and salmon.',
+      'Top with chips and cilantro.',
+      'Drizzle sauce and finish with lime.',
+    ],
+  },
+  {
+    id: 28, cuisine: 'Asian', name: 'Hot-Smoked Salmon Noodle',
+    ingredients: [
+      '4 oz smoked salmon',
+      '4 oz soba noodles, cooked',
+      '2 cups bagged greens',
+      '1 cup green beans, trimmed',
+      '1 tsp sesame seeds',
+      'Sauce: 1 tbsp soy sauce + 1 tsp sesame oil + 1 tbsp rice vinegar + ½ tsp sugar',
+    ],
+    steps: [
+      'Cook soba noodles, rinse under cold water.',
+      'Toss greens lightly with sesame dressing.',
+      'Plate noodles, green beans, and smoked salmon.',
+      'Drizzle more sesame dressing.',
+      'Garnish with sesame seeds. Optional: add avocado.',
+    ],
+  },
+  {
+    id: 62, cuisine: 'Asian', name: 'Sunomono Cucumber',
+    ingredients: [
+      '3 Persian cucumbers, thinly sliced',
+      '2 tbsp rice vinegar',
+      '1 tsp sugar',
+      '½ tsp salt',
+      '1 tsp sesame seeds',
+      '¼ cup dried wakame seaweed, rehydrated',
+      '4 oz imitation crab or cooked shrimp (optional)',
+    ],
+    steps: [
+      'Salt cucumber slices, let sit 5 min, then squeeze out moisture.',
+      'Rehydrate wakame in cold water for 5 min, drain.',
+      'Whisk rice vinegar, sugar, and salt into a dressing.',
+      'Toss cucumbers and wakame with dressing.',
+      'Top with sesame seeds and protein if using.',
+    ],
+  },
+  {
+    id: 63, cuisine: 'Asian', name: 'Goma-ae Spinach',
+    ingredients: [
+      '5 oz baby spinach or blanched spinach',
+      '3 tbsp toasted sesame seeds, ground',
+      '1 tbsp soy sauce',
+      '1 tbsp mirin',
+      '½ tsp sugar',
+      '1 tsp sesame oil',
+    ],
+    steps: [
+      'Blanch spinach in boiling water 30 seconds, transfer to ice water.',
+      'Squeeze out all excess moisture and cut into segments.',
+      'Grind sesame seeds in a mortar until paste-like.',
+      'Mix sesame paste with soy sauce, mirin, sugar, and sesame oil.',
+      'Toss spinach with sesame dressing and serve.',
+    ],
+  },
+  {
+    id: 64, cuisine: 'Asian', name: 'Soba Noodle Salad',
+    ingredients: [
+      '6 oz soba noodles, cooked and rinsed cold',
+      '2 cups rotisserie chicken or tofu, shredded',
+      '1 cucumber, julienned',
+      '½ cup shredded carrots',
+      '3 scallions, sliced',
+      '2 sheets nori, cut into strips',
+      '1 tbsp sesame seeds',
+      'Sauce: 2 tbsp soy sauce + 1 tbsp mirin + 1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp grated ginger',
+    ],
+    steps: [
+      'Cook soba, rinse thoroughly under cold water.',
+      'Whisk soy-sesame dressing in a large bowl.',
+      'Toss noodles with dressing.',
+      'Add chicken or tofu, cucumber, and carrots.',
+      'Top with scallions, nori strips, and sesame seeds.',
+    ],
+  },
+  {
+    id: 65, cuisine: 'Asian', name: 'Miso Kale',
+    ingredients: [
+      '3 cups bagged chopped kale',
+      '1 cup shredded purple cabbage',
+      '½ cup edamame, shelled',
+      '½ cup shredded carrots',
+      '1 avocado, sliced',
+      '¼ cup crispy wonton strips',
+      'Sauce: 1 tbsp white miso + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey + 1 tsp grated ginger',
+    ],
+    steps: [
+      'Whisk miso dressing until smooth.',
+      'Massage kale with half the dressing until tender.',
+      'Add cabbage, edamame, and carrots.',
+      'Toss with remaining dressing.',
+      'Top with avocado and crispy wonton strips.',
+    ],
+  },
+  {
+    id: 66, cuisine: 'Asian', name: 'Karaage Chicken Salad',
+    ingredients: [
+      '2 cups karaage or crispy fried chicken thighs',
+      '2 cups shredded cabbage + romaine',
+      '1 cucumber, sliced',
+      '1 cup cherry tomatoes, halved',
+      '2 tbsp kewpie mayo',
+      '1 lemon, cut into wedges',
+      'Sauce: 2 tbsp ponzu + 1 tsp sesame oil + 2 scallions, sliced',
+    ],
+    steps: [
+      'Heat or prepare karaage chicken.',
+      'Toss cabbage and romaine with ponzu dressing.',
+      'Plate greens with cucumber and tomatoes.',
+      'Add chicken on top.',
+      'Drizzle kewpie mayo and finish with lemon.',
+    ],
+  },
+  {
+    id: 67, cuisine: 'Asian', name: 'Daikon & Carrot',
+    ingredients: [
+      '2 cups daikon radish, shredded or julienned',
+      '1 cup carrots, shredded',
+      '2 tbsp rice vinegar',
+      '1 tsp sugar',
+      '1 tsp sesame oil',
+      '1 tsp chili crisp',
+      '1 tsp sesame seeds',
+      '¼ cup fresh cilantro',
+    ],
+    steps: [
+      'Toss daikon and carrots with rice vinegar, sugar, and a pinch of salt.',
+      'Let sit 10 min for a quick pickle effect.',
+      'Add sesame oil and chili crisp.',
+      'Toss well and top with sesame seeds.',
+      'Finish with fresh cilantro.',
+    ],
+  },
+  {
+    id: 68, cuisine: 'Asian', name: 'Chaat-Style Potato',
+    ingredients: [
+      '2 cups pre-cooked baby potatoes, halved',
+      '¼ cup plain Greek yogurt',
+      '1 tsp chaat masala (or ½ tsp curry powder + ½ tsp cumin)',
+      '1 cup pita chips or papdi crackers, crushed',
+      '2 tbsp mint chutney + 2 tbsp tamarind chutney',
+      '½ cup cherry tomatoes + ¼ cup red onion + ¼ cup cilantro',
+    ],
+    steps: [
+      'Toss potatoes with yogurt + lemon juice + chaat masala.',
+      'Crush pita chips over the top.',
+      'Add tomatoes, red onion, and cilantro.',
+      'Drizzle both chutneys generously.',
+      'Optional: add canned chickpeas for extra texture.',
+    ],
+  },
+  {
+    id: 69, cuisine: 'Asian', name: 'Tandoori Chicken Salad',
+    ingredients: [
+      '2 chicken thighs, marinated in ¼ cup yogurt + 2 tsp tandoori spices',
+      '3 cups romaine + baby spinach',
+      '1 cucumber, sliced',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup red onion, thinly sliced',
+      '¼ cup fresh cilantro + mint',
+      'Sauce: ¼ cup Greek yogurt + 1 tbsp lemon juice + ½ tsp cumin + 1 garlic clove',
+    ],
+    steps: [
+      'Marinate chicken in yogurt + tandoori spice mix, pan-cook or broil.',
+      'Slice chicken and let rest.',
+      'Toss greens with yogurt-cumin dressing.',
+      'Add cucumber, tomatoes, and red onion.',
+      'Top with sliced chicken and fresh herbs.',
+    ],
+  },
+  {
+    id: 70, cuisine: 'Asian', name: 'Chickpea Chaat',
+    ingredients: [
+      '2 cans chickpeas, drained',
+      '1 cup cherry tomatoes, diced',
+      '1 cucumber, diced',
+      '¼ cup red onion, finely diced',
+      '¼ cup fresh cilantro + mint',
+      '¼ cup pomegranate seeds (optional)',
+      'Sauce: 2 tbsp lemon juice + 1 tsp chaat masala + ½ tsp cumin + salt',
+    ],
+    steps: [
+      'Combine chickpeas, tomatoes, cucumber, and red onion.',
+      'Add chaat masala, cumin, and lemon juice.',
+      'Toss well and taste for seasoning.',
+      'Fold in fresh cilantro and mint.',
+      'Top with pomegranate seeds for sweetness and crunch.',
+    ],
+  },
+  {
+    id: 71, cuisine: 'Asian', name: 'Spiced Lentil & Spinach',
+    ingredients: [
+      '1 pouch pre-cooked green lentils',
+      '3 cups baby spinach',
+      '1 cup cherry tomatoes, halved',
+      '1 cucumber, diced',
+      '¼ cup red onion, sliced',
+      '¼ cup roasted cashews',
+      'Sauce: 2 tbsp olive oil + 1 tbsp lemon + ½ tsp cumin + ½ tsp coriander + ¼ tsp turmeric + 1 tsp grated ginger',
+    ],
+    steps: [
+      'Warm spiced dressing in a small pan for 30 sec to bloom spices.',
+      'Toss lentils with warm dressing and let cool slightly.',
+      'Add spinach, tomatoes, cucumber, and red onion.',
+      'Mix gently and season with salt.',
+      'Top with roasted cashews.',
+    ],
+  },
+  {
+    id: 72, cuisine: 'Asian', name: 'Cucumber Raita Salad',
+    ingredients: [
+      '2 Persian cucumbers, diced',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup red onion, finely diced',
+      '½ cup full-fat Greek yogurt',
+      '2 tbsp fresh mint + cilantro, chopped',
+      '½ tsp ground cumin, toasted',
+      '¼ tsp chili flakes',
+    ],
+    steps: [
+      'Combine cucumbers, tomatoes, and red onion.',
+      'Mix in Greek yogurt until everything is lightly coated.',
+      'Fold in fresh mint and cilantro.',
+      'Season with cumin, salt, and chili flakes.',
+      'Serve chilled — great alongside grilled meats.',
+    ],
+  },
+  {
+    id: 73, cuisine: 'Asian', name: 'Mango Kachumber',
+    ingredients: [
+      '1 semi-ripe mango, diced',
+      '1 cucumber, diced',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup red onion, finely diced',
+      '¼ cup fresh cilantro',
+      '1 green chili, finely sliced',
+      'Sauce: 2 tbsp lime juice + ½ tsp chaat masala + salt',
+    ],
+    steps: [
+      'Combine mango, cucumber, tomatoes, and red onion.',
+      'Add sliced green chili to taste.',
+      'Squeeze lime juice over everything.',
+      'Season with chaat masala and salt.',
+      'Toss with fresh cilantro and serve immediately.',
+    ],
+  },
+  {
+    id: 80, cuisine: 'Asian', name: 'Japchae Noodle Salad',
+    ingredients: [
+      '4 oz glass noodles, cooked',
+      '2 cups spinach, blanched',
+      '½ cup shredded carrots',
+      '1 cup shiitake mushrooms, sautéed',
+      '3 scallions, sliced',
+      '1 tbsp sesame seeds',
+      'Sauce: 2 tbsp soy sauce + 1 tsp sesame oil + 1 garlic clove + 1 tsp sugar + 1 tbsp rice vinegar',
+    ],
+    steps: [
+      'Cook glass noodles, rinse cold, and cut into shorter lengths.',
+      'Blanch spinach, squeeze dry.',
+      'Sauté mushrooms in sesame oil until golden.',
+      'Toss noodles, spinach, carrots, and mushrooms with dressing.',
+      'Top with scallions and sesame seeds.',
+    ],
+  },
+  {
+    id: 81, cuisine: 'Asian', name: 'Bibimbap Salad Bowl',
+    ingredients: [
+      '1 cup cooked short-grain rice, cooled',
+      '½ cup shredded carrots',
+      '1 cucumber, julienned',
+      '1 cup spinach, blanched',
+      '1 soft-boiled egg, halved',
+      '2 tbsp gochujang sauce',
+      '1 tsp sesame oil + 1 tsp sesame seeds',
+    ],
+    steps: [
+      'Arrange rice in a bowl as the base.',
+      'Place carrots, cucumber, and spinach in separate sections on top.',
+      'Add soft-boiled egg in the center.',
+      'Drizzle gochujang sauce and sesame oil.',
+      'Mix everything together before eating.',
+    ],
+  },
+  {
+    id: 82, cuisine: 'Asian', name: 'Spicy Cucumber Muchim',
+    ingredients: [
+      '3 Persian cucumbers, sliced',
+      '1 tsp gochugaru (Korean chili flakes)',
+      '1 tbsp rice vinegar',
+      '1 tsp sesame oil',
+      '1 garlic clove, minced',
+      '2 scallions, sliced',
+      '1 tsp sesame seeds',
+    ],
+    steps: [
+      'Salt cucumber slices, let sit 5 min, then pat dry.',
+      'Mix gochugaru, rice vinegar, sesame oil, and garlic into a dressing.',
+      'Toss cucumbers with dressing.',
+      'Add scallions and toss again.',
+      'Top with sesame seeds — serve immediately or chill.',
+    ],
+  },
+  {
+    id: 83, cuisine: 'Asian', name: 'Bulgogi Beef Salad',
+    ingredients: [
+      '8 oz beef, thinly sliced (marinated in 2 tbsp soy + ½ pear grated + 1 garlic clove + 1 tsp sesame oil)',
+      '3 cups romaine + shredded cabbage',
+      '½ cup shredded carrots',
+      '3 scallions, sliced',
+      '1 tbsp sesame seeds',
+      'Sauce: 1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey',
+    ],
+    steps: [
+      'Marinate and cook bulgogi beef in a hot pan, 2–3 min per side.',
+      'Toss romaine, cabbage, and carrots together.',
+      'Dress with gochujang vinaigrette.',
+      'Top with sliced bulgogi beef.',
+      'Finish with scallions and sesame seeds.',
+    ],
+  },
+  {
+    id: 84, cuisine: 'Asian', name: 'Kimchi Slaw',
+    ingredients: [
+      '3 cups bagged coleslaw mix',
+      '½ cup kimchi, roughly chopped',
+      '3 scallions, sliced',
+      '1 tsp sesame seeds',
+      '¼ cup crushed ramen noodles or wonton strips',
+      'Sauce: 1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp honey + 1 tbsp soy sauce',
+    ],
+    steps: [
+      'Toss coleslaw mix with sesame dressing.',
+      'Fold in chopped kimchi.',
+      'Add scallions and mix well.',
+      'Top with crushed ramen for crunch.',
+      'Garnish with sesame seeds.',
+    ],
+  },
+  {
+    id: 85, cuisine: 'Asian', name: 'Green Papaya Salad',
+    ingredients: [
+      '2 cups green papaya, shredded (or green mango)',
+      '1 cup shredded carrots',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup fresh mint + Thai basil + cilantro',
+      '¼ cup crushed roasted peanuts',
+      '2 tbsp dried shrimp (optional)',
+      'Sauce: 2 tbsp fish sauce + 2 tbsp lime juice + 1 tsp sugar + 1 garlic clove + 1 chili',
+    ],
+    steps: [
+      'Shred papaya and carrots into long thin strips.',
+      'Whisk fish sauce dressing until sugar dissolves.',
+      'Toss papaya, carrots, and tomatoes with dressing.',
+      'Add fresh herbs and toss gently.',
+      'Top with crushed peanuts and serve immediately.',
+    ],
+  },
+  {
+    id: 86, cuisine: 'Asian', name: 'Bún Bowls',
+    ingredients: [
+      '4 oz rice vermicelli noodles, cooked and cooled',
+      '2 cups grilled lemongrass chicken or pork, sliced',
+      '2 cups butter lettuce, torn',
+      '1 cup bean sprouts',
+      '1 cucumber, sliced',
+      '½ cup shredded carrots',
+      '¼ cup fresh mint + cilantro',
+      '¼ cup crushed peanuts',
+      'Sauce: 2 tbsp fish sauce + 1 tbsp lime juice + 1 tsp sugar + 1 garlic clove + 1 chili',
+    ],
+    steps: [
+      'Cook rice noodles, rinse cold.',
+      'Grill or pan-cook marinated protein.',
+      'Arrange noodles in a bowl with lettuce, bean sprouts, and cucumber.',
+      'Add protein and fresh herbs on top.',
+      'Pour nuoc cham over everything and top with peanuts.',
+    ],
+  },
+  {
+    id: 87, cuisine: 'Asian', name: 'Lemongrass Chicken Salad',
+    ingredients: [
+      '2 chicken thighs, marinated in 1 stalk lemongrass + 1 tbsp fish sauce + 2 garlic cloves',
+      '2 cups shredded cabbage + shredded carrots',
+      '¼ cup crispy fried shallots',
+      '¼ cup fresh mint + cilantro',
+      '¼ cup crushed peanuts',
+      'Sauce: 2 tbsp fish sauce + 2 tbsp lime juice + 1 tsp sugar + 1 chili + 1 garlic clove',
+    ],
+    steps: [
+      'Marinate chicken and pan-cook or grill until caramelized.',
+      'Shred chicken and let cool.',
+      'Toss cabbage and carrots with nuoc cham dressing.',
+      'Add chicken and fresh herbs.',
+      'Top with crispy fried shallots and crushed peanuts.',
+    ],
+  },
+  {
+    id: 88, cuisine: 'Asian', name: 'Shrimp & Herb Rice Paper',
+    ingredients: [
+      '12 rice paper sheets',
+      '8 oz cooked shrimp',
+      '2 oz rice vermicelli, cooked',
+      '4 butter lettuce leaves',
+      '1 cucumber + 1 carrot, julienned',
+      '¼ cup fresh mint + Thai basil',
+      'Sauce: 2 tbsp hoisin + 1 tbsp peanut butter + 1 tsp lime juice + 2 tbsp warm water',
+    ],
+    steps: [
+      'Soften rice paper in warm water, 10 seconds.',
+      'Layer lettuce, noodles, veggies, shrimp, and herbs.',
+      'Roll tightly and slice in half.',
+      'Whisk hoisin-peanut dipping sauce.',
+      'Serve rolls alongside dipping sauce.',
+    ],
+  },
+
+  // ── MEDITERRANEAN ─────────────────────────────────────────────────────────
+  {
+    id: 29, cuisine: 'Mediterranean', name: 'Panzanella',
+    ingredients: [
+      '4 thick slices day-old crusty bread, torn',
+      '3 heirloom tomatoes, roughly chopped',
+      '1 cucumber, roughly chopped',
+      '¼ cup red onion, thinly sliced',
+      '¼ cup fresh basil, torn',
+      '2 tbsp capers',
+      '3 tbsp olive oil + 2 tbsp red wine vinegar',
+      'Flaky salt and black pepper',
+    ],
+    steps: [
+      'Toast bread pieces in olive oil until golden.',
+      'Combine tomatoes, cucumber, onion, and capers.',
+      'Add bread and toss with oil and vinegar.',
+      'Let sit 10 minutes so bread soaks up juices.',
+      'Finish with torn basil and flaky salt.',
+    ],
+  },
+  {
+    id: 30, cuisine: 'Mediterranean', name: 'Italian Chopped Salad',
+    ingredients: [
+      '1 bag chopped romaine or iceberg',
+      '1 cup shredded radicchio',
+      '1 pint cherry tomatoes, halved',
+      '1 can chickpeas, drained',
+      '4 oz fresh pearl mozzarella',
+      '4 oz provolone, diced',
+      '5 pepperoncini, sliced',
+      '¼ cup red onion, thinly sliced',
+      'Sauce: 3 tbsp Italian dressing + squeeze of lemon + pinch of dried oregano',
+    ],
+    steps: [
+      'Combine all salad ingredients in a large bowl.',
+      'Drizzle with Italian dressing and toss gently.',
+      'Season with salt, pepper, and extra oregano.',
+      'Optional: add salami or pepperoni for a heartier salad.',
+      'Serve immediately or chill briefly.',
+    ],
+  },
+  {
+    id: 31, cuisine: 'Mediterranean', name: 'Arugula Salad',
+    ingredients: [
+      '5 oz arugula',
+      '¼ cup shaved parmesan or pecorino',
+      '¼ cup toasted pine nuts',
+      '2 tbsp olive oil',
+      '1 tbsp lemon juice',
+      '¾ tsp honey',
+      '½ tsp Dijon mustard',
+      'Salt & pepper to taste',
+    ],
+    steps: [
+      'Whisk olive oil, lemon, honey, Dijon, salt & pepper in the bottom of a large bowl.',
+      'Add arugula and toss to coat.',
+      'Top with parmesan and pine nuts.',
+      'Serve immediately.',
+      'Optional: drape thin-sliced prosciutto on top.',
+    ],
+  },
+  {
+    id: 32, cuisine: 'Mediterranean', name: 'Grinder Sub Salad',
+    ingredients: [
+      '4 cups bagged shredded lettuce',
+      '4 oz deli ham + 2 oz salami, pre-sliced',
+      '4 slices provolone',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup jarred pepperoncini or banana peppers',
+      '½ cup croutons',
+      'Sauce: 2 tbsp olive oil + 1 tbsp red wine vinegar + ½ tsp dried oregano',
+    ],
+    steps: [
+      'Toss lettuce, meats, cheese, tomatoes, and peppers in a large bowl.',
+      'Add olive oil, red wine vinegar, and oregano.',
+      'Mix well until everything is coated.',
+      'Finish with croutons.',
+      'Optional: add a spoonful of mayo for a creamy grinder-style dressing.',
+    ],
+  },
+  {
+    id: 33, cuisine: 'Mediterranean', name: 'Farro Salad',
+    ingredients: [
+      '1 pouch pre-cooked farro',
+      '1 cup arugula',
+      '1 cup radicchio, sliced',
+      '1 Honeycrisp apple, thinly sliced',
+      '3 Medjool dates, pitted and chopped',
+      '½ cup walnuts',
+      '½ cup shaved pecorino',
+      '1 tbsp fresh thyme',
+      'Sauce: 3 tbsp olive oil + 2 tbsp apple cider vinegar + 1 tsp Dijon + 1 tsp honey',
+    ],
+    steps: [
+      'Warm farro per package or use at room temperature.',
+      'Combine farro, arugula, radicchio, apple, dates, walnuts, pecorino, and thyme.',
+      'Whisk dressing and pour over salad.',
+      'Toss and season to taste.',
+      'Optional: add crumbled gorgonzola for bolder flavor.',
+    ],
+  },
+  {
+    id: 34, cuisine: 'Mediterranean', name: 'Pasta Salad Primavera',
+    ingredients: [
+      '8 oz short pasta (penne or fusilli)',
+      '1 cup cherry tomatoes, halved',
+      '1 cup pre-cut asparagus or green beans',
+      '½ cup frozen peas, thawed',
+      '½ cup store-bought pesto',
+      '¼ cup shaved parmesan',
+      '2 tbsp olive oil + salt & pepper',
+    ],
+    steps: [
+      'Cook pasta; add asparagus in the last 2 min, then drain.',
+      'Toss warm pasta with pesto.',
+      'Stir in tomatoes and peas.',
+      'Loosen pesto with 2–3 tbsp olive oil + a splash of lemon juice.',
+      'Finish with parmesan, salt, and pepper.',
+    ],
+  },
+  {
+    id: 35, cuisine: 'Mediterranean', name: 'Roasted Red Pepper & Mozzarella',
+    ingredients: [
+      '3 cups spinach + arugula',
+      '½ cup roasted red peppers (jarred), sliced',
+      '4 oz fresh mozzarella, sliced',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup fresh basil, torn',
+      '½ cup cooked quinoa',
+      '2 cups rotisserie chicken (optional)',
+      'Sauce: 2 tbsp balsamic glaze + 1 tbsp olive oil',
+    ],
+    steps: [
+      'Toss greens + quinoa with a drizzle of olive oil.',
+      'Add roasted red peppers, cherry tomatoes, and mozzarella.',
+      'Add chicken if using.',
+      'Drizzle balsamic glaze over the top.',
+      'Finish with torn fresh basil.',
+    ],
+  },
+  {
+    id: 41, cuisine: 'Mediterranean', name: 'Fattoush',
+    ingredients: [
+      '2 pita breads, torn and toasted until crispy',
+      '3 cups romaine + purslane',
+      '1 cup tomatoes, diced',
+      '1 cucumber, sliced',
+      '4 radishes, sliced',
+      '¼ cup fresh mint + parsley',
+      'Sauce: 2 tbsp olive oil + 1 tbsp lemon juice + 1 tsp sumac',
+    ],
+    steps: [
+      'Toast or fry pita pieces until crispy.',
+      'Chop all vegetables and herbs.',
+      'Toss together with sumac dressing.',
+      'Add pita just before serving so it stays crisp.',
+      'Dust extra sumac on top.',
+    ],
+  },
+  {
+    id: 42, cuisine: 'Mediterranean', name: 'Tabbouleh',
+    ingredients: [
+      '⅔ cup bulgur wheat, quick-cook',
+      '3 cups flat-leaf parsley, very finely chopped',
+      '1 cup English cucumber, diced',
+      '1 cup tomato, diced',
+      '⅓ cup fresh mint, chopped',
+      '2 scallions, chopped',
+      'Sauce: ⅓ cup olive oil + 3 tbsp lemon juice + 1 garlic clove + ¼ tsp coriander',
+    ],
+    steps: [
+      'Cook bulgur per package (soak in boiling water 10 min). Cool.',
+      'Whisk dressing in the bottom of a large bowl.',
+      'Add bulgur, parsley, cucumber, tomato, mint, and scallions.',
+      'Toss well and season to taste.',
+      'Chill 15 min before serving (keeps up to 3 days).',
+    ],
+  },
+  {
+    id: 43, cuisine: 'Mediterranean', name: 'Mediterranean Quinoa',
+    ingredients: [
+      '1 pouch pre-cooked quinoa',
+      '2 cups arugula',
+      '1 cup Persian cucumbers, sliced',
+      '¾ cup crumbled feta',
+      '¾ cup kalamata olives, sliced',
+      '½ cup red onion, diced',
+      '1 cup cherry tomatoes, halved',
+      '1 can roasted chickpeas',
+      '¼ cup fresh basil + mint',
+      'Sauce: 3 tbsp Italian dressing + 1 garlic clove + 1 tbsp lemon juice',
+    ],
+    steps: [
+      'Microwave quinoa per package. Let cool slightly.',
+      'Combine quinoa, arugula, cucumber, feta, olives, onion, and herbs.',
+      'Dress and toss.',
+      'Top with roasted chickpeas.',
+      'Season with red pepper flakes, salt, and pepper.',
+    ],
+  },
+  {
+    id: 44, cuisine: 'Mediterranean', name: 'Lentil Salad',
+    ingredients: [
+      '1 can French green lentils (or 2½ cups pre-cooked)',
+      '3 Persian cucumbers, sliced',
+      '¾ cup grape tomatoes, halved',
+      '½ cup red onion, diced',
+      '4 kale leaves, torn',
+      '4 radishes, sliced',
+      '½ cup crumbled feta',
+      '½ cup green olives, halved',
+      '¼ cup parsley + mint, chopped',
+      'Sauce: 3 tbsp olive oil + 2 tbsp lemon juice + 2 garlic cloves + 1 tsp Dijon + ½ tsp cumin',
+    ],
+    steps: [
+      'Whisk dressing in the bottom of a large bowl.',
+      'Add lentils, cucumbers, tomatoes, onion, kale, radishes, feta, and olives.',
+      'Toss to coat.',
+      'Fold in parsley and mint.',
+      'Season to taste — keeps 4 days in the fridge.',
+    ],
+  },
+  {
+    id: 45, cuisine: 'Mediterranean', name: 'Chickpea Salad',
+    ingredients: [
+      '2 cans chickpeas, drained',
+      '2 cups grape tomatoes, halved',
+      '½ English cucumber, diced',
+      '½ cup kalamata olives, halved',
+      '½ cup pickled red onions',
+      '½ cup parsley + dill + mint, chopped',
+      'Sauce: 2 tbsp olive oil + 2 tbsp lemon juice + 1 garlic clove + 1 tsp Dijon',
+    ],
+    steps: [
+      'Whisk dressing in a large bowl.',
+      'Add chickpeas, tomatoes, cucumber, pickled onion, and olives.',
+      'Toss well to combine.',
+      'Fold in fresh herbs.',
+      'Serve immediately or chill. Optional: serve over hummus.',
+    ],
+  },
+  {
+    id: 46, cuisine: 'Mediterranean', name: 'Hummus Crunch',
+    ingredients: [
+      '½ cup store-bought hummus',
+      '3 cups romaine + kale, chopped',
+      '1 can chickpeas, drained',
+      '¼ cup feta crumbles',
+      '1 cup cherry tomatoes, halved',
+      '1 cucumber, chopped',
+      '1 cup shredded cabbage',
+      '½ cup garlic croutons or breadcrumbs',
+      'Sauce: 2 tbsp pesto + 1 tbsp olive oil + 1 tsp lemon juice',
+    ],
+    steps: [
+      'Toss greens + cabbage in a bowl.',
+      'Add chickpeas, tomatoes, and cucumber.',
+      'Dollop hummus on top.',
+      'Add feta and fresh basil.',
+      'Drizzle pesto dressing and finish with croutons.',
+    ],
+  },
+  {
+    id: 47, cuisine: 'Mediterranean', name: 'Spiced Carrot & Date',
+    ingredients: [
+      '2 cups baby carrots',
+      '1 tsp curry powder',
+      '½ cup plain Greek yogurt',
+      '4 Medjool dates, pitted and chopped',
+      '¼ cup red onion, thinly sliced',
+      '¼ cup fresh cilantro + parsley',
+      'Sauce: 1 tbsp olive oil + ½ tsp curry powder + 1 tbsp lemon juice',
+    ],
+    steps: [
+      'Roast carrots with oil + curry powder at high heat (~15 min).',
+      'Mix red onion, dates, and fresh herbs with lemon juice.',
+      'Spread yogurt on a plate.',
+      'Add roasted carrots on top.',
+      'Spoon herb-date mixture over and finish with hot honey.',
+    ],
+  },
+  {
+    id: 48, cuisine: 'Mediterranean', name: 'Mediterranean Lemon Herb',
+    ingredients: [
+      '3 cups romaine + arugula',
+      '2 cups rotisserie chicken or 1 can chickpeas',
+      '1 cucumber, sliced',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup kalamata olives',
+      '¼ cup red onion, sliced',
+      '¼ cup feta crumbles',
+      '½ cup cooked farro or quinoa',
+      'Sauce: 2 tbsp olive oil + 1 tbsp lemon + ½ tsp oregano + 1 garlic clove',
+    ],
+    steps: [
+      'Toss greens with lemon-herb dressing.',
+      'Add protein and grains.',
+      'Add veggies and toss gently.',
+      'Top with feta and olives.',
+      'Optional: serve with a side of hummus.',
+    ],
+  },
+  {
+    id: 52, cuisine: 'Mediterranean', name: 'Greek Salad',
+    ingredients: [
+      '1 cucumber, chopped',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup red onion, thinly sliced',
+      '½ cup kalamata olives',
+      '4 oz block feta, sliced or crumbled',
+      '1 tsp fresh oregano',
+      'Sauce: 2 tbsp olive oil + 1 tbsp red wine vinegar + pinch of dried oregano',
+    ],
+    steps: [
+      'Toss cucumber, tomatoes, onion, and olives in a bowl.',
+      'Add dressing and mix.',
+      'Top with feta — don\'t overmix so it stays in chunks.',
+      'Finish with fresh oregano and cracked pepper.',
+      'Optional: add grilled chicken or chickpeas for protein.',
+    ],
+  },
+  {
+    id: 53, cuisine: 'Mediterranean', name: 'Orzo Salad',
+    ingredients: [
+      '1½ cups orzo, cooked and cooled',
+      '1 cup cherry tomatoes, halved',
+      '1 cucumber, diced',
+      '½ cup kalamata olives, halved',
+      '½ cup crumbled feta',
+      '¼ cup red onion, thinly sliced',
+      '¼ cup fresh parsley + mint',
+      'Sauce: 3 tbsp lemon juice + 2 tbsp olive oil + 1 garlic clove + ½ tsp dried oregano',
+    ],
+    steps: [
+      'Cook orzo, drain, and rinse under cold water.',
+      'Whisk lemon dressing in a large bowl.',
+      'Add orzo, tomatoes, cucumber, olives, onion, and herbs.',
+      'Toss well and fold in feta.',
+      'Chill 20 min before serving — keeps 3 days in the fridge.',
+    ],
+  },
+  {
+    id: 54, cuisine: 'Mediterranean', name: 'Spanakopita Salad',
+    ingredients: [
+      '4 cups baby spinach',
+      '½ cup crumbled feta',
+      '1 cucumber, sliced',
+      '¼ cup kalamata olives',
+      '1 cup cherry tomatoes, halved',
+      '2 tbsp toasted pine nuts',
+      '½ cup pita chips, crushed',
+      'Sauce: 2 tbsp lemon juice + 2 tbsp olive oil + 1 tsp Dijon + 1 garlic clove',
+    ],
+    steps: [
+      'Toss spinach with lemon-garlic dressing.',
+      'Add cucumber, olives, tomatoes, and feta.',
+      'Scatter toasted pine nuts on top.',
+      'Finish with crushed pita chips for crunch.',
+      'Serve immediately.',
+    ],
+  },
+  {
+    id: 55, cuisine: 'Mediterranean', name: 'Lemon Herb Quinoa',
+    ingredients: [
+      '1 pouch pre-cooked quinoa',
+      '2 cups baby spinach or arugula',
+      '1 cucumber, diced',
+      '1 cup cherry tomatoes, halved',
+      '½ cup roasted red peppers (jarred), sliced',
+      '¼ cup crumbled feta',
+      '2 tbsp fresh dill + parsley',
+      'Sauce: 2 tbsp lemon juice + 2 tbsp olive oil + 1 garlic clove + salt',
+    ],
+    steps: [
+      'Warm quinoa or use at room temperature.',
+      'Combine quinoa, greens, cucumber, tomatoes, and roasted peppers.',
+      'Toss with lemon-herb dressing.',
+      'Fold in feta and fresh herbs.',
+      'Season with salt and pepper — great served warm or cold.',
+    ],
+  },
+  {
+    id: 74, cuisine: 'Mediterranean', name: 'Lebanese Fattoush',
+    ingredients: [
+      '2 pita breads, torn and toasted',
+      '3 cups romaine + purslane',
+      '1 cup cherry tomatoes, halved',
+      '2 Persian cucumbers, sliced',
+      '4 radishes, sliced',
+      '3 scallions, sliced',
+      '¼ cup fresh mint + parsley',
+      'Sauce: 2 tbsp olive oil + 1 tbsp lemon juice + 1 tsp sumac + 1 tsp pomegranate molasses',
+    ],
+    steps: [
+      'Break pita into pieces and toast or fry until crispy.',
+      'Chop all vegetables and herbs into similar-sized pieces.',
+      'Whisk sumac dressing with a drizzle of pomegranate molasses.',
+      'Toss vegetables with dressing.',
+      'Add pita just before serving and dust with extra sumac.',
+    ],
+  },
+  {
+    id: 76, cuisine: 'Mediterranean', name: 'Halloumi & Pomegranate',
+    ingredients: [
+      '8 oz halloumi, sliced',
+      '3 cups arugula + baby spinach',
+      '¼ cup pomegranate seeds',
+      '¼ cup walnuts, toasted',
+      '¼ cup fresh mint leaves',
+      'Sauce: 1 tbsp pomegranate molasses + 1 tbsp lemon juice + 2 tbsp olive oil',
+    ],
+    steps: [
+      'Pan-sear halloumi slices until golden on both sides.',
+      'Plate arugula and spinach as the base.',
+      'Add halloumi, pomegranate seeds, and walnuts.',
+      'Drizzle pomegranate-lemon dressing over everything.',
+      'Finish with fresh mint leaves.',
+    ],
+  },
+  {
+    id: 77, cuisine: 'Mediterranean', name: 'Lentil & Caramelized Onion',
+    ingredients: [
+      '1 can green or brown lentils, drained',
+      '2 large onions, thinly sliced',
+      '3 cups baby spinach',
+      '1 cup cherry tomatoes, halved',
+      '1 tsp sumac',
+      '3 tbsp toasted pine nuts',
+      'Sauce: 2 tbsp lemon juice + 2 tbsp olive oil + ½ tsp cumin + ½ tsp coriander',
+    ],
+    steps: [
+      'Caramelize onions in olive oil over low heat, 20–25 min.',
+      'Toss lentils with lemon-cumin dressing.',
+      'Plate spinach and tomatoes.',
+      'Spoon lentils over greens.',
+      'Top with caramelized onions, pine nuts, and a heavy dusting of sumac.',
+    ],
+  },
+  {
+    id: 78, cuisine: 'Mediterranean', name: 'Roasted Cauliflower & Tahini',
+    ingredients: [
+      '1 head cauliflower, cut into florets',
+      '3 cups baby spinach or arugula',
+      '1 can chickpeas, roasted',
+      '¼ cup pomegranate seeds',
+      '¼ cup fresh parsley',
+      'Sauce: 3 tbsp tahini + 1 tbsp lemon juice + 1 garlic clove + 2 tbsp water + salt',
+    ],
+    steps: [
+      'Roast cauliflower at 425°F with olive oil and cumin until golden, ~25 min.',
+      'Toss greens lightly with a little of the tahini dressing.',
+      'Add cauliflower and chickpeas.',
+      'Drizzle tahini sauce generously over the top.',
+      'Finish with pomegranate seeds and fresh parsley.',
+    ],
+  },
+  {
+    id: 79, cuisine: 'Mediterranean', name: 'Grain Salad with Herbs',
+    ingredients: [
+      '1 pouch pre-cooked farro or freekeh',
+      '¼ cup pickled red onions',
+      '¼ cup flat-leaf parsley + mint, chopped',
+      '¼ cup pistachios, roughly chopped',
+      '1 cucumber, diced',
+      '1 cup cherry tomatoes, halved',
+      'Sauce: 2 tbsp lemon vinaigrette + ½ tsp sumac',
+    ],
+    steps: [
+      'Warm or use grains at room temperature.',
+      'Toss grains with lemon-sumac dressing.',
+      'Add pickled onions, cucumber, and tomatoes.',
+      'Fold in fresh herbs.',
+      'Top with pistachios and serve.',
+    ],
+  },
+
+  // ── FRENCH ───────────────────────────────────────────────────────────────
+  {
+    id: 36, cuisine: 'French', name: 'Niçoise',
+    ingredients: [
+      '2 cans tuna in olive oil, drained',
+      '4 hard-boiled eggs, halved',
+      '2 cups haricots verts, blanched',
+      '1 lb new potatoes, boiled',
+      '½ cup kalamata olives',
+      '1 cup cherry tomatoes, halved',
+      '4 anchovy fillets (optional)',
+      'Sauce: 3 tbsp Dijon vinaigrette',
+    ],
+    steps: [
+      'Boil and cool potatoes; blanch green beans.',
+      'Arrange all components on a large platter.',
+      'Place tuna and eggs in the center.',
+      'Scatter olives and tomatoes around.',
+      'Drizzle Dijon vinaigrette over everything.',
+    ],
+  },
+  {
+    id: 37, cuisine: 'French', name: 'Lyonnaise Salad',
+    ingredients: [
+      '4 cups frisée lettuce',
+      '4 oz lardons (thick-cut bacon, diced)',
+      '2 poached eggs',
+      '½ cup croutons (fried in bacon fat)',
+      '1 shallot, minced',
+      '1 tsp Dijon mustard',
+      '1 tbsp red wine vinegar + 2 tbsp olive oil',
+    ],
+    steps: [
+      'Render lardons until crisp, set aside and reserve fat.',
+      'Make warm vinaigrette with shallot, Dijon, vinegar, and bacon fat.',
+      'Toss frisée with warm dressing.',
+      'Top with lardons and croutons.',
+      'Place poached egg on top — break it at the table.',
+    ],
+  },
+  {
+    id: 38, cuisine: 'French', name: 'Chicory & Bacon Egg',
+    ingredients: [
+      '3 cups endive or radicchio, torn',
+      '4 strips pre-cooked bacon, crumbled',
+      '2 eggs',
+      '½ cup store-bought croutons',
+      'Sauce: 3 tbsp bottled vinaigrette, warmed',
+    ],
+    steps: [
+      'Crisp bacon in a pan, set aside.',
+      'Soft-boil eggs (6–7 min), peel and halve.',
+      'Toss greens with warm dressing.',
+      'Top with bacon and croutons.',
+      'Add eggs and serve immediately.',
+    ],
+  },
+  {
+    id: 39, cuisine: 'French', name: 'Mustardy Potato & Egg',
+    ingredients: [
+      '3 cups mixed greens',
+      '1½ cups pre-cooked baby potatoes, halved',
+      '3 hard-boiled eggs, halved',
+      '3 tbsp pre-cooked bacon bits',
+      'Sauce: 3 tbsp Dijon vinaigrette',
+    ],
+    steps: [
+      'Warm potatoes slightly in the microwave.',
+      'Toss greens with Dijon vinaigrette.',
+      'Arrange potatoes, bacon, and halved eggs on top.',
+      'Drizzle extra dressing.',
+      'Optional: add avocado.',
+    ],
+  },
+  {
+    id: 40, cuisine: 'French', name: 'Herby Salmon Potato',
+    ingredients: [
+      '1½ cups pre-cooked baby potatoes, halved',
+      '4 oz smoked salmon (or canned salmon)',
+      '½ cup jarred artichoke hearts, quartered',
+      '¼ cup kalamata olives',
+      '1 tbsp capers',
+      '3 tbsp fresh dill + parsley, chopped',
+      'Sauce: 3 tbsp lemon vinaigrette',
+    ],
+    steps: [
+      'Toss warm potatoes with lemon vinaigrette.',
+      'Add salmon, artichokes, and olives.',
+      'Scatter capers over the top.',
+      'Finish generously with fresh herbs.',
+      'Serve warm or at room temperature.',
+    ],
+  },
+
+  // ── SPANISH & MEXICAN ─────────────────────────────────────────────────────
+  {
+    id: 49, cuisine: 'Spanish & Mexican', name: 'Ensaladilla Rusa',
+    ingredients: [
+      '2 cups potatoes, boiled and cubed',
+      '1 cup carrots, boiled and diced',
+      '1 can tuna, drained',
+      '¼ cup green olives, sliced',
+      '½ cup peas, cooked',
+      '3 hard-boiled eggs, diced',
+      '½ cup mayonnaise',
+      '¼ cup piquillo peppers (garnish)',
+    ],
+    steps: [
+      'Boil and cool potatoes and carrots separately.',
+      'Drain tuna and break into chunks.',
+      'Combine all ingredients with mayonnaise.',
+      'Adjust seasoning with salt and lemon.',
+      'Chill 1 hour, garnish with piquillo pepper strips.',
+    ],
+  },
+  {
+    id: 50, cuisine: 'Spanish & Mexican', name: 'Manchego & Fig',
+    ingredients: [
+      '3 cups arugula',
+      '4 fresh figs, halved',
+      '2 oz manchego, shaved',
+      '¼ cup marcona almonds',
+      '2 oz serrano ham, torn',
+      '1 tsp fresh thyme',
+      'Sauce: 1 tbsp honey + 1 tbsp sherry vinegar + 2 tbsp olive oil',
+    ],
+    steps: [
+      'Plate arugula as the base.',
+      'Add figs, torn serrano ham, and shaved manchego.',
+      'Scatter marcona almonds over top.',
+      'Whisk honey and sherry vinegar with olive oil, drizzle over.',
+      'Finish with fresh thyme leaves.',
+    ],
+  },
+  {
+    id: 51, cuisine: 'Spanish & Mexican', name: 'Halloumi Citrus',
+    ingredients: [
+      '8 oz halloumi, sliced',
+      '1 cup pre-cut orange or grapefruit segments',
+      '1 avocado, sliced',
+      '1 cup pita chips',
+      '2 tbsp fresh dill or parsley',
+      'Sauce: 1 tbsp lime juice + 1 tsp honey + 2 tbsp olive oil',
+    ],
+    steps: [
+      'Pan-sear halloumi until golden on both sides.',
+      'Toss pita chips with citrus segments and lime dressing.',
+      'Plate and add avocado and halloumi.',
+      'Top with fresh herbs.',
+      'Optional: add arugula as a greens base.',
+    ],
+  },
+  {
+    id: 56, cuisine: 'Spanish & Mexican', name: 'Elote Street Corn',
+    ingredients: [
+      '2 cups frozen or canned corn, charred in a pan',
+      '3 cups romaine, chopped',
+      '¼ cup cotija cheese, crumbled',
+      '1 avocado, cubed',
+      '1 jalapeño, sliced',
+      '¼ cup fresh cilantro',
+      '1 lime, cut into wedges',
+      'Sauce: 3 tbsp mayo + 1 tbsp lime juice + ½ tsp chili powder + 1 garlic clove',
+    ],
+    steps: [
+      'Char corn in a dry hot pan until lightly blackened.',
+      'Toss romaine with a little lime dressing.',
+      'Add corn, avocado, jalapeño, and cotija.',
+      'Drizzle elote sauce over the top.',
+      'Finish with fresh cilantro and a squeeze of lime.',
+    ],
+  },
+  {
+    id: 57, cuisine: 'Spanish & Mexican', name: 'Taco Salad',
+    ingredients: [
+      '3 cups romaine + 1 cup shredded red cabbage',
+      '8 oz seasoned ground beef or turkey',
+      '½ cup black beans, drained',
+      '1 cup cherry tomatoes, halved',
+      '½ cup cheddar cheese, shredded',
+      '2 tbsp pickled jalapeños',
+      '½ cup tortilla chips, crushed',
+      'Sauce: ¼ cup sour cream + 1 tbsp lime juice + ½ tsp cumin + 1 garlic clove',
+    ],
+    steps: [
+      'Cook and season meat with taco spices.',
+      'Build base with romaine and cabbage.',
+      'Add meat, beans, tomatoes, and cheddar.',
+      'Top with pickled jalapeños and chips.',
+      'Drizzle cumin-lime crema and serve immediately.',
+    ],
+  },
+  {
+    id: 58, cuisine: 'Spanish & Mexican', name: 'Watermelon Jicama',
+    ingredients: [
+      '3 cups pre-cut watermelon, cubed',
+      '1 cup jicama sticks (or cucumber)',
+      '1 jalapeño, thinly sliced',
+      '¼ cup fresh cilantro',
+      '3 scallions, sliced',
+      '1 tsp Tajín seasoning',
+      'Sauce: 2 tbsp lime juice + pinch of salt',
+    ],
+    steps: [
+      'Combine watermelon, jicama, and jalapeño in a bowl.',
+      'Add scallions and cilantro.',
+      'Squeeze lime juice generously over everything.',
+      'Toss and season with salt.',
+      'Dust with Tajín right before serving.',
+    ],
+  },
+  {
+    id: 59, cuisine: 'Spanish & Mexican', name: 'Grilled Corn & Poblano',
+    ingredients: [
+      '2 cups frozen or pre-grilled corn',
+      '1 poblano pepper, diced (or bell pepper)',
+      '3 cups romaine, chopped',
+      '½ cup black beans, drained',
+      '1 avocado, sliced',
+      '¼ cup cotija cheese, crumbled',
+      '3 scallions, sliced',
+      'Sauce: 1 tbsp lime juice + 1 tsp butter + 1 tsp hot sauce',
+    ],
+    steps: [
+      'Sauté corn and diced poblano in butter until lightly charred.',
+      'Build romaine base in a bowl.',
+      'Add beans, corn mixture, and avocado.',
+      'Crumble cotija over the top.',
+      'Finish with scallions and lime-hot sauce dressing.',
+    ],
+  },
+  {
+    id: 60, cuisine: 'Spanish & Mexican', name: 'Chipotle Black Bean',
+    ingredients: [
+      '3 cups spring mix + romaine',
+      '1 can black beans, drained',
+      '1 cup sweet potato, roasted and cubed',
+      '½ cup corn, charred',
+      '¼ cup red onion, thinly sliced',
+      '1 avocado, sliced',
+      '2 tbsp pepitas, toasted',
+      'Sauce: ¼ cup Greek yogurt + 1 chipotle pepper in adobo + 1 tbsp lime juice + 1 garlic clove',
+    ],
+    steps: [
+      'Roast sweet potato at 425°F until caramelized, ~20 min.',
+      'Char corn in a dry pan.',
+      'Toss greens with chipotle lime dressing.',
+      'Add beans, sweet potato, corn, onion, and avocado.',
+      'Top with toasted pepitas.',
+    ],
+  },
+  {
+    id: 61, cuisine: 'Spanish & Mexican', name: 'Hot & Tangy Pear',
+    ingredients: [
+      '3 cups bagged butter lettuce or romaine',
+      '1 pear, sliced (or apple)',
+      '3 radishes, thinly sliced',
+      '1 avocado, sliced',
+      '¼ cup fresh cilantro',
+      '1 tsp Tajín seasoning',
+      'Sauce: 2 tbsp spicy mayo + 1 tbsp lime juice',
+    ],
+    steps: [
+      'Toss lettuce, pears, and radishes with spicy mayo dressing.',
+      'Plate and add avocado slices.',
+      'Add fresh cilantro on top.',
+      'Sprinkle Tajín generously.',
+      'Optional: add shredded rotisserie chicken.',
+    ],
+  },
+];
+// ── State ─────────────────────────────────────────────────────────────────────
+let activeCategory = 'All';
+let selectedId = RECIPES[0].id;
+
+// ── Render Nav ────────────────────────────────────────────────────────────────
+function renderNav() {
+  const nav = document.getElementById('nav');
+  const cats = ['All', ...Object.keys(ACCENT)];
+  nav.innerHTML = cats.map(cat => {
+    const accent = ACCENT[cat] || '#2c3e50';
+    const active = cat === activeCategory ? 'active' : '';
+    return `<button class="${active}" data-cat="${cat}"
+      style="--accent:${accent}"
+      onclick="selectCategory('${cat}')">${cat}</button>`;
+  }).join('');
+}
+
+// ── Render Cards ──────────────────────────────────────────────────────────────
+function renderCards() {
+  const strip = document.getElementById('cardStrip');
+  const visible = activeCategory === 'All'
+    ? RECIPES
+    : RECIPES.filter(r => r.cuisine === activeCategory);
+  strip.innerHTML = visible.map(r => {
+    const accent = ACCENT[r.cuisine];
+    const sel = r.id === selectedId ? 'selected' : '';
+    return `
+      <div class="recipe-card ${sel}" style="--card-accent:${accent}"
+           onclick="selectRecipe(${r.id})">
+        <div class="card-label">${r.name}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── Render Detail ─────────────────────────────────────────────────────────────
+// ── Amount toggle state ───────────────────────────────────────────────────────
+let showAmounts = false;
+
+// Parses "2 cups arugula" → { amount: '2 cups', rest: 'arugula' }
+// Also handles fractions like ¼, ½, ¾ and ranges like "1–2"
+function parseIngredient(str) {
+  const match = str.match(/^([\d¼½¾⅓⅔⅛⅜⅝⅞\/\-–. ]*(tbsp|tsp|cup|cups|oz|lb|lbs|g|kg|ml|l|bunch|head|can|cans|pouch|pkg|package|clove|cloves|slice|slices|strip|strips|piece|pieces|sprig|sprigs|handful|pinch|dash|scoop|scoops|qt|pint)?\.?)\s+(.+)$/i);
+  if (match && match[1].trim()) {
+    return { amount: match[1].trim(), rest: match[3].trim() };
+  }
+  return { amount: null, rest: str };
+}
+
+function renderIngredient(str) {
+  const { amount, rest } = parseIngredient(str);
+  if (amount && showAmounts) {
+    return `<li><span class="bullet"></span><strong class="amount">${amount}</strong> ${rest}</li>`;
+  }
+  return `<li><span class="bullet"></span>${str}</li>`;
+}
+
+function renderDetail() {
+  const el = document.getElementById('recipeDetail');
+  const r = RECIPES.find(x => x.id === selectedId);
+  if (!r) { el.innerHTML = '<div class="empty-state">Select a recipe above to view its details.</div>'; return; }
+
+  const accent = ACCENT[r.cuisine];
+  el.innerHTML = `
+    <div class="recipe-detail" style="--detail-accent:${accent}">
+      <div class="detail-header">
+        <div>
+          <div class="detail-meta">
+            <span class="badge">✦ Recipe Ready</span>
+            <span class="cuisine-badge">${r.cuisine}</span>
+          </div>
+          <h2 class="detail-title">${r.name}</h2>
+        </div>
+        <div class="copy-actions">
+          <button class="copy-btn toggle-btn ${showAmounts ? 'active' : ''}" onclick="toggleAmounts()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4"/><rect x="9" y="3" width="6" height="5" rx="1"/></svg>
+            ${showAmounts ? 'Hide amounts' : 'Show amounts'}
+          </button>
+          <button class="copy-btn" onclick="copyIngredients(${r.id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy ingredients
+          </button>
+          <button class="copy-btn" onclick="copyFullRecipe(${r.id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy full recipe
+          </button>
+        </div>
+      </div>
+      <div class="detail-body">
+        <div>
+          <div class="section-heading">
+            <span>🛒</span> Ingredients
+          </div>
+          <ul class="ingredients-list">
+            ${r.ingredients.map(i => renderIngredient(i)).join('')}
+          </ul>
+        </div>
+        <div>
+          <div class="section-heading">
+            <span>📋</span> Steps
+          </div>
+          <ul class="steps-list">
+            ${r.steps.map((s, i) => `<li><span class="step-num">${i+1}</span>${s}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleAmounts() {
+  showAmounts = !showAmounts;
+  renderDetail();
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function selectCategory(cat) {
+  activeCategory = cat;
+  // auto-select first recipe in category
+  const visible = cat === 'All' ? RECIPES : RECIPES.filter(r => r.cuisine === cat);
+  if (visible.length) selectedId = visible[0].id;
+  renderNav();
+  renderCards();
+  renderDetail();
+}
+
+function selectRecipe(id) {
+  selectedId = id;
+  renderCards();
+  renderDetail();
+}
+
+function copyIngredients(id) {
+  const r = RECIPES.find(x => x.id === id);
+  navigator.clipboard.writeText(r.ingredients.join('\n')).then(() => flash('Ingredients copied!'));
+}
+
+function copyFullRecipe(id) {
+  const r = RECIPES.find(x => x.id === id);
+  const text = `${r.name}\n\nIngredients:\n${r.ingredients.map(i => '• ' + i).join('\n')}\n\nSteps:\n${r.steps.map((s,i) => `${i+1}. ${s}`).join('\n')}`;
+  navigator.clipboard.writeText(text).then(() => flash('Full recipe copied!'));
+}
+
+function flash(msg) {
+  const t = document.createElement('div');
+  Object.assign(t.style, {
+    position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)',
+    background:'#1a1a18', color:'#fff', padding:'9px 18px', borderRadius:'8px',
+    fontSize:'0.82rem', fontWeight:'500', zIndex:999, pointerEvents:'none',
+    transition:'opacity 0.4s', opacity:'1',
+  });
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 1800);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderNav();
+renderCards();
+renderDetail();
+</script>
+</body>
+</html>
