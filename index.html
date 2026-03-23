@@ -10,6 +10,10 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html {
+      font-size: 107%;
+    }
+
     :root {
       --bg: #f7f5f0;
       --surface: #ffffff;
@@ -91,6 +95,52 @@
     }
     nav button:hover { color: var(--text); }
 
+    /* ── Browse by (cuisine / flavor / season) ── */
+    .browse-mode {
+      padding: 22px 48px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .browse-mode-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .browse-mode-toggle {
+      display: flex;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .browse-mode-toggle button {
+      border: none;
+      background: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.84rem;
+      font-weight: 500;
+      padding: 8px 14px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .browse-mode-toggle button + button {
+      border-left: 1px solid var(--border);
+    }
+    .browse-mode-toggle button.active {
+      background: var(--bg);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .browse-mode-toggle button:hover:not(.active) {
+      color: var(--text);
+    }
+
     /* ── Card Strip ── */
     .card-strip-wrapper {
       padding: 28px 48px 0;
@@ -119,6 +169,7 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
+      -webkit-tap-highlight-color: transparent;
     }
     .recipe-card::before {
       content: '';
@@ -133,16 +184,34 @@
       border-color: rgba(255,255,255,0.7);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--card-accent) 40%, transparent);
     }
-    .recipe-card .card-label {
+    .recipe-card .card-label-wrap {
       position: relative;
       z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      text-align: center;
+      max-width: 100%;
+    }
+    .recipe-card .card-label {
       color: #fff;
       font-weight: 700;
-      font-size: 1.05rem;
-      line-height: 1.3;
-      text-align: center;
+      font-size: 1.06rem;
+      line-height: 1.28;
       text-shadow: 0 1px 6px rgba(0,0,0,0.25);
       letter-spacing: -0.01em;
+    }
+    .recipe-card .card-subcuisine {
+      font-size: 0.65rem;
+      font-weight: 600;
+      line-height: 1.2;
+      color: rgba(255,255,255,0.9);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      text-shadow: 0 1px 5px rgba(0,0,0,0.35);
+      max-width: 100%;
     }
 
     /* ── Recipe Detail ── */
@@ -166,7 +235,7 @@
       flex-wrap: wrap;
       gap: 12px;
     }
-    .detail-meta { display: flex; align-items: center; gap: 10px; }
+    .detail-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -190,6 +259,17 @@
       color: var(--detail-accent);
       background: color-mix(in srgb, var(--detail-accent) 12%, transparent);
       border: 1px solid color-mix(in srgb, var(--detail-accent) 30%, transparent);
+    }
+    .subcuisine-badge {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 11px;
+      border-radius: 20px;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
     }
     .detail-title {
       font-family: 'Playfair Display', serif;
@@ -243,7 +323,7 @@
     }
     @media (max-width: 680px) {
       .detail-body { grid-template-columns: 1fr; }
-      header, nav, .card-strip-wrapper, .recipe-detail { padding-left: 20px; padding-right: 20px; }
+      header, nav, .browse-mode, .card-strip-wrapper, .recipe-detail { padding-left: 20px; padding-right: 20px; }
     }
 
     .section-heading {
@@ -324,6 +404,7 @@
   <h1>Meal Prep Salads</h1>
 </header>
 
+<div class="browse-mode" id="browseModeBar"></div>
 <nav id="nav"></nav>
 <div class="card-strip-wrapper"><div class="card-strip" id="cardStrip"></div></div>
 <div id="recipeDetail"></div>
@@ -336,6 +417,25 @@ const ACCENT = {
   Mediterranean: '#2e86ab',
   French:        '#5c4a8f',
   'Spanish & Mexican': '#d35400',
+};
+
+const FLAVOR_KEYS = ['Bright & Tangy', 'Creamy', 'Smoky & Spicy', 'Fresh & Herb', 'Sweet & Savory', 'Rich & Umami'];
+const SEASON_KEYS = ['Spring', 'Summer', 'Fall', 'Winter', 'Year-round'];
+
+const FLAVOR_ACCENTS = {
+  'Bright & Tangy': '#e67e22',
+  'Creamy': '#8e7cc3',
+  'Smoky & Spicy': '#c0392b',
+  'Fresh & Herb': '#27ae60',
+  'Sweet & Savory': '#d68910',
+  'Rich & Umami': '#6d4c41',
+};
+const SEASON_ACCENTS = {
+  'Spring': '#82b366',
+  'Summer': '#f1c40f',
+  'Fall': '#d35400',
+  'Winter': '#5d6d7e',
+  'Year-round': '#2e86ab',
 };
 
 const RECIPES = [
@@ -2035,43 +2135,118 @@ const RECIPES = [
     ],
   },
 ];
+
+// [subCuisine|null, flavorTags[], seasons[]]
+const RECIPE_META_BY_ID = {
+  1: ['American', ['Bright & Tangy', 'Fresh & Herb'], ['Summer', 'Year-round']],
+  2: ['American', ['Smoky & Spicy', 'Sweet & Savory'], ['Summer', 'Fall']],
+  3: ['American', ['Smoky & Spicy', 'Creamy'], ['Year-round']],
+  4: ['American', ['Sweet & Savory', 'Rich & Umami'], ['Fall', 'Winter']],
+  5: ['Italian-American', ['Rich & Umami', 'Creamy'], ['Year-round']],
+  6: ['American', ['Fresh & Herb', 'Rich & Umami'], ['Summer', 'Year-round']],
+  7: ['American', ['Creamy', 'Fresh & Herb'], ['Summer', 'Year-round']],
+  8: ['American', ['Fresh & Herb', 'Rich & Umami'], ['Spring', 'Year-round']],
+  9: ['American', ['Fresh & Herb', 'Bright & Tangy'], ['Spring', 'Summer']],
+  10: ['American', ['Sweet & Savory', 'Rich & Umami'], ['Fall']],
+  11: ['Italian-American', ['Rich & Umami', 'Creamy'], ['Year-round']],
+  12: ['Mexican', ['Smoky & Spicy', 'Fresh & Herb'], ['Year-round']],
+  13: ['American', ['Creamy', 'Rich & Umami'], ['Summer', 'Year-round']],
+  14: ['Mexican', ['Smoky & Spicy', 'Bright & Tangy'], ['Year-round']],
+  15: ['American', ['Sweet & Savory', 'Rich & Umami'], ['Fall', 'Year-round']],
+  16: ['American', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  17: ['American', ['Sweet & Savory', 'Fresh & Herb'], ['Summer']],
+  18: ['American', ['Creamy', 'Fresh & Herb'], ['Summer']],
+  19: ['Japanese', ['Rich & Umami', 'Fresh & Herb'], ['Year-round']],
+  20: ['Thai', ['Bright & Tangy', 'Smoky & Spicy'], ['Summer', 'Year-round']],
+  21: ['Southeast Asian', ['Rich & Umami', 'Bright & Tangy'], ['Year-round']],
+  22: ['Thai', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  23: ['Japanese', ['Sweet & Savory', 'Rich & Umami'], ['Year-round']],
+  24: ['Japanese', ['Fresh & Herb', 'Bright & Tangy'], ['Spring', 'Year-round']],
+  25: ['Japanese', ['Rich & Umami', 'Fresh & Herb'], ['Year-round']],
+  26: ['Japanese', ['Fresh & Herb', 'Bright & Tangy'], ['Fall', 'Year-round']],
+  27: ['Fusion', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  28: ['Japanese', ['Rich & Umami', 'Fresh & Herb'], ['Year-round']],
+  29: ['Italian', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  30: ['Italian', ['Fresh & Herb', 'Rich & Umami'], ['Year-round']],
+  31: ['Italian', ['Bright & Tangy', 'Fresh & Herb'], ['Spring', 'Summer']],
+  32: ['Italian-American', ['Rich & Umami', 'Fresh & Herb'], ['Year-round']],
+  33: ['Italian', ['Sweet & Savory', 'Fresh & Herb'], ['Fall', 'Year-round']],
+  34: ['Italian', ['Fresh & Herb', 'Bright & Tangy'], ['Spring', 'Summer']],
+  35: ['Italian', ['Creamy', 'Sweet & Savory'], ['Summer', 'Year-round']],
+  36: ['Provençal', ['Fresh & Herb', 'Bright & Tangy'], ['Summer']],
+  37: ['Lyonnaise', ['Rich & Umami', 'Smoky & Spicy'], ['Fall', 'Winter']],
+  38: ['Bistro', ['Smoky & Spicy', 'Rich & Umami'], ['Fall', 'Winter']],
+  39: ['Rustic French', ['Bright & Tangy', 'Rich & Umami'], ['Year-round']],
+  40: ['Provençal', ['Fresh & Herb', 'Bright & Tangy'], ['Spring', 'Summer']],
+  41: ['Levantine', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  42: ['Levantine', ['Fresh & Herb', 'Bright & Tangy'], ['Summer']],
+  43: ['Greek', ['Fresh & Herb', 'Bright & Tangy'], ['Year-round']],
+  44: ['Greek', ['Rich & Umami', 'Fresh & Herb'], ['Fall', 'Year-round']],
+  45: ['Greek', ['Bright & Tangy', 'Fresh & Herb'], ['Year-round']],
+  46: ['Middle Eastern', ['Rich & Umami', 'Fresh & Herb'], ['Year-round']],
+  47: ['North African', ['Sweet & Savory', 'Smoky & Spicy'], ['Fall']],
+  48: ['Greek', ['Fresh & Herb', 'Bright & Tangy'], ['Summer', 'Year-round']],
+  49: ['Spanish', ['Creamy', 'Fresh & Herb'], ['Summer', 'Year-round']],
+  50: ['Spanish', ['Sweet & Savory', 'Rich & Umami'], ['Fall']],
+  51: ['Spanish', ['Bright & Tangy', 'Fresh & Herb'], ['Winter', 'Year-round']],
+  52: ['Greek', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  53: ['Greek', ['Fresh & Herb', 'Bright & Tangy'], ['Year-round']],
+  54: ['Greek', ['Creamy', 'Rich & Umami'], ['Spring', 'Year-round']],
+  55: ['Greek', ['Bright & Tangy', 'Fresh & Herb'], ['Year-round']],
+  56: ['Mexican', ['Smoky & Spicy', 'Sweet & Savory'], ['Summer']],
+  57: ['Mexican', ['Smoky & Spicy', 'Fresh & Herb'], ['Year-round']],
+  58: ['Mexican', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  59: ['Mexican', ['Smoky & Spicy', 'Sweet & Savory'], ['Summer', 'Fall']],
+  60: ['Mexican', ['Smoky & Spicy', 'Rich & Umami'], ['Year-round']],
+  61: ['Mexican', ['Sweet & Savory', 'Bright & Tangy'], ['Fall']],
+  62: ['Japanese', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  63: ['Japanese', ['Rich & Umami', 'Sweet & Savory'], ['Spring', 'Year-round']],
+  64: ['Japanese', ['Fresh & Herb', 'Rich & Umami'], ['Year-round']],
+  65: ['Japanese', ['Rich & Umami', 'Fresh & Herb'], ['Year-round']],
+  66: ['Japanese', ['Rich & Umami', 'Smoky & Spicy'], ['Year-round']],
+  67: ['Japanese', ['Fresh & Herb', 'Bright & Tangy'], ['Year-round']],
+  68: ['Indian', ['Bright & Tangy', 'Smoky & Spicy'], ['Year-round']],
+  69: ['Indian', ['Smoky & Spicy', 'Rich & Umami'], ['Summer', 'Year-round']],
+  70: ['Indian', ['Bright & Tangy', 'Fresh & Herb'], ['Year-round']],
+  71: ['Indian', ['Smoky & Spicy', 'Rich & Umami'], ['Fall', 'Winter']],
+  72: ['Indian', ['Creamy', 'Fresh & Herb'], ['Summer']],
+  73: ['Indian', ['Bright & Tangy', 'Sweet & Savory'], ['Summer']],
+  74: ['Lebanese', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  76: ['Levantine', ['Sweet & Savory', 'Bright & Tangy'], ['Fall']],
+  77: ['Middle Eastern', ['Rich & Umami', 'Sweet & Savory'], ['Fall', 'Winter']],
+  78: ['Middle Eastern', ['Creamy', 'Rich & Umami'], ['Year-round']],
+  79: ['Levantine', ['Fresh & Herb', 'Bright & Tangy'], ['Spring', 'Year-round']],
+  80: ['Korean', ['Sweet & Savory', 'Rich & Umami'], ['Year-round']],
+  81: ['Korean', ['Smoky & Spicy', 'Rich & Umami'], ['Year-round']],
+  82: ['Korean', ['Bright & Tangy', 'Smoky & Spicy'], ['Summer']],
+  83: ['Korean', ['Sweet & Savory', 'Rich & Umami'], ['Year-round']],
+  84: ['Korean', ['Smoky & Spicy', 'Bright & Tangy'], ['Year-round']],
+  85: ['Thai', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+  86: ['Vietnamese', ['Bright & Tangy', 'Rich & Umami'], ['Summer', 'Year-round']],
+  87: ['Vietnamese', ['Fresh & Herb', 'Bright & Tangy'], ['Summer']],
+  88: ['Vietnamese', ['Bright & Tangy', 'Fresh & Herb'], ['Summer']],
+};
+
+function applyRecipeMeta() {
+  RECIPES.forEach((r) => {
+    const m = RECIPE_META_BY_ID[r.id];
+    if (m) {
+      r.subCuisine = m[0];
+      r.flavorTags = m[1].slice();
+      r.seasons = m[2].slice();
+    } else {
+      r.subCuisine = 'Regional';
+      r.flavorTags = ['Fresh & Herb'];
+      r.seasons = ['Year-round'];
+    }
+  });
+}
+applyRecipeMeta();
+
 // ── State ─────────────────────────────────────────────────────────────────────
+let browseMode = 'cuisine';
 let activeCategory = 'All';
 let selectedId = RECIPES[0].id;
-
-// ── Render Nav ────────────────────────────────────────────────────────────────
-function renderNav() {
-  const nav = document.getElementById('nav');
-  const cats = ['All', ...Object.keys(ACCENT)];
-  nav.innerHTML = cats.map(cat => {
-    const accent = ACCENT[cat] || '#2c3e50';
-    const active = cat === activeCategory ? 'active' : '';
-    return `<button class="${active}" data-cat="${cat}"
-      style="--accent:${accent}"
-      onclick="selectCategory('${cat}')">${cat}</button>`;
-  }).join('');
-}
-
-// ── Render Cards ──────────────────────────────────────────────────────────────
-function renderCards() {
-  const strip = document.getElementById('cardStrip');
-  const visible = activeCategory === 'All'
-    ? RECIPES
-    : RECIPES.filter(r => r.cuisine === activeCategory);
-  strip.innerHTML = visible.map(r => {
-    const accent = ACCENT[r.cuisine];
-    const sel = r.id === selectedId ? 'selected' : '';
-    return `
-      <div class="recipe-card ${sel}" style="--card-accent:${accent}"
-           onclick="selectRecipe(${r.id})">
-        <div class="card-label">${r.name}</div>
-      </div>`;
-  }).join('');
-}
-
-// ── Render Detail ─────────────────────────────────────────────────────────────
-// ── Amount toggle state ───────────────────────────────────────────────────────
-let showAmounts = false;
 
 function escapeHtml(s) {
   return String(s)
@@ -2080,6 +2255,109 @@ function escapeHtml(s) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+function escapeAttr(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;');
+}
+
+function getNavTabs() {
+  if (browseMode === 'cuisine') return ['All', ...Object.keys(ACCENT)];
+  if (browseMode === 'flavor') return ['All', ...FLAVOR_KEYS];
+  return ['All', ...SEASON_KEYS];
+}
+
+function accentForNavCat(cat) {
+  if (browseMode === 'cuisine') return ACCENT[cat] || '#2c3e50';
+  if (browseMode === 'flavor') return FLAVOR_ACCENTS[cat] || '#2c3e50';
+  return SEASON_ACCENTS[cat] || '#2c3e50';
+}
+
+function getVisibleRecipes() {
+  if (browseMode === 'cuisine') {
+    return activeCategory === 'All' ? RECIPES : RECIPES.filter((r) => r.cuisine === activeCategory);
+  }
+  if (browseMode === 'flavor') {
+    if (activeCategory === 'All') return RECIPES;
+    return RECIPES.filter((r) => r.flavorTags.includes(activeCategory));
+  }
+  if (activeCategory === 'All') return RECIPES;
+  return RECIPES.filter((r) => r.seasons.includes(activeCategory));
+}
+
+const CUISINE_SORT_ORDER = Object.keys(ACCENT);
+
+function cuisineSortIndex(cuisine) {
+  const i = CUISINE_SORT_ORDER.indexOf(cuisine);
+  return i === -1 ? 999 : i;
+}
+
+function compareRecipesForCuisineBrowse(a, b) {
+  const byCuisine = cuisineSortIndex(a.cuisine) - cuisineSortIndex(b.cuisine);
+  if (byCuisine !== 0) return byCuisine;
+  const subA = a.subCuisine || '';
+  const subB = b.subCuisine || '';
+  const bySub = subA.localeCompare(subB, undefined, { sensitivity: 'base' });
+  if (bySub !== 0) return bySub;
+  return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+}
+
+// Filtered list in strip order (sub-cuisine groups when browsing by cuisine).
+function recipesForCardStrip() {
+  const raw = getVisibleRecipes();
+  if (browseMode !== 'cuisine') return raw;
+  return raw.slice().sort(compareRecipesForCuisineBrowse);
+}
+
+function renderBrowseModeBar() {
+  const el = document.getElementById('browseModeBar');
+  if (!el) return;
+  el.innerHTML = `
+    <span class="browse-mode-label">Browse by</span>
+    <div class="browse-mode-toggle" role="group" aria-label="Browse recipes by">
+      <button type="button" class="${browseMode === 'cuisine' ? 'active' : ''}" data-browse="cuisine">Cuisine</button>
+      <button type="button" class="${browseMode === 'flavor' ? 'active' : ''}" data-browse="flavor">Flavor</button>
+      <button type="button" class="${browseMode === 'season' ? 'active' : ''}" data-browse="season">Season</button>
+    </div>`;
+}
+
+// ── Render Nav ────────────────────────────────────────────────────────────────
+function renderNav() {
+  const nav = document.getElementById('nav');
+  const cats = getNavTabs();
+  nav.innerHTML = cats.map((cat) => {
+    const accent = accentForNavCat(cat);
+    const active = cat === activeCategory ? 'active' : '';
+    return `<button type="button" class="${active}" data-filter="${escapeAttr(cat)}"
+      style="--accent:${accent}">${escapeHtml(cat)}</button>`;
+  }).join('');
+}
+
+// ── Render Cards ──────────────────────────────────────────────────────────────
+function renderCards() {
+  const strip = document.getElementById('cardStrip');
+  const visible = recipesForCardStrip();
+  strip.innerHTML = visible.map((r) => {
+    const accent = ACCENT[r.cuisine];
+    const sel = r.id === selectedId ? 'selected' : '';
+    const sub =
+      browseMode === 'cuisine' && r.subCuisine
+        ? `<div class="card-subcuisine">${escapeHtml(r.subCuisine)}</div>`
+        : '';
+    return `
+      <div class="recipe-card ${sel}" style="--card-accent:${accent}"
+           onclick="selectRecipe(${r.id})">
+        <div class="card-label-wrap">
+          <div class="card-label">${escapeHtml(r.name)}</div>${sub}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Render Detail ─────────────────────────────────────────────────────────────
+// ── Amount toggle state ───────────────────────────────────────────────────────
+let showAmounts = false;
 
 // Parses "2 cups arugula" → { amount: '2 cups', rest: 'arugula' }
 // Also handles fractions like ¼, ½, ¾ and ranges like "1–2"
@@ -2304,9 +2582,10 @@ function renderDetail() {
         <div>
           <div class="detail-meta">
             <span class="badge">✦ Recipe Ready</span>
-            <span class="cuisine-badge">${r.cuisine}</span>
+            <span class="cuisine-badge">${escapeHtml(r.cuisine)}</span>
+            ${browseMode === 'cuisine' && r.subCuisine ? `<span class="subcuisine-badge">${escapeHtml(r.subCuisine)}</span>` : ''}
           </div>
-          <h2 class="detail-title">${r.name}</h2>
+          <h2 class="detail-title">${escapeHtml(r.name)}</h2>
         </div>
         <div class="copy-actions">
           <button type="button" id="amountToggleBtn" class="copy-btn toggle-btn ${showAmounts ? 'active' : ''}" onclick="toggleAmounts()">
@@ -2362,9 +2641,21 @@ function toggleAmounts() {
 // ── Actions ───────────────────────────────────────────────────────────────────
 function selectCategory(cat) {
   activeCategory = cat;
-  // auto-select first recipe in category
-  const visible = cat === 'All' ? RECIPES : RECIPES.filter(r => r.cuisine === cat);
+  const visible = recipesForCardStrip();
   if (visible.length) selectedId = visible[0].id;
+  renderNav();
+  renderCards();
+  renderDetail();
+}
+
+function selectBrowseMode(mode) {
+  if (mode !== 'cuisine' && mode !== 'flavor' && mode !== 'season') return;
+  if (mode === browseMode) return;
+  browseMode = mode;
+  activeCategory = 'All';
+  const visible = recipesForCardStrip();
+  if (visible.length) selectedId = visible[0].id;
+  renderBrowseModeBar();
   renderNav();
   renderCards();
   renderDetail();
@@ -2401,6 +2692,18 @@ function flash(msg) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+document.getElementById('browseModeBar').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-browse]');
+  if (b) selectBrowseMode(b.getAttribute('data-browse'));
+});
+document.getElementById('nav').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-filter]');
+  if (b) selectCategory(b.getAttribute('data-filter'));
+});
+
+if (recipesForCardStrip().length) selectedId = recipesForCardStrip()[0].id;
+
+renderBrowseModeBar();
 renderNav();
 renderCards();
 renderDetail();
