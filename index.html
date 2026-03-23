@@ -236,19 +236,6 @@
       gap: 12px;
     }
     .detail-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: var(--text);
-      color: #fff;
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 20px;
-    }
     .cuisine-badge {
       font-size: 0.72rem;
       font-weight: 500;
@@ -275,7 +262,7 @@
       font-family: 'Playfair Display', serif;
       font-size: 1.75rem;
       letter-spacing: -0.02em;
-      margin-top: 6px;
+      margin-top: 18px;
     }
     .copy-actions { display: flex; gap: 8px; }
     .copy-btn {
@@ -2262,6 +2249,11 @@ function escapeAttr(s) {
     .replace(/"/g, '&quot;');
 }
 
+function isDistinctSubCuisine(r) {
+  if (!r.subCuisine) return false;
+  return r.subCuisine.trim().toLowerCase() !== String(r.cuisine).trim().toLowerCase();
+}
+
 function getNavTabs() {
   if (browseMode === 'cuisine') return ['All', ...Object.keys(ACCENT)];
   if (browseMode === 'flavor') return ['All', ...FLAVOR_KEYS];
@@ -2581,9 +2573,8 @@ function renderDetail() {
       <div class="detail-header">
         <div>
           <div class="detail-meta">
-            <span class="badge">✦ Recipe Ready</span>
             <span class="cuisine-badge">${escapeHtml(r.cuisine)}</span>
-            ${browseMode === 'cuisine' && r.subCuisine ? `<span class="subcuisine-badge">${escapeHtml(r.subCuisine)}</span>` : ''}
+            ${browseMode === 'cuisine' && isDistinctSubCuisine(r) ? `<span class="subcuisine-badge">${escapeHtml(r.subCuisine)}</span>` : ''}
           </div>
           <h2 class="detail-title">${escapeHtml(r.name)}</h2>
         </div>
@@ -2667,9 +2658,25 @@ function selectRecipe(id) {
   renderDetail();
 }
 
+function ingredientLineForClipboard(str) {
+  if (showAmounts) return str;
+
+  const sauceMatch = str.match(/^Sauce:\s*(.*)$/i);
+  if (sauceMatch) {
+    const body = sauceMatch[1];
+    if (!body.trim()) return str;
+    return 'Sauce: ' + stripCompositeSauceAmounts(body);
+  }
+
+  const { amount, rest } = parseIngredient(str);
+  if (!amount) return str;
+  return rest;
+}
+
 function copyIngredients(id) {
-  const r = RECIPES.find(x => x.id === id);
-  navigator.clipboard.writeText(r.ingredients.join('\n')).then(() => flash('Ingredients copied!'));
+  const r = RECIPES.find((x) => x.id === id);
+  const text = r.ingredients.map(ingredientLineForClipboard).join('\n');
+  navigator.clipboard.writeText(text).then(() => flash('Ingredients copied!'));
 }
 
 function copyFullRecipe(id) {
