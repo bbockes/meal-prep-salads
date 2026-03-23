@@ -230,6 +230,10 @@
       font-weight: 700;
       color: var(--detail-accent);
     }
+    .sauce-prefix {
+      font-weight: 600;
+      color: var(--text);
+    }
     .copy-btn svg { flex-shrink: 0; }
 
     .detail-body {
@@ -273,6 +277,11 @@
       border-radius: 50%;
       background: var(--detail-accent, var(--muted));
       flex-shrink: 0;
+    }
+    /* One flex child with bullet so gap isn’t applied between amount and name */
+    .ingredient-body {
+      flex: 1;
+      min-width: 0;
     }
 
     .steps-list { list-style: none; }
@@ -2064,6 +2073,14 @@ function renderCards() {
 // ── Amount toggle state ───────────────────────────────────────────────────────
 let showAmounts = false;
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // Parses "2 cups arugula" → { amount: '2 cups', rest: 'arugula' }
 // Also handles fractions like ¼, ½, ¾ and ranges like "1–2"
 function parseIngredient(str) {
@@ -2074,12 +2091,205 @@ function parseIngredient(str) {
   return { amount: null, rest: str };
 }
 
-function renderIngredient(str) {
-  const { amount, rest } = parseIngredient(str);
-  if (amount && showAmounts) {
-    return `<li><span class="bullet"></span><strong class="amount">${amount}</strong> ${rest}</li>`;
+// Keep every `Sauce:` line last; promote bottled/amount + dressing|vinaigrette rows to `Sauce:` (e.g. Kale Caesar).
+function orderIngredientsSauceLast(ingredients) {
+  const sauce = [];
+  const other = [];
+  for (const line of ingredients) {
+    let out = line;
+    if (!/^Sauce:\s*/i.test(out)) {
+      const { amount, rest } = parseIngredient(out);
+      if (amount && /\b(dressing|vinaigrette)\b/i.test(rest)) {
+        out = 'Sauce: ' + out;
+      }
+    }
+    if (/^Sauce:\s*/i.test(out)) sauce.push(out);
+    else other.push(out);
   }
-  return `<li><span class="bullet"></span>${str}</li>`;
+  return other.concat(sauce);
+}
+
+RECIPES.forEach((r) => {
+  r.ingredients = orderIngredientsSauceLast(r.ingredients);
+});
+
+// Split on " + " only when not inside parentheses (for composite sauce lines).
+function splitPlusAtDepthZero(s) {
+  const parts = [];
+  let depth = 0;
+  let buf = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    if (depth === 0 && s.slice(i, i + 3) === ' + ') {
+      parts.push(buf.trim());
+      buf = '';
+      i += 2;
+      continue;
+    }
+    buf += c;
+  }
+  if (buf.trim()) parts.push(buf.trim());
+  return parts;
+}
+
+function boldCompositeSauceBody(body) {
+  body = body.trim();
+  if (!body) return '';
+
+  const { amount, rest } = parseIngredient(body);
+  if (amount) {
+    return `<span class="amount">${escapeHtml(amount)}</span> ${boldCompositeSauceBody(rest)}`;
+  }
+
+  if (body.startsWith('(')) {
+    let depth = 0;
+    let end = -1;
+    for (let i = 0; i < body.length; i++) {
+      if (body[i] === '(') depth++;
+      if (body[i] === ')') {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    if (end > 0) {
+      const inner = body.slice(1, end);
+      const after = body.slice(end + 1).trim();
+      return '(' + boldCompositeSauceBody(inner) + ')' + (after ? ' ' + boldCompositeSauceBody(after) : '');
+    }
+  }
+
+  const pIdx = body.indexOf('(');
+  if (pIdx > 0) {
+    let depth = 0;
+    let end = -1;
+    for (let i = pIdx; i < body.length; i++) {
+      if (body[i] === '(') depth++;
+      if (body[i] === ')') {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    if (end > 0) {
+      const before = body.slice(0, pIdx);
+      const inner = body.slice(pIdx + 1, end);
+      const after = body.slice(end + 1).trim();
+      return escapeHtml(before) + '(' + boldCompositeSauceBody(inner) + ')' + (after ? ' ' + boldCompositeSauceBody(after) : '');
+    }
+  }
+
+  const chunks = splitPlusAtDepthZero(body);
+  if (chunks.length > 1) {
+    return chunks
+      .map((ch, i) => {
+        let c = ch;
+        if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+        const part = boldCompositeSauceBody(c);
+        return (i > 0 ? ' + ' : '') + part;
+      })
+      .join('');
+  }
+
+  return escapeHtml(body);
+}
+
+function stripCompositeSauceAmounts(body) {
+  body = body.trim();
+  if (!body) return '';
+
+  const { amount, rest } = parseIngredient(body);
+  if (amount) {
+    return stripCompositeSauceAmounts(rest);
+  }
+
+  if (body.startsWith('(')) {
+    let depth = 0;
+    let end = -1;
+    for (let i = 0; i < body.length; i++) {
+      if (body[i] === '(') depth++;
+      if (body[i] === ')') {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    if (end > 0) {
+      const inner = body.slice(1, end);
+      const after = body.slice(end + 1).trim();
+      return '(' + stripCompositeSauceAmounts(inner) + ')' + (after ? ' ' + stripCompositeSauceAmounts(after) : '');
+    }
+  }
+
+  const pIdx = body.indexOf('(');
+  if (pIdx > 0) {
+    let depth = 0;
+    let end = -1;
+    for (let i = pIdx; i < body.length; i++) {
+      if (body[i] === '(') depth++;
+      if (body[i] === ')') {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    if (end > 0) {
+      const before = body.slice(0, pIdx);
+      const inner = body.slice(pIdx + 1, end);
+      const after = body.slice(end + 1).trim();
+      return before + '(' + stripCompositeSauceAmounts(inner) + ')' + (after ? ' ' + stripCompositeSauceAmounts(after) : '');
+    }
+  }
+
+  const chunks = splitPlusAtDepthZero(body);
+  if (chunks.length > 1) {
+    return chunks
+      .map((ch, i) => {
+        let c = ch;
+        if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+        return (i > 0 ? ' + ' : '') + stripCompositeSauceAmounts(c);
+      })
+      .join('');
+  }
+
+  return body;
+}
+
+function renderIngredient(str) {
+  const sauceMatch = str.match(/^Sauce:\s*(.*)$/i);
+  if (sauceMatch) {
+    const body = sauceMatch[1];
+    let inner;
+    if (!body.trim()) {
+      inner = escapeHtml(str);
+    } else if (showAmounts) {
+      inner = '<span class="sauce-prefix">Sauce:</span> ' + boldCompositeSauceBody(body);
+    } else {
+      inner = '<span class="sauce-prefix">Sauce:</span> ' + escapeHtml(stripCompositeSauceAmounts(body));
+    }
+    return `<li><span class="bullet"></span><span class="ingredient-body">${inner}</span></li>`;
+  }
+
+  const { amount, rest } = parseIngredient(str);
+  let inner;
+  if (!amount) {
+    inner = escapeHtml(str);
+  } else if (showAmounts) {
+    inner = `<span class="amount">${escapeHtml(amount)}</span> ${escapeHtml(rest)}`;
+  } else {
+    inner = escapeHtml(rest);
+  }
+  return `<li><span class="bullet"></span><span class="ingredient-body">${inner}</span></li>`;
 }
 
 function renderDetail() {
@@ -2099,9 +2309,9 @@ function renderDetail() {
           <h2 class="detail-title">${r.name}</h2>
         </div>
         <div class="copy-actions">
-          <button class="copy-btn toggle-btn ${showAmounts ? 'active' : ''}" onclick="toggleAmounts()">
+          <button type="button" id="amountToggleBtn" class="copy-btn toggle-btn ${showAmounts ? 'active' : ''}" onclick="toggleAmounts()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4"/><rect x="9" y="3" width="6" height="5" rx="1"/></svg>
-            ${showAmounts ? 'Hide amounts' : 'Show amounts'}
+            <span class="toggle-label">${showAmounts ? 'Hide amounts' : 'Show amounts'}</span>
           </button>
           <button class="copy-btn" onclick="copyIngredients(${r.id})">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -2118,7 +2328,7 @@ function renderDetail() {
           <div class="section-heading">
             <span>🛒</span> Ingredients
           </div>
-          <ul class="ingredients-list">
+          <ul id="ingredientsList" class="ingredients-list">
             ${r.ingredients.map(i => renderIngredient(i)).join('')}
           </ul>
         </div>
@@ -2136,7 +2346,17 @@ function renderDetail() {
 
 function toggleAmounts() {
   showAmounts = !showAmounts;
-  renderDetail();
+  const r = RECIPES.find((x) => x.id === selectedId);
+  const listEl = document.getElementById('ingredientsList');
+  const btn = document.getElementById('amountToggleBtn');
+  if (!r || !listEl || !btn) {
+    renderDetail();
+    return;
+  }
+  listEl.innerHTML = r.ingredients.map((i) => renderIngredient(i)).join('');
+  btn.classList.toggle('active', showAmounts);
+  const label = btn.querySelector('.toggle-label');
+  if (label) label.textContent = showAmounts ? 'Hide amounts' : 'Show amounts';
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
