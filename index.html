@@ -15,20 +15,20 @@
     }
 
     :root {
-      --bg: #f7f5f0;
+      --bg: #f4f3ef;
       --surface: #ffffff;
       --text: #1a1a18;
-      --muted: #7a7a72;
-      --border: #e8e4dc;
+      --muted: #6b6b64;
+      --border: #e4e1d9;
 
-      /* Cuisine accent colors */
-      --american: #c0392b;
-      --asian: #e67e22;
-      --italian: #27ae60;
-      --french: #2980b9;
-      --middle-eastern: #8e44ad;
-      --spanish: #d35400;
-      --all: #2c3e50;
+      /* Cuisine accent colors (mirrors ACCENT in script) */
+      --american: #c73d3a;
+      --italian: #2d86ae;
+      --french: #6b5b95;
+      --middle-eastern: #6b5b95;
+      --spanish: #e25d40;
+      --asian: #1b8670;
+      --all: #4a5568;
     }
 
     body {
@@ -681,7 +681,7 @@
       font-size: 0.78rem;
       font-weight: 700;
       letter-spacing: 0.02em;
-      color: var(--detail-accent, #2e86ab);
+      color: var(--detail-accent, #2d86ae);
       font-variant-numeric: tabular-nums;
     }
     .servings-modal-title-label {
@@ -728,7 +728,7 @@
       width: 100%;
       height: 1.25rem;
       cursor: pointer;
-      accent-color: var(--detail-accent, #2e86ab);
+      accent-color: var(--detail-accent, #2d86ae);
     }
     .servings-scale-pill {
       flex-shrink: 0;
@@ -744,7 +744,7 @@
       text-align: center;
     }
     .servings-scale-pill strong {
-      color: var(--detail-accent, #2e86ab);
+      color: var(--detail-accent, #2d86ae);
       font-weight: 700;
     }
     .servings-modal-actions {
@@ -778,7 +778,7 @@
       padding: 8px 18px;
       border-radius: 8px;
       border: none;
-      background: var(--detail-accent, #2e86ab);
+      background: var(--detail-accent, #2d86ae);
       color: #fff;
       cursor: pointer;
       transition: filter 0.15s, opacity 0.15s;
@@ -806,7 +806,7 @@
 
 <div id="servingsModal" class="servings-modal" hidden>
   <div class="servings-modal-backdrop" onclick="closeServingsModal()" aria-hidden="true"></div>
-  <div class="servings-modal-card" role="dialog" aria-modal="true" aria-labelledby="servingsModalTitle" style="--detail-accent: #2e86ab" onclick="event.stopPropagation()">
+  <div class="servings-modal-card" role="dialog" aria-modal="true" aria-labelledby="servingsModalTitle" style="--detail-accent: #2d86ae" onclick="event.stopPropagation()">
     <div class="servings-modal-top">
       <div id="servingsModalTitle" class="servings-modal-title"><span class="servings-modal-title-num" id="servingsModalTitleNum">2</span><span class="servings-modal-title-label">Portions</span></div>
       <button type="button" class="servings-modal-close" onclick="closeServingsModal()" aria-label="Close">×</button>
@@ -828,30 +828,30 @@
 <script>
 // ── Data ──────────────────────────────────────────────────────────────────────
 const ACCENT = {
-  American:      '#c0392b',
-  Mediterranean: '#2e86ab',
-  Asian:         '#e67e22',
-  French:        '#5c4a8f',
-  'Spanish & Mexican': '#d35400',
+  American:      '#c73d3a',
+  Mediterranean: '#2d86ae',
+  French:        '#6b5b95',
+  'Spanish & Mexican': '#e25d40',
+  Asian:         '#1b8670',
 };
 
 const FLAVOR_KEYS = ['Bright & Tangy', 'Creamy', 'Smoky & Spicy', 'Fresh & Herb', 'Sweet & Savory', 'Rich & Umami'];
 const SEASON_KEYS = ['Spring', 'Summer', 'Fall', 'Winter', 'Year-round'];
 
 const FLAVOR_ACCENTS = {
-  'Bright & Tangy': '#e67e22',
-  'Creamy': '#8e7cc3',
-  'Smoky & Spicy': '#c0392b',
-  'Fresh & Herb': '#27ae60',
-  'Sweet & Savory': '#d68910',
-  'Rich & Umami': '#6d4c41',
+  'Bright & Tangy': '#2bb0a3',
+  'Creamy': '#8b78b8',
+  'Smoky & Spicy': '#c23b3b',
+  'Fresh & Herb': '#4a9b6e',
+  'Sweet & Savory': '#b57d1f',
+  'Rich & Umami': '#5d4e44',
 };
 const SEASON_ACCENTS = {
-  'Spring': '#82b366',
-  'Summer': '#f1c40f',
-  'Fall': '#d35400',
-  'Winter': '#5d6d7e',
-  'Year-round': '#2e86ab',
+  'Spring': '#5d8f6e',
+  'Summer': '#b8892a',
+  'Fall': '#c86b45',
+  'Winter': '#6b7f94',
+  'Year-round': '#2d86ae',
 };
 
 /* Fullness standard @ 2 portions (matches slider base; scales linearly):
@@ -2545,9 +2545,9 @@ function getNavTabs() {
 }
 
 function accentForNavCat(cat) {
-  if (browseMode === 'cuisine') return ACCENT[cat] || '#2c3e50';
-  if (browseMode === 'flavor') return FLAVOR_ACCENTS[cat] || '#2c3e50';
-  return SEASON_ACCENTS[cat] || '#2c3e50';
+  if (browseMode === 'cuisine') return ACCENT[cat] || '#4a5568';
+  if (browseMode === 'flavor') return FLAVOR_ACCENTS[cat] || '#4a5568';
+  return SEASON_ACCENTS[cat] || '#4a5568';
 }
 
 function getVisibleRecipes() {
@@ -3887,7 +3887,7 @@ function openServingsModal() {
   if (!m) return;
   const r = RECIPES.find((x) => x.id === selectedId);
   const card = m.querySelector('.servings-modal-card');
-  if (r && card) card.style.setProperty('--detail-accent', ACCENT[r.cuisine] || '#2e86ab');
+  if (r && card) card.style.setProperty('--detail-accent', ACCENT[r.cuisine] || '#2d86ae');
   portionsDraft = recipePortions;
   const s = document.getElementById('servingsSlider');
   if (s) s.value = String(portionsDraft);
