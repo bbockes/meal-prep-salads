@@ -2753,6 +2753,20 @@ function isDistinctSubCuisine(r) {
   return r.subCuisine.trim().toLowerCase() !== String(r.cuisine).trim().toLowerCase();
 }
 
+/** Recipe detail header: one pill for Spanish & Mexican (sub only); otherwise cuisine + optional sub in cuisine browse. */
+function detailMetaBadgesHtml(r) {
+  const isSpanishMexican = r.cuisine === 'Spanish & Mexican';
+  if (isSpanishMexican && isDistinctSubCuisine(r)) {
+    return `<span class="cuisine-badge">${escapeHtml(r.subCuisine)}</span>`;
+  }
+  const main = `<span class="cuisine-badge">${escapeHtml(r.cuisine)}</span>`;
+  const sub =
+    !isSpanishMexican && browseMode === 'cuisine' && isDistinctSubCuisine(r)
+      ? `<span class="subcuisine-badge">${escapeHtml(r.subCuisine)}</span>`
+      : '';
+  return main + sub;
+}
+
 function getNavTabs() {
   if (browseMode === 'cuisine') return ['All', ...Object.keys(ACCENT)];
   if (browseMode === 'flavor') return ['All', ...FLAVOR_KEYS];
@@ -2810,11 +2824,13 @@ function compareRecipesForCuisineBrowse(a, b) {
   return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 }
 
-// Filtered list in strip order (sub-cuisine groups when browsing by cuisine).
+// Filtered list in strip order: cuisine, then sub-cuisine (incl. Spanish/Mexican grouping), then name.
 function recipesForCardStrip() {
   const raw = getVisibleRecipes();
-  if (browseMode !== 'cuisine') return raw;
-  return raw.slice().sort(compareRecipesForCuisineBrowse);
+  if (browseMode === 'cuisine' || browseMode === 'flavor' || browseMode === 'season') {
+    return raw.slice().sort(compareRecipesForCuisineBrowse);
+  }
+  return raw;
 }
 
 function renderBrowseModeBar() {
@@ -2853,7 +2869,7 @@ function renderCards() {
     const sel = r.id === selectedId ? 'selected' : '';
     const plan = inPlan.has(r.id) ? 'in-meal-plan' : '';
     const sub =
-      browseMode === 'cuisine' && r.subCuisine
+      (browseMode === 'cuisine' || browseMode === 'flavor' || browseMode === 'season') && r.subCuisine
         ? `<div class="card-subcuisine">${escapeHtml(r.subCuisine)}</div>`
         : '';
     const onPlan = inPlan.has(r.id);
@@ -4350,8 +4366,7 @@ function renderDetail() {
       <div class="detail-header">
         <div>
           <div class="detail-meta">
-            <span class="cuisine-badge">${escapeHtml(r.cuisine)}</span>
-            ${browseMode === 'cuisine' && isDistinctSubCuisine(r) ? `<span class="subcuisine-badge">${escapeHtml(r.subCuisine)}</span>` : ''}
+            ${detailMetaBadgesHtml(r)}
           </div>
           <h2 class="detail-title">${escapeHtml(r.name)}</h2>
         </div>
