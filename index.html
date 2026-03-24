@@ -561,6 +561,14 @@
       text-transform: uppercase;
       color: var(--muted);
     }
+    .servings-modal-hint {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      line-height: 1.45;
+      color: var(--muted);
+      margin: -8px 0 14px;
+      padding-right: 28px;
+    }
     .servings-modal-close {
       border: none;
       background: none;
@@ -664,9 +672,10 @@
   <div class="servings-modal-backdrop" onclick="closeServingsModal()" aria-hidden="true"></div>
   <div class="servings-modal-card" role="dialog" aria-modal="true" aria-labelledby="servingsModalTitle" style="--detail-accent: #2e86ab" onclick="event.stopPropagation()">
     <div class="servings-modal-top">
-      <div id="servingsModalTitle" class="servings-modal-title"><span class="servings-modal-title-num" id="servingsModalTitleNum">2</span><span class="servings-modal-title-label">Servings</span></div>
+      <div id="servingsModalTitle" class="servings-modal-title"><span class="servings-modal-title-num" id="servingsModalTitleNum">2</span><span class="servings-modal-title-label">Portions</span></div>
       <button type="button" class="servings-modal-close" onclick="closeServingsModal()" aria-label="Close">×</button>
     </div>
+    <p class="servings-modal-hint">Each portion is sized as one filling meal—scale up if you’re meal prepping or feeding more people.</p>
     <div class="servings-slider-row">
       <div class="servings-slider-wrap">
         <input type="range" id="servingsSlider" class="servings-slider" min="2" max="30" step="1" value="2" oninput="onServingsSliderInput(this.value)" />
@@ -709,11 +718,13 @@ const SEASON_ACCENTS = {
   'Year-round': '#2e86ab',
 };
 
-/* Portion defaults @ 2 servings (scales with servings slider + units toggle):
-   leafy base 3 cups total; cooked chicken 2 cups; shredded cabbage 1 cup;
-   cherry tomatoes 1 cup; pickled onion ¼ cup; tortilla chips/strips ½ cup;
-   black beans ½ cup; corn ½ cup; quinoa/farro/rice ½ cup; feta crumbles ¼ cup;
-   shredded carrots ½ cup; chickpeas 1 can (15 oz) when beans are the bulk. */
+/* Fullness standard @ 2 portions (matches slider base; scales linearly):
+   — Leafy + slaw bulk: ~3–4 cups total (e.g. 3 cups greens + 0–1 cup cabbage).
+   — Cooked / shredded chicken: 2 cups when it is the main protein.
+   — Beef strips (bulgogi-style): 8 oz raw; steak: 8 oz cooked; salmon fillet: 8 oz; shrimp: 8 oz cooked.
+   — Cherry tomatoes: 1 cup; shredded carrots: ½ cup (1 cup in veg-heavy slaws); pickled onion ¼ cup.
+   — Starch add-ins (quinoa / rice / farro in a salad): ~½ cup cooked each unless the recipe is bowl-style.
+   — Black beans ½ cup; corn ½ cup; feta crumbles ¼ cup; chickpeas 1 can (15 oz) when beans carry the meal. */
 const RECIPES = [
   // ── AMERICAN ─────────────────────────────────────────────────────────────
   {
@@ -977,7 +988,7 @@ const RECIPES = [
   {
     id: 14, cuisine: 'American', name: 'Smoky Chipotle Lime',
     ingredients: [
-      '2 cups romaine + 1 cup shredded cabbage',
+      '3 cups romaine + 1 cup shredded cabbage',
       '2 cups cooked chicken, sliced',
       '½ cup black beans, drained',
       '½ cup corn kernels',
@@ -998,7 +1009,7 @@ const RECIPES = [
     id: 15, cuisine: 'American', name: 'Steak Honey Crunch',
     ingredients: [
       '3 cups romaine + arugula',
-      '6 oz steak, cooked and sliced thin',
+      '8 oz steak, cooked and sliced thin',
       '½ cup cooked quinoa',
       '¼ cup pickled red onions',
       '1 cup cherry tomatoes, halved',
@@ -1093,7 +1104,7 @@ const RECIPES = [
   {
     id: 20, cuisine: 'Asian', name: 'Thai Crunch Peanut',
     ingredients: [
-      '2 cups napa cabbage + 1 cup romaine, shredded',
+      '3 cups napa cabbage + 1 cup romaine, shredded',
       '2 cups rotisserie chicken, shredded',
       '½ cup shredded carrots',
       '1 bell pepper, thinly sliced',
@@ -1211,7 +1222,7 @@ const RECIPES = [
     id: 27, cuisine: 'Asian', name: 'Salmon Taco Salad',
     ingredients: [
       '3 cups spring mix + romaine',
-      '6 oz salmon fillet',
+      '8 oz salmon fillet',
       '1 avocado, sliced',
       '1 cup shredded cabbage',
       '¼ cup fresh cilantro',
@@ -1438,18 +1449,18 @@ const RECIPES = [
   {
     id: 81, cuisine: 'Asian', name: 'Bibimbap Salad Bowl',
     ingredients: [
-      '1 cup cooked short-grain rice, cooled',
+      '1½ cups cooked short-grain rice, cooled',
       '½ cup shredded carrots',
       '1 cucumber, julienned',
-      '1 cup spinach, blanched',
-      '1 soft-boiled egg, halved',
+      '3 cups spinach, blanched',
+      '2 soft-boiled eggs, halved',
       '2 tbsp gochujang sauce',
       '1 tsp sesame oil + 1 tsp sesame seeds',
     ],
     steps: [
       'Arrange rice in a bowl as the base.',
       'Place carrots, cucumber, and spinach in separate sections on top.',
-      'Add soft-boiled egg in the center.',
+      'Add soft-boiled eggs in the center.',
       'Drizzle gochujang sauce and sesame oil.',
       'Mix everything together before eating.',
     ],
@@ -1477,7 +1488,7 @@ const RECIPES = [
     id: 83, cuisine: 'Asian', name: 'Bulgogi Beef Salad',
     ingredients: [
       '8 oz beef, thinly sliced (marinated in 2 tbsp soy + ½ pear grated + 1 garlic clove + 1 tsp sesame oil)',
-      '3 cups romaine + shredded cabbage',
+      '3 cups romaine + 1 cup shredded cabbage',
       '½ cup shredded carrots',
       '3 scallions, sliced',
       '1 tbsp sesame seeds',
@@ -1532,7 +1543,7 @@ const RECIPES = [
     id: 87, cuisine: 'Asian', name: 'Lemongrass Chicken Salad',
     ingredients: [
       '2 chicken thighs, marinated in 1 stalk lemongrass + 1 tbsp fish sauce + 2 garlic cloves',
-      '1 cup shredded cabbage',
+      '2 cups shredded cabbage + 1 cup romaine, shredded',
       '½ cup shredded carrots',
       '¼ cup crispy fried shallots',
       '¼ cup fresh mint + cilantro',
@@ -1542,7 +1553,7 @@ const RECIPES = [
     steps: [
       'Marinate chicken and pan-cook or grill until caramelized.',
       'Shred chicken and let cool.',
-      'Toss cabbage and carrots with nuoc cham dressing.',
+      'Toss cabbage, romaine, and carrots with nuoc cham dressing.',
       'Add chicken and fresh herbs.',
       'Top with crispy fried shallots and crushed peanuts.',
     ],
@@ -1990,6 +2001,7 @@ const RECIPES = [
   {
     id: 36, cuisine: 'French', name: 'Niçoise',
     ingredients: [
+      '3 cups mixed greens',
       '1 can (5 oz) tuna in olive oil, drained',
       '2 hard-boiled eggs, halved',
       '1 cup French green beans, blanched',
@@ -2001,9 +2013,9 @@ const RECIPES = [
     ],
     steps: [
       'Boil and cool potatoes; blanch green beans.',
-      'Arrange all components on a large platter.',
+      'Lay mixed greens on a large platter.',
+      'Arrange potatoes, green beans, tomatoes, and olives on top.',
       'Place tuna and eggs in the center.',
-      'Scatter olives and tomatoes around.',
       'Drizzle Dijon vinaigrette over everything.',
     ],
   },
@@ -2065,7 +2077,7 @@ const RECIPES = [
     ingredients: [
       '3 cups mixed greens',
       '1½ cups pre-cooked baby potatoes, halved',
-      '4 oz smoked salmon (or canned salmon)',
+      '8 oz smoked salmon (or canned salmon)',
       '½ cup jarred artichoke hearts, quartered',
       '¼ cup kalamata olives',
       '1 tbsp capers',
@@ -2164,7 +2176,7 @@ const RECIPES = [
   {
     id: 57, cuisine: 'Spanish & Mexican', name: 'Taco Salad',
     ingredients: [
-      '2 cups romaine + 1 cup shredded red cabbage',
+      '3 cups romaine + 1 cup shredded red cabbage',
       '8 oz seasoned ground beef or turkey',
       '½ cup black beans, drained',
       '1 cup cherry tomatoes, halved',
@@ -2494,11 +2506,11 @@ function renderCards() {
 let showAmounts = false;
 /** `us` shown as "Imperial" (cups/oz). Metric = ml/L + g/kg; liquids show approximate g only (no ml). @type {'us'|'metric'} */
 let unitMode = 'us';
-/** Recipe text is written for this many servings; slider default matches → scale factor 1. */
-const SCALING_BASE_SERVINGS = 2;
-let recipeServings = 2;
-/** While the servings modal is open, preview scale before Apply. */
-let servingsDraft = null;
+/** Recipe text is written for this many portions; slider default matches → scale factor 1. */
+const SCALING_BASE_PORTIONS = 2;
+let recipePortions = 2;
+/** While the portions modal is open, preview scale before Apply. */
+let portionsDraft = null;
 
 const ML_PER_US_TSP = 4.92892159375;
 const ML_PER_US_TBSP = 14.78676478125;
@@ -2692,12 +2704,76 @@ function splitAmountNumberAndUnit(amountStr) {
   return null;
 }
 
-function effectiveRecipeServings() {
-  return servingsDraft != null ? servingsDraft : recipeServings;
+function effectiveRecipePortions() {
+  return portionsDraft != null ? portionsDraft : recipePortions;
 }
 
-function servingScaleFactor() {
-  return effectiveRecipeServings() / SCALING_BASE_SERVINGS;
+function portionScaleFactor() {
+  return effectiveRecipePortions() / SCALING_BASE_PORTIONS;
+}
+
+function cupWordFromNumeric(cups) {
+  if (!Number.isFinite(cups)) return 'cup';
+  if (cups > 1 + 1e-6) return 'cups';
+  return 'cup';
+}
+
+/** After scaling: prefer cups over large tbsp counts (16 tbsp = 1 cup, etc.). */
+function normalizeTbspEndpoint(v) {
+  const rounded = Math.round(v * 1000) / 1000;
+  if (Math.abs(v - rounded) > 0.001) return { kind: 'tbsp', txt: formatQuantityForDisplay(v) };
+  const n = rounded;
+  if (n < 4) return { kind: 'tbsp', txt: formatQuantityForDisplay(n) };
+  if (n % 4 !== 0) return { kind: 'tbsp', txt: formatQuantityForDisplay(n) };
+  const cups = n / 16;
+  return { kind: 'cup', txt: formatQuantityForDisplay(cups), nCups: cups };
+}
+
+function normalizeTspEndpoint(v) {
+  const rounded = Math.round(v * 1000) / 1000;
+  if (Math.abs(v - rounded) > 0.001) return { kind: 'tsp', txt: formatQuantityForDisplay(v) };
+  const n = rounded;
+  if (n >= 12 && n % 12 === 0) {
+    const cups = n / 48;
+    return { kind: 'cup', txt: formatQuantityForDisplay(cups), nCups: cups };
+  }
+  if (n >= 3 && n % 3 === 0) {
+    const tbsp = n / 3;
+    return normalizeTbspEndpoint(tbsp);
+  }
+  return { kind: 'tsp', txt: formatQuantityForDisplay(n) };
+}
+
+function normalizeScaledUsVolume(amountStr) {
+  const sp = splitAmountNumberAndUnit(amountStr);
+  if (!sp || (sp.unit !== 'tbsp' && sp.unit !== 'tsp')) return amountStr;
+  const q = parseQuantityValue(sp.numPart);
+  if (q == null) return amountStr;
+  const trimmed = String(amountStr).trim();
+  const np = sp.numPart.trim();
+  const idx = trimmed.startsWith(np) ? 0 : trimmed.indexOf(np);
+  const afterNum = idx >= 0 ? trimmed.slice(idx + np.length).trim() : '';
+  if (afterNum && !/^(tbsp|tsp|tablespoons?|teaspoons?)\.?$/i.test(afterNum)) return amountStr;
+
+  const pair = (lo, hi, unit) => {
+    const a = unit === 'tbsp' ? normalizeTbspEndpoint(lo) : normalizeTspEndpoint(lo);
+    const b = unit === 'tbsp' ? normalizeTbspEndpoint(hi) : normalizeTspEndpoint(hi);
+    if (a.kind === 'cup' && b.kind === 'cup') {
+      return `${a.txt}–${b.txt} ${cupWordFromNumeric(Math.max(a.nCups, b.nCups))}`;
+    }
+    if (a.kind === 'tbsp' && b.kind === 'tbsp') return `${a.txt}–${b.txt} tbsp`;
+    if (a.kind === 'tsp' && b.kind === 'tsp') return `${a.txt}–${b.txt} tsp`;
+    return null;
+  };
+
+  if (Array.isArray(q)) {
+    const ranged = pair(q[0], q[1], sp.unit);
+    return ranged || amountStr;
+  }
+  const one = sp.unit === 'tbsp' ? normalizeTbspEndpoint(q) : normalizeTspEndpoint(q);
+  if (one.kind === 'cup') return `${one.txt} ${cupWordFromNumeric(one.nCups)}`;
+  const u = one.kind === 'tbsp' ? 'tbsp' : 'tsp';
+  return `${one.txt} ${u}`;
 }
 
 function formatQuantityForDisplay(n) {
@@ -2733,7 +2809,6 @@ function formatQuantityForDisplay(n) {
 }
 
 function scaleAmountString(amountStr, factor) {
-  if (!Number.isFinite(factor) || Math.abs(factor - 1) < 1e-9) return amountStr;
   const sp = splitAmountNumberAndUnit(amountStr);
   if (!sp) return amountStr;
   const q = parseQuantityValue(sp.numPart);
@@ -2743,12 +2818,19 @@ function scaleAmountString(amountStr, factor) {
   const idx = trimmed.startsWith(np) ? 0 : trimmed.indexOf(np);
   const tail = idx >= 0 ? trimmed.slice(idx + np.length).trim() : '';
   let scaledNum;
-  if (Array.isArray(q)) {
+  if (!Number.isFinite(factor) || Math.abs(factor - 1) < 1e-9) {
+    if (Array.isArray(q)) {
+      scaledNum = `${formatQuantityForDisplay(q[0])}–${formatQuantityForDisplay(q[1])}`;
+    } else {
+      scaledNum = formatQuantityForDisplay(q);
+    }
+  } else if (Array.isArray(q)) {
     scaledNum = `${formatQuantityForDisplay(q[0] * factor)}–${formatQuantityForDisplay(q[1] * factor)}`;
   } else {
     scaledNum = formatQuantityForDisplay(q * factor);
   }
-  return tail ? `${scaledNum} ${tail}` : scaledNum;
+  const out = tail ? `${scaledNum} ${tail}` : scaledNum;
+  return normalizeScaledUsVolume(out);
 }
 
 function formatMetricMl(ml) {
@@ -2989,7 +3071,7 @@ function displayAmountText(amountStr, restHint) {
 }
 
 function formatAmountForDisplay(amountStr, restHint) {
-  const scaled = scaleAmountString(amountStr, servingScaleFactor());
+  const scaled = scaleAmountString(amountStr, portionScaleFactor());
   return displayAmountText(scaled, restHint);
 }
 
@@ -3458,50 +3540,50 @@ function openServingsModal() {
   const r = RECIPES.find((x) => x.id === selectedId);
   const card = m.querySelector('.servings-modal-card');
   if (r && card) card.style.setProperty('--detail-accent', ACCENT[r.cuisine] || '#2e86ab');
-  servingsDraft = recipeServings;
+  portionsDraft = recipePortions;
   const s = document.getElementById('servingsSlider');
-  if (s) s.value = String(servingsDraft);
+  if (s) s.value = String(portionsDraft);
   const pillNum = document.getElementById('servingsScaleNum');
-  if (pillNum) pillNum.textContent = String(servingsDraft);
+  if (pillNum) pillNum.textContent = String(portionsDraft);
   const titleNum = document.getElementById('servingsModalTitleNum');
-  if (titleNum) titleNum.textContent = String(servingsDraft);
+  if (titleNum) titleNum.textContent = String(portionsDraft);
   const chip = document.getElementById('servingsChipNum');
-  if (chip) chip.textContent = String(servingsDraft);
+  if (chip) chip.textContent = String(portionsDraft);
   m.removeAttribute('hidden');
   refreshScaledIngredientsList();
 }
 
 function closeServingsModal() {
-  servingsDraft = null;
+  portionsDraft = null;
   const m = document.getElementById('servingsModal');
   if (m) m.setAttribute('hidden', '');
   const chip = document.getElementById('servingsChipNum');
-  if (chip) chip.textContent = String(recipeServings);
+  if (chip) chip.textContent = String(recipePortions);
   refreshScaledIngredientsList();
 }
 
 function applyServingsModal() {
   const s = document.getElementById('servingsSlider');
   if (!s) return;
-  recipeServings = Math.min(30, Math.max(2, parseInt(s.value, 10) || recipeServings));
-  servingsDraft = null;
+  recipePortions = Math.min(30, Math.max(2, parseInt(s.value, 10) || recipePortions));
+  portionsDraft = null;
   const m = document.getElementById('servingsModal');
   if (m) m.setAttribute('hidden', '');
   const chip = document.getElementById('servingsChipNum');
-  if (chip) chip.textContent = String(recipeServings);
+  if (chip) chip.textContent = String(recipePortions);
   refreshScaledIngredientsList();
 }
 
 function onServingsSliderInput(val) {
   const n = parseInt(val, 10);
   if (!Number.isFinite(n)) return;
-  servingsDraft = Math.min(30, Math.max(2, n));
+  portionsDraft = Math.min(30, Math.max(2, n));
   const chip = document.getElementById('servingsChipNum');
-  if (chip) chip.textContent = String(servingsDraft);
+  if (chip) chip.textContent = String(portionsDraft);
   const pillNum = document.getElementById('servingsScaleNum');
-  if (pillNum) pillNum.textContent = String(servingsDraft);
+  if (pillNum) pillNum.textContent = String(portionsDraft);
   const titleNum = document.getElementById('servingsModalTitleNum');
-  if (titleNum) titleNum.textContent = String(servingsDraft);
+  if (titleNum) titleNum.textContent = String(portionsDraft);
   refreshScaledIngredientsList();
 }
 
@@ -3561,9 +3643,9 @@ function renderDetail() {
             <div class="section-heading-label">
               <span>🛒</span> Ingredients
             </div>
-            <button type="button" class="servings-chip" id="servingsOpenBtn"${showAmounts ? ' ' : ' hidden '}onclick="openServingsModal()" aria-label="Recipe servings" title="Scale by servings">
+            <button type="button" class="servings-chip" id="servingsOpenBtn"${showAmounts ? ' ' : ' hidden '}onclick="openServingsModal()" aria-label="Recipe portions" title="Scale by portions">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-              <span id="servingsChipNum">${recipeServings}</span>
+              <span id="servingsChipNum">${recipePortions}</span>
             </button>
           </div>
           <ul id="ingredientsList" class="ingredients-list">
@@ -3616,7 +3698,7 @@ function toggleAmounts() {
 function selectCategory(cat) {
   closeServingsModal();
   activeCategory = cat;
-  recipeServings = 2;
+  recipePortions = 2;
   const visible = recipesForCardStrip();
   if (visible.length) selectedId = visible[0].id;
   renderNav();
@@ -3630,7 +3712,7 @@ function selectBrowseMode(mode) {
   closeServingsModal();
   browseMode = mode;
   activeCategory = 'All';
-  recipeServings = 2;
+  recipePortions = 2;
   const visible = recipesForCardStrip();
   if (visible.length) selectedId = visible[0].id;
   renderBrowseModeBar();
@@ -3641,7 +3723,7 @@ function selectBrowseMode(mode) {
 
 function selectRecipe(id) {
   closeServingsModal();
-  recipeServings = 2;
+  recipePortions = 2;
   selectedId = id;
   renderCards();
   renderDetail();
