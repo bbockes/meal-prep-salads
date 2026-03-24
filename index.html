@@ -29,6 +29,9 @@
       --spanish: #e25d40;
       --asian: #1b8670;
       --all: #4a5568;
+
+      /* Recipe detail + meal plan reading text */
+      --prose-font-size: 0.95rem;
     }
 
     body {
@@ -358,7 +361,7 @@
 
     /* ── Recipe Detail ── */
     .recipe-detail {
-      margin: 28px 48px 48px;
+      margin: 28px 48px 32px;
       background: var(--surface);
       border-radius: 18px;
       border: 1.5px solid var(--border);
@@ -481,11 +484,15 @@
       min-width: 9.875rem;
       max-width: 9.875rem;
     }
-    #copyIngredientsBtn,
-    #mealPlanCopyIngredientsBtn {
+    #copyIngredientsBtn {
       width: 9.75rem;
       min-width: 9.75rem;
       max-width: 9.75rem;
+    }
+    #mealPlanCopyIngredientsBtn {
+      width: 12.5rem;
+      min-width: 12.5rem;
+      max-width: 12.5rem;
     }
     #copyFullRecipeBtn,
     #mealPlanCopyFullRecipeBtn {
@@ -533,7 +540,7 @@
     /* ── Meal plan panel ── */
     .meal-plan-panel {
       --detail-accent: #4a5568;
-      margin: 20px 48px 48px;
+      margin: 13px 48px 48px;
       background: var(--surface);
       border-radius: 18px;
       border: 1.5px solid var(--border);
@@ -552,7 +559,7 @@
     .meal-plan-panel-title {
       font-family: 'Raleway', system-ui, sans-serif;
       font-weight: 800;
-      font-size: 1.1rem;
+      font-size: 1.28rem;
       letter-spacing: -0.02em;
       color: var(--text);
     }
@@ -598,7 +605,7 @@
       background: rgba(0, 0, 0, 0.06);
     }
     .meal-plan-empty {
-      font-size: 0.88rem;
+      font-size: var(--prose-font-size);
       color: var(--muted);
       margin-bottom: 12px;
       line-height: 1.45;
@@ -624,7 +631,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.88rem;
+      font-size: 0.91rem;
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
@@ -639,7 +646,7 @@
       gap: 9px;
       padding: 7px 0;
       border-bottom: 1px solid var(--border);
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
       line-height: 1.4;
       color: #333;
     }
@@ -679,7 +686,7 @@
     .dressing-heading-single {
       display: block;
       line-height: 1.4;
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
       color: #333;
     }
     .dressing-heading-single .dressing-single-name {
@@ -694,7 +701,7 @@
       display: block;
       margin-top: 0;
       padding-left: 0;
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
       line-height: 1.4;
       color: #333;
       font-weight: 400;
@@ -705,7 +712,7 @@
       color: var(--detail-accent);
     }
     .dressing-stack-single .dressing-tail {
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
       color: #333;
     }
     .dressing-heading-combo {
@@ -737,7 +744,7 @@
       color: var(--text);
     }
     .dressing-recipe-inline {
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
       line-height: 1.4;
       color: #333;
       font-weight: 400;
@@ -748,7 +755,7 @@
       color: var(--detail-accent);
     }
     .dressing-line-combo-part .dressing-tail {
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
       color: #333;
     }
     .dressing-line {
@@ -763,7 +770,7 @@
       display: block;
       margin-top: 0.18rem;
       padding-left: 0;
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
       line-height: 1.4;
       color: #333;
       font-weight: 400;
@@ -775,7 +782,7 @@
     }
     .dressing-tail {
       display: inline;
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
     }
 
     .steps-list { list-style: none; }
@@ -783,7 +790,7 @@
       display: flex;
       gap: 14px;
       padding: 8px 0;
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
       line-height: 1.4;
       color: #333;
     }
@@ -806,7 +813,7 @@
     .step-content {
       flex: 1;
       min-width: 0;
-      font-size: 0.9rem;
+      font-size: var(--prose-font-size);
       line-height: 1.4;
     }
 
@@ -814,7 +821,7 @@
       margin: 28px 48px 48px;
       text-align: center;
       color: var(--muted);
-      font-size: 0.92rem;
+      font-size: var(--prose-font-size);
       padding: 48px 0;
     }
 
@@ -1112,7 +1119,7 @@ const RECIPES = [
       '¼ cup pickled red onions',
       '1 cup shredded cabbage (bagged slaw mix)',
       '½ cup toasted pumpkin seeds',
-      'Dressing: ranch (mayo + sour cream + buttermilk + dill + garlic) + lime (lime juice) + cilantro (cilantro) + hot sauce (chili + vinegar) // ¼ cup ranch + 1 tbsp lime juice + 2 tbsp cilantro + hot sauce to taste (¼ cup mayo + 2 tbsp sour cream + 1 tbsp buttermilk + herbs + 1 tbsp lime + 2 tbsp cilantro + hot sauce to taste)',
+      'Dressing: ranch (mayo + sour cream + buttermilk + dill + garlic) + lime + cilantro + hot sauce (chili + vinegar) // ¼ cup ranch + 1 tbsp lime juice + 2 tbsp cilantro + hot sauce to taste (¼ cup mayo + 2 tbsp sour cream + 1 tbsp buttermilk + herbs + 1 tbsp lime + 2 tbsp cilantro + hot sauce to taste)',
     ],
     steps: [
       'Toss greens + cabbage together.',
@@ -1423,7 +1430,7 @@ const RECIPES = [
       '2 cups sugar snap peas',
       '¼ cup crispy fried onions',
       '¼ cup fresh mint or basil',
-      'Dressing: chili crisp (dried chili + garlic + shallot + spices fried in oil) + soy sauce (fermented soy + wheat + salt) + sesame oil (toasted sesame seeds) // 1 tsp chili crisp + 1 tbsp soy sauce + 1 tsp sesame oil (1 tsp chili crisp + 1 tbsp soy + 1 tsp toasted sesame oil)',
+      'Dressing: chili crisp (dried chili + garlic + shallot + spices fried in oil) + soy sauce + sesame oil // 1 tsp chili crisp + 1 tbsp soy sauce + 1 tsp sesame oil (1 tsp chili crisp + 1 tbsp soy + 1 tsp toasted sesame oil)',
     ],
     steps: [
       'Mix chili crisp, soy sauce, and sesame oil for dressing.',
@@ -1440,7 +1447,7 @@ const RECIPES = [
       '1 cup shredded green cabbage + 1 cup shredded purple cabbage',
       '¼ cup sliced almonds',
       '3 scallions, sliced',
-      'Dressing: sesame dressing (soy sauce + sesame oil + sugar + rice vinegar) + rice vinegar (rice vinegar) // 3 tbsp sesame dressing (2 tbsp soy + 1 tbsp sesame oil + 1 tsp sugar + splash rice vinegar) + 1 tsp rice vinegar (1 tsp rice vinegar)',
+      'Dressing: sesame dressing (soy sauce + sesame oil + sugar + rice vinegar) + rice vinegar // 3 tbsp sesame dressing (2 tbsp soy + 1 tbsp sesame oil + 1 tsp sugar + splash rice vinegar) + 1 tsp rice vinegar',
     ],
     steps: [
       'Toss coleslaw mix with sesame dressing.',
@@ -1480,7 +1487,7 @@ const RECIPES = [
       '1 cup shredded cabbage',
       '¼ cup almonds',
       '½ cup cooked wild rice',
-      'Dressing: miso (fermented soybean paste) + soy (soy sauce) + sesame oil (toasted sesame) + ginger (grated fresh ginger) + honey (honey) // 1 tbsp miso + 1 tbsp soy + 1 tsp sesame oil + 1 tsp ginger + 1 tsp honey (1 tbsp white miso + 1 tbsp soy sauce + 1 tsp toasted sesame oil + 1 tsp ginger + 1 tsp honey)',
+      'Dressing: miso + soy sauce + sesame oil + ginger + honey // 1 tbsp miso + 1 tbsp soy + 1 tsp sesame oil + 1 tsp ginger + 1 tsp honey (1 tbsp white miso + 1 tbsp soy sauce + 1 tsp toasted sesame oil + 1 tsp ginger + 1 tsp honey)',
     ],
     steps: [
       'Sauté mushrooms until deeply browned.',
@@ -1511,7 +1518,7 @@ const RECIPES = [
     ],
   },
   {
-    id: 27, cuisine: 'Asian', name: 'Salmon Taco Salad',
+    id: 27, cuisine: 'Spanish & Mexican', name: 'Salmon Taco Salad',
     ingredients: [
       '3 cups spring mix + romaine',
       '8 oz salmon fillet',
@@ -1520,7 +1527,7 @@ const RECIPES = [
       '¼ cup fresh cilantro',
       '½ cup roasted plantain chips, crushed',
       '½ cup cooked quinoa',
-      'Dressing: yogurt (Greek yogurt) + lime (lime juice) + hot sauce (chili + vinegar) + cilantro (cilantro) // ¼ cup yogurt + 1 tbsp lime juice + 1 tsp hot sauce + 1 tbsp cilantro (¼ cup Greek yogurt + 1 tbsp lime + hot sauce to taste + chopped cilantro)',
+      'Dressing: yogurt + lime + hot sauce (chili + vinegar) + cilantro // ¼ cup yogurt + 1 tbsp lime juice + 1 tsp hot sauce + 1 tbsp cilantro (¼ cup Greek yogurt + 1 tbsp lime + hot sauce to taste + chopped cilantro)',
     ],
     steps: [
       'Cook salmon (pan-sear or bake).',
@@ -1576,7 +1583,7 @@ const RECIPES = [
       '½ cup shredded carrots',
       '1 avocado, sliced',
       '¼ cup toasted coconut chips',
-      'Dressing: shiro miso (rice + soybean koji) + rice vinegar (fermented rice wine vinegar) + sesame oil (toasted sesame) + honey (honey) + ginger (fresh ginger) // 1 tbsp white miso + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey + 1 tsp grated ginger (1 tbsp miso + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey + 1 tsp ginger)',
+      'Dressing: shiro miso + rice vinegar + sesame oil + honey + ginger // 1 tbsp white miso + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey + 1 tsp grated ginger (1 tbsp miso + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey + 1 tsp ginger)',
     ],
     steps: [
       'Whisk miso dressing until smooth.',
@@ -1595,7 +1602,7 @@ const RECIPES = [
       '1 cup cherry tomatoes, halved',
       '2 tbsp Japanese mayo',
       '1 lemon, cut into wedges',
-      'Dressing: ponzu (citrus juice + soy sauce + mirin + bonito or kombu dashi) + sesame oil (toasted sesame) + scallions (thinly sliced scallions) // 2 tbsp ponzu + 1 tsp sesame oil + 2 scallions, sliced (2 tbsp ponzu + 1 tsp toasted sesame oil + 2 sliced scallions)',
+      'Dressing: ponzu (citrus juice + soy sauce + mirin + bonito or kombu dashi) + sesame oil + scallions // 2 tbsp ponzu + 1 tsp sesame oil + 2 scallions, sliced (2 tbsp ponzu + 1 tsp toasted sesame oil + 2 sliced scallions)',
     ],
     steps: [
       'Heat or prepare karaage chicken.',
@@ -1634,7 +1641,7 @@ const RECIPES = [
       '1 cup cherry tomatoes, halved',
       '¼ cup red onion, thinly sliced',
       '¼ cup fresh cilantro + mint',
-      'Dressing: yogurt (strained Greek yogurt) + lemon (fresh lemon juice) + cumin (ground cumin) + garlic (garlic clove) // ¼ cup Greek yogurt + 1 tbsp lemon juice + ½ tsp cumin + 1 garlic clove (¼ cup yogurt + 1 tbsp lemon + toasted cumin + grated garlic)',
+      'Dressing: yogurt + lemon + cumin + garlic // ¼ cup Greek yogurt + 1 tbsp lemon juice + ½ tsp cumin + 1 garlic clove (¼ cup yogurt + 1 tbsp lemon + toasted cumin + grated garlic)',
     ],
     steps: [
       'Marinate chicken in yogurt + tandoori spice mix, pan-cook or broil.',
@@ -1766,7 +1773,7 @@ const RECIPES = [
       '½ cup shredded carrots',
       '3 scallions, sliced',
       '1 tbsp sesame seeds',
-      'Dressing: gochujang (fermented Korean chili paste) + rice vinegar (rice wine vinegar) + sesame oil (toasted sesame) + honey (honey) // 1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey (1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey)',
+      'Dressing: gochujang + rice vinegar + sesame oil + honey // 1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey (1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey)',
     ],
     steps: [
       'Marinate and cook bulgogi beef in a hot pan, 2–3 min per side.',
@@ -1784,7 +1791,7 @@ const RECIPES = [
       '3 scallions, sliced',
       '1 tsp sesame seeds',
       '¼ cup toasted coconut flakes + sliced almonds',
-      'Dressing: sesame (toasted sesame oil) + vinegar (rice vinegar) + honey (honey) + soy (fermented soy sauce) // 1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp honey + 1 tbsp soy sauce (1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp honey + 1 tbsp soy)',
+      'Dressing: sesame oil + rice vinegar + honey + soy sauce // 1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp honey + 1 tbsp soy sauce (1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp honey + 1 tbsp soy)',
     ],
     steps: [
       'Toss coleslaw mix with sesame dressing.',
@@ -1865,7 +1872,7 @@ const RECIPES = [
       '4 oz provolone, diced',
       '5 pepperoncini, sliced',
       '¼ cup red onion, thinly sliced',
-      'Dressing: Italian dressing (red wine vinegar + olive oil + garlic + Italian herbs) + lemon (lemon juice) + oregano (dried oregano) // 3 tbsp Italian dressing + squeeze of lemon + pinch of dried oregano (3 tbsp oil + vinegar blend + lemon wedge + pinch dried oregano)',
+      'Dressing: Italian dressing (red wine vinegar + olive oil + garlic + Italian herbs) + lemon + oregano // 3 tbsp Italian dressing + squeeze of lemon + pinch of dried oregano (3 tbsp oil + vinegar blend + lemon wedge + pinch dried oregano)',
     ],
     steps: [
       'Combine all salad ingredients in a large bowl.',
@@ -1981,7 +1988,7 @@ const RECIPES = [
       '¼ cup fresh basil, torn',
       '½ cup cooked quinoa',
       '2 cups rotisserie chicken (optional)',
-      'Dressing: balsamic glaze (reduced balsamic vinegar + touch of brown sugar) + olive oil (extra-virgin olive oil) // 2 tbsp balsamic glaze + 1 tbsp olive oil (2 tbsp reduced balsamic + 1 tbsp extra-virgin olive oil)',
+      'Dressing: balsamic glaze (reduced balsamic vinegar + touch of brown sugar) + olive oil // 2 tbsp balsamic glaze + 1 tbsp olive oil (2 tbsp reduced balsamic + 1 tbsp extra-virgin olive oil)',
     ],
     steps: [
       'Toss greens + quinoa with a drizzle of olive oil.',
@@ -2041,7 +2048,7 @@ const RECIPES = [
       '1 cup cherry tomatoes, halved',
       '1 can roasted chickpeas',
       '¼ cup fresh basil + mint',
-      'Dressing: Italian dressing (red wine vinegar + olive oil + herbs) + garlic (garlic clove) + lemon (lemon juice) // 3 tbsp Italian dressing + 1 garlic clove + 1 tbsp lemon juice (3 tbsp vinaigrette base + grated garlic + 1 tbsp lemon juice)',
+      'Dressing: Italian dressing (red wine vinegar + olive oil + herbs) + garlic + lemon // 3 tbsp Italian dressing + 1 garlic clove + 1 tbsp lemon juice (3 tbsp vinaigrette base + grated garlic + 1 tbsp lemon juice)',
     ],
     steps: [
       'Microwave quinoa per package. Let cool slightly.',
@@ -2103,7 +2110,7 @@ const RECIPES = [
       '1 cucumber, chopped',
       '1 cup shredded cabbage',
       '½ cup toasted almond meal + chopped walnuts',
-      'Dressing: pesto (basil + pine nuts + garlic + parmesan + olive oil) + thinning oil (extra-virgin olive oil) + citrus (lemon juice) // 2 tbsp pesto + 1 tbsp olive oil + 1 tsp lemon juice (2 tbsp basil pesto + EVOO + lemon)',
+      'Dressing: pesto (basil + pine nuts + garlic + parmesan + olive oil) + olive oil + lemon // 2 tbsp pesto + 1 tbsp olive oil + 1 tsp lemon juice (2 tbsp basil pesto + EVOO + lemon)',
     ],
     steps: [
       'Toss greens + cabbage in a bowl.',
@@ -2296,7 +2303,7 @@ const RECIPES = [
       '¼ cup pistachios, roughly chopped',
       '1 cucumber, diced',
       '1 cup cherry tomatoes, halved',
-      'Dressing: lemon vinaigrette (lemon juice + olive oil + Dijon) + sumac (ground sumac berry) // 2 tbsp lemon vinaigrette + ½ tsp sumac (1 tbsp lemon juice + 1 tbsp olive oil + pinch Dijon + ½ tsp sumac)',
+      'Dressing: lemon vinaigrette (lemon juice + olive oil + Dijon) + sumac // 2 tbsp lemon vinaigrette + ½ tsp sumac (1 tbsp lemon juice + 1 tbsp olive oil + pinch Dijon + ½ tsp sumac)',
     ],
     steps: [
       'Warm or use grains at room temperature.',
@@ -2594,7 +2601,7 @@ const RECIPE_META_BY_ID = {
   24: ['Japanese', ['Bright & Tangy'], ['Spring']],
   25: ['Japanese', ['Rich & Umami'], ['Year-round']],
   26: ['Japanese', ['Fresh & Herb'], ['Year-round']],
-  27: ['Fusion', ['Bright & Tangy'], ['Summer']],
+  27: ['Mexican', ['Bright & Tangy'], ['Summer']],
   28: ['Japanese', ['Rich & Umami'], ['Year-round']],
   29: ['Italian', ['Bright & Tangy'], ['Summer']],
   30: ['Italian', ['Fresh & Herb'], ['Year-round']],
@@ -3577,6 +3584,31 @@ function splitPlusAtDepthZero(s) {
   return parts;
 }
 
+/**
+ * Amounts lines like `3 tbsp ranch + 1 tbsp lemon + herbs (mayo + sour cream + …)` are split on
+ * `+`; the renderer treats `herbs (…)` as "Herbs:" + recipe and mis-attributes the gloss. If only
+ * the last segment has parentheses and the first segment has none, move that parenthetical onto
+ * the first segment (skip when the first segment already has its own breakdown, e.g. BBQ + ranch).
+ */
+function relocateTrailingDressingParen(amountsBody) {
+  const trimmed = String(amountsBody || '').trim();
+  if (!trimmed) return trimmed;
+  const chunks = splitPlusAtDepthZero(trimmed);
+  if (chunks.length < 2) return trimmed;
+  const last = chunks[chunks.length - 1];
+  const region = findFirstBalancedParenRegion(last);
+  if (!region || region.pIdx <= 0) return trimmed;
+  const beforeParen = last.slice(0, region.pIdx).trim();
+  const inner = last.slice(region.pIdx + 1, region.end);
+  const first = chunks[0];
+  if (findFirstBalancedParenRegion(first)) return trimmed;
+  const newFirst = `${first} (${inner})`;
+  const out = [newFirst];
+  for (let i = 1; i < chunks.length - 1; i++) out.push(chunks[i]);
+  if (beforeParen) out.push(beforeParen);
+  return out.join(' + ');
+}
+
 function boldCompositeDressingBody(body) {
   body = body.trim();
   if (!body) return '';
@@ -3808,7 +3840,9 @@ function formatDressingComboPartLine(chunk) {
 }
 
 function renderDressingBlockHtml(body) {
-  const trimmed = body.trim();
+  let trimmed = body.trim();
+  if (showAmounts) trimmed = relocateTrailingDressingParen(trimmed);
+  trimmed = trimmed.trim();
   if (!trimmed) return '';
   const chunks = splitPlusAtDepthZero(trimmed);
   if (chunks.length <= 1) {
