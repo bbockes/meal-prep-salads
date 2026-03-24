@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Meal Prep Salads</title>
+  <title>Super Simple Meal Prep Salads</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Raleway:wght@700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -45,12 +45,20 @@
       align-items: baseline;
       gap: 12px;
     }
-    header h1 {
-      font-family: 'Playfair Display', serif;
+    header h1.site-title {
+      font-family: 'Raleway', system-ui, sans-serif;
+      font-weight: 700;
       font-size: 1.65rem;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.015em;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      column-gap: 0.26em;
+      row-gap: 0.12em;
+      color: var(--text);
     }
-    header span {
+    /* Tagline only when a direct child of header (not words inside h1) */
+    header > span {
       color: var(--muted);
       font-size: 0.85rem;
       font-weight: 300;
@@ -259,7 +267,8 @@
       border: 1px solid var(--border);
     }
     .detail-title {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Raleway', system-ui, sans-serif;
+      font-weight: 800;
       font-size: 1.75rem;
       letter-spacing: -0.02em;
       margin-top: 18px;
@@ -429,6 +438,38 @@
     }
     .dressing-heading {
       line-height: 1.25;
+    }
+    .dressing-heading-single {
+      display: block;
+      line-height: 1.4;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    .dressing-heading-single .dressing-single-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .dressing-stack-single {
+      display: block;
+      margin-top: 0.2rem;
+    }
+    .dressing-stack-single .dressing-recipe-below {
+      display: block;
+      margin-top: 0;
+      padding-left: 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: #333;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+    .dressing-stack-single .dressing-recipe-below .amount {
+      font-weight: 700;
+      color: var(--detail-accent);
+    }
+    .dressing-stack-single .dressing-tail {
+      font-size: 0.9rem;
+      color: #333;
     }
     .dressing-heading-combo {
       display: block;
@@ -750,7 +791,12 @@
 <body>
 
 <header>
-  <h1>Meal Prep Salads</h1>
+  <h1 class="site-title">
+    <span class="site-title-super">Super</span>
+    <span class="site-title-simple">Simple</span>
+    <span class="site-title-core">Meal Prep</span>
+    <span class="site-title-salads">Salads</span>
+  </h1>
 </header>
 
 <div class="browse-mode" id="browseModeBar"></div>
@@ -783,8 +829,8 @@
 // ── Data ──────────────────────────────────────────────────────────────────────
 const ACCENT = {
   American:      '#c0392b',
-  Asian:         '#e67e22',
   Mediterranean: '#2e86ab',
+  Asian:         '#e67e22',
   French:        '#5c4a8f',
   'Spanish & Mexican': '#d35400',
 };
@@ -899,26 +945,6 @@ const RECIPES = [
     ],
   },
   {
-    id: 5, cuisine: 'American', name: 'Kale Caesar',
-    ingredients: [
-      '2 cups rotisserie chicken, shredded',
-      '1½ cups romaine, chopped',
-      '1½ cups shredded kale',
-      '1 cup cherry tomatoes, halved',
-      '¼ cup shaved parmesan',
-      'Dressing: Caesar (anchovy + lemon + garlic + egg yolk + parmesan + olive oil + Worcestershire) // 3 tbsp Caesar dressing (2 tbsp mayo + anchovy + 2 tsp lemon + garlic + parmesan + 2 tsp olive oil + Worcestershire)',
-      '½ cup parmesan crisps',
-      '½ lime',
-    ],
-    steps: [
-      'Shred or slice chicken.',
-      'Massage kale with a little Caesar dressing for 30–60 sec.',
-      'Toss kale + romaine with dressing.',
-      'Add chicken, tomatoes, and parmesan.',
-      'Squeeze lime over top and finish with parmesan crisps.',
-    ],
-  },
-  {
     id: 6, cuisine: 'American', name: 'Chicken Cobb Salad',
     ingredients: [
       '2 cups rotisserie chicken, shredded',
@@ -1018,43 +1044,6 @@ const RECIPES = [
     ],
   },
   {
-    id: 11, cuisine: 'American', name: 'Homemade Caesar',
-    ingredients: [
-      '3 cups romaine, chopped',
-      '¼ cup shaved parmesan',
-      '½ cup toasted chopped almonds',
-      'Dressing: Caesar (mayo + olive oil + lemon + Dijon + garlic + Worcestershire) // Caesar (1 cup mayo + ¼ cup olive oil + 2 tbsp lemon juice + 2 tsp Dijon + 1 grated garlic clove + 1 tsp Worcestershire + salt & pepper)',
-    ],
-    steps: [
-      'Whisk all dressing ingredients together, thin with water if needed.',
-      'Toss romaine with dressing and half the parmesan.',
-      'Top with toasted chopped almonds and remaining parmesan.',
-      'Serve immediately.',
-      'Optional: add anchovies for authentic depth.',
-    ],
-  },
-  {
-    id: 12, cuisine: 'American', name: 'Healthy Taco Salad',
-    ingredients: [
-      '3 cups romaine, chopped',
-      '1 cup shredded red cabbage',
-      '½ cup black beans, drained',
-      '1 avocado, sliced',
-      '1 cup cherry tomatoes or pico de gallo',
-      'Jalapeño slices (optional)',
-      '½ cup jicama sticks',
-      'Taco "meat": 8 oz shiitake mushrooms + ½ cup walnuts + 1 tbsp tamari + 1 tsp taco seasoning',
-      'Dressing: avocado (ripe avocado) + crema (Greek yogurt) + lime (lime juice) + cilantro (cilantro) + garlic (garlic clove) // ½ avocado + ¼ cup Greek yogurt + 1 lime + handful cilantro + 1 garlic clove (½ mashed avocado + ¼ cup Greek yogurt + juice of lime + chopped cilantro + grated garlic)',
-    ],
-    steps: [
-      'Sauté mushrooms 3–4 min; add walnuts, toast 1 min; stir in tamari + taco seasoning.',
-      'Build salad: romaine, cabbage, beans, taco meat, tomatoes, avocado.',
-      'Add jalapeño if using.',
-      'Top with jicama sticks and cilantro dressing.',
-      'Finish with lime wedges.',
-    ],
-  },
-  {
     id: 13, cuisine: 'American', name: 'Wedge Salad',
     ingredients: [
       '1 head iceberg lettuce, cut into 4 wedges',
@@ -1069,26 +1058,6 @@ const RECIPES = [
       'Scatter bacon bits and halved cherry tomatoes on top.',
       'Finish with fresh chives.',
       'Serve cold.',
-    ],
-  },
-  {
-    id: 14, cuisine: 'American', name: 'Smoky Chipotle Lime',
-    ingredients: [
-      '3 cups romaine + 1 cup shredded cabbage',
-      '2 cups cooked chicken, sliced',
-      '½ cup black beans, drained',
-      '½ cup corn kernels',
-      '1 cup cherry tomatoes, halved',
-      '1 avocado, sliced',
-      '½ cup toasted pumpkin seeds',
-      'Dressing: chipotle lime (strained Greek yogurt + fresh lime + chipotle pepper + adobo sauce + garlic) // ¼ cup Greek yogurt + 1 tbsp lime juice + 1 chipotle pepper in adobo (¼ cup yogurt + lime + chipotle + adobo vinegar + garlic)',
-    ],
-    steps: [
-      'Toss greens + cabbage together.',
-      'Add chicken, beans, charred corn, and tomatoes.',
-      'Add avocado slices.',
-      'Drizzle chipotle lime dressing.',
-      'Top with toasted pumpkin seeds and a squeeze of lime.',
     ],
   },
   {
@@ -1706,6 +1675,42 @@ const RECIPES = [
     ],
   },
   {
+    id: 5, cuisine: 'Mediterranean', name: 'Kale Caesar',
+    ingredients: [
+      '2 cups rotisserie chicken, shredded',
+      '1½ cups romaine, chopped',
+      '1½ cups shredded kale',
+      '1 cup cherry tomatoes, halved',
+      '¼ cup shaved parmesan',
+      'Dressing: Caesar (anchovy + lemon + garlic + egg yolk + parmesan + olive oil + Worcestershire) // 3 tbsp Caesar dressing (2 tbsp mayo + anchovy + 2 tsp lemon + garlic + parmesan + 2 tsp olive oil + Worcestershire)',
+      '½ cup parmesan crisps',
+      '½ lime',
+    ],
+    steps: [
+      'Shred or slice chicken.',
+      'Massage kale with a little Caesar dressing for 30–60 sec.',
+      'Toss kale + romaine with dressing.',
+      'Add chicken, tomatoes, and parmesan.',
+      'Squeeze lime over top and finish with parmesan crisps.',
+    ],
+  },
+  {
+    id: 11, cuisine: 'Mediterranean', name: 'Homemade Caesar',
+    ingredients: [
+      '3 cups romaine, chopped',
+      '¼ cup shaved parmesan',
+      '½ cup toasted chopped almonds',
+      'Dressing: Caesar (mayo + olive oil + lemon + Dijon + garlic + Worcestershire) // Caesar (1 cup mayo + ¼ cup olive oil + 2 tbsp lemon juice + 2 tsp Dijon + 1 grated garlic clove + 1 tsp Worcestershire + salt & pepper)',
+    ],
+    steps: [
+      'Whisk all dressing ingredients together, thin with water if needed.',
+      'Toss romaine with dressing and half the parmesan.',
+      'Top with toasted chopped almonds and remaining parmesan.',
+      'Serve immediately.',
+      'Optional: add anchovies for authentic depth.',
+    ],
+  },
+  {
     id: 32, cuisine: 'Mediterranean', name: 'Grinder Sub Salad',
     ingredients: [
       '3 cups bagged shredded lettuce',
@@ -2258,6 +2263,27 @@ const RECIPES = [
     ],
   },
   {
+    id: 12, cuisine: 'Spanish & Mexican', name: 'Healthy Taco Salad',
+    ingredients: [
+      '3 cups romaine, chopped',
+      '1 cup shredded red cabbage',
+      '½ cup black beans, drained',
+      '1 avocado, sliced',
+      '1 cup cherry tomatoes or pico de gallo',
+      'Jalapeño slices (optional)',
+      '½ cup jicama sticks',
+      'Taco "meat": 8 oz shiitake mushrooms + ½ cup walnuts + 1 tbsp tamari + 1 tsp taco seasoning',
+      'Dressing: avocado (ripe avocado) + crema (Greek yogurt) + lime (lime juice) + cilantro (cilantro) + garlic (garlic clove) // ½ avocado + ¼ cup Greek yogurt + 1 lime + handful cilantro + 1 garlic clove (½ mashed avocado + ¼ cup Greek yogurt + juice of lime + chopped cilantro + grated garlic)',
+    ],
+    steps: [
+      'Sauté mushrooms 3–4 min; add walnuts, toast 1 min; stir in tamari + taco seasoning.',
+      'Build salad: romaine, cabbage, beans, taco meat, tomatoes, avocado.',
+      'Add jalapeño if using.',
+      'Top with jicama sticks and cilantro dressing.',
+      'Finish with lime wedges.',
+    ],
+  },
+  {
     id: 57, cuisine: 'Spanish & Mexican', name: 'Taco Salad',
     ingredients: [
       '3 cups romaine + 1 cup shredded red cabbage',
@@ -2317,6 +2343,26 @@ const RECIPES = [
     ],
   },
   {
+    id: 14, cuisine: 'Spanish & Mexican', name: 'Smoky Chipotle Lime',
+    ingredients: [
+      '3 cups romaine + 1 cup shredded cabbage',
+      '2 cups cooked chicken, sliced',
+      '½ cup black beans, drained',
+      '½ cup corn kernels',
+      '1 cup cherry tomatoes, halved',
+      '1 avocado, sliced',
+      '½ cup toasted pumpkin seeds',
+      'Dressing: chipotle lime (strained Greek yogurt + fresh lime + chipotle pepper + adobo sauce + garlic) // ¼ cup Greek yogurt + 1 tbsp lime juice + 1 chipotle pepper in adobo (¼ cup yogurt + lime + chipotle + adobo vinegar + garlic)',
+    ],
+    steps: [
+      'Toss greens + cabbage together.',
+      'Add chicken, beans, charred corn, and tomatoes.',
+      'Add avocado slices.',
+      'Drizzle chipotle lime dressing.',
+      'Top with toasted pumpkin seeds and a squeeze of lime.',
+    ],
+  },
+  {
     id: 60, cuisine: 'Spanish & Mexican', name: 'Chipotle Black Bean',
     ingredients: [
       '3 cups spring mix + romaine',
@@ -2363,13 +2409,13 @@ const RECIPE_META_BY_ID = {
   2: ['American', ['Smoky & Spicy'], ['Summer']],
   3: ['American', ['Smoky & Spicy'], ['Year-round']],
   4: ['American', ['Sweet & Savory'], ['Winter']],
-  5: ['Italian-American', ['Rich & Umami'], ['Year-round']],
+  5: ['Italian', ['Rich & Umami'], ['Year-round']],
   6: ['American', ['Rich & Umami'], ['Summer']],
   7: ['American', ['Creamy'], ['Summer']],
   8: ['American', ['Fresh & Herb'], ['Spring']],
   9: ['American', ['Fresh & Herb'], ['Spring']],
   10: ['American', ['Sweet & Savory'], ['Fall']],
-  11: ['Italian-American', ['Rich & Umami'], ['Year-round']],
+  11: ['Italian', ['Rich & Umami'], ['Year-round']],
   12: ['Mexican', ['Smoky & Spicy'], ['Year-round']],
   13: ['American', ['Creamy'], ['Summer']],
   14: ['Mexican', ['Smoky & Spicy'], ['Year-round']],
@@ -2390,7 +2436,7 @@ const RECIPE_META_BY_ID = {
   29: ['Italian', ['Bright & Tangy'], ['Summer']],
   30: ['Italian', ['Fresh & Herb'], ['Year-round']],
   31: ['Italian', ['Bright & Tangy'], ['Spring']],
-  32: ['Italian-American', ['Rich & Umami'], ['Year-round']],
+  32: ['Italian', ['Rich & Umami'], ['Year-round']],
   33: ['Italian', ['Sweet & Savory'], ['Fall']],
   34: ['Italian', ['Fresh & Herb'], ['Summer']],
   35: ['Italian', ['Creamy'], ['Summer']],
@@ -2523,12 +2569,28 @@ function cuisineSortIndex(cuisine) {
   return i === -1 ? 999 : i;
 }
 
+/** Within “Spanish & Mexican”: Spain first, then explicit fusion, then Mexico (plain localeCompare put Mexican before Spanish). */
+function spanishMexicanSubcuisineRank(sub) {
+  const t = String(sub || '')
+    .trim()
+    .toLowerCase();
+  if (t === 'spanish') return 0;
+  if (t === 'spanish & mexican') return 1;
+  if (t === 'mexican') return 2;
+  return 3;
+}
+
 function compareRecipesForCuisineBrowse(a, b) {
   const byCuisine = cuisineSortIndex(a.cuisine) - cuisineSortIndex(b.cuisine);
   if (byCuisine !== 0) return byCuisine;
   const subA = a.subCuisine || '';
   const subB = b.subCuisine || '';
-  const bySub = subA.localeCompare(subB, undefined, { sensitivity: 'base' });
+  let bySub;
+  if (a.cuisine === 'Spanish & Mexican' && b.cuisine === 'Spanish & Mexican') {
+    bySub = spanishMexicanSubcuisineRank(subA) - spanishMexicanSubcuisineRank(subB);
+  } else {
+    bySub = subA.localeCompare(subB, undefined, { sensitivity: 'base' });
+  }
   if (bySub !== 0) return bySub;
   return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 }
@@ -3463,27 +3525,38 @@ function dressingChunkLabel(chunk) {
   return base || namePart;
 }
 
-function formatDressingLineChunk(chunk) {
-  let c = chunk.trim();
+/** Single dressing: “Dressing: name” on one line; recipe parts on the next. */
+function renderSingleDressingBlockHtml(chunk) {
+  let c = String(chunk).trim();
   if (/^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
   const region = findFirstBalancedParenRegion(c);
   if (!region) {
-    return `<span class="dressing-line dressing-line-flat">${boldCompositeDressingBody(c)}</span>`;
+    return (
+      '<span class="dressing-heading dressing-heading-single">' +
+      '<span class="dressing-prefix">Dressing:</span> ' +
+      `<span class="dressing-single-name">${boldCompositeDressingBody(c)}</span></span>`
+    );
   }
   const { pIdx, end } = region;
   const label = c.slice(0, pIdx).trim();
   const inner = c.slice(pIdx + 1, end);
   const after = c.slice(end + 1).trim();
   if (!label) {
-    return `<span class="dressing-line dressing-line-flat">${boldCompositeDressingBody(c)}</span>`;
+    return (
+      '<span class="dressing-heading dressing-heading-single">' +
+      '<span class="dressing-prefix">Dressing:</span> ' +
+      `<span class="dressing-single-name">${boldCompositeDressingBody(c)}</span></span>`
+    );
   }
-  let html =
-    '<span class="dressing-line">' +
-    `<span class="dressing-label">${boldCompositeDressingBody(label)}</span>` +
-    `<span class="dressing-recipe">${boldCompositeDressingBody(inner)}</span>`;
-  if (after) html += `<span class="dressing-tail"> ${boldCompositeDressingBody(after)}</span>`;
-  html += '</span>';
-  return html;
+  let body =
+    `<span class="dressing-recipe dressing-recipe-below">${boldCompositeDressingBody(inner)}</span>`;
+  if (after) body += `<span class="dressing-tail"> ${boldCompositeDressingBody(after)}</span>`;
+  return (
+    '<span class="dressing-heading dressing-heading-single">' +
+    '<span class="dressing-prefix">Dressing:</span> ' +
+    `<span class="dressing-single-name">${boldCompositeDressingBody(label)}</span></span>` +
+    `<span class="dressing-stack dressing-stack-single">${body}</span>`
+  );
 }
 
 function formatDressingComboPartLine(chunk) {
@@ -3510,10 +3583,7 @@ function renderDressingBlockHtml(body) {
   if (!trimmed) return '';
   const chunks = splitPlusAtDepthZero(trimmed);
   if (chunks.length <= 1) {
-    return (
-      '<span class="dressing-heading"><span class="dressing-prefix">Dressing:</span></span>' +
-      `<span class="dressing-stack">${formatDressingLineChunk(trimmed)}</span>`
-    );
+    return renderSingleDressingBlockHtml(trimmed);
   }
   const comboTitle = chunks
     .map((ch, i) => {
