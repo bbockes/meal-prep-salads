@@ -148,17 +148,45 @@
     .browse-mode-toggle button:hover:not(.active) {
       color: var(--text);
     }
+    .browse-mode-spacer {
+      flex: 1;
+      min-width: 4px;
+    }
+    .meal-prep-mode-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.84rem;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .meal-prep-mode-btn:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+    .meal-prep-mode-btn.active {
+      background: var(--text);
+      color: var(--surface);
+      border-color: var(--text);
+      font-weight: 600;
+    }
 
     /* ── Card Strip ── */
     .card-strip-wrapper {
-      padding: 28px 48px 0;
+      padding: 16px 48px 0;
       overflow: visible;
     }
     .card-strip {
       display: flex;
       gap: 14px;
       overflow-x: auto;
-      padding: 6px 0 6px 6px;
+      /* Extra top room so hover lift + selection rings aren’t clipped at the strip edge */
+      padding: 10px 0 6px 6px;
       scrollbar-width: none;
     }
     .card-strip::-webkit-scrollbar { display: none; }
@@ -170,13 +198,13 @@
       overflow: hidden;
       position: relative;
       cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
       border: 2.5px solid transparent;
       background: var(--card-accent);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 18px 16px 16px 16px;
       -webkit-tap-highlight-color: transparent;
     }
     .recipe-card::before {
@@ -191,6 +219,112 @@
     .recipe-card.selected {
       border-color: rgba(255,255,255,0.7);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--card-accent) 40%, transparent);
+    }
+    /* White border + thicker black ring; no blur/drop shadow. */
+    .recipe-card.in-meal-plan {
+      border-width: 3px;
+      border-color: rgba(255, 255, 255, 0.98);
+    }
+    /* On the meal plan: bold title + high-contrast frame (not only the ✓ control). */
+    .recipe-card.in-meal-plan .card-label {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .recipe-card.in-meal-plan .card-subcuisine {
+      font-weight: 700;
+    }
+    .recipe-card.in-meal-plan:not(.selected) {
+      box-shadow: 0 0 0 3px #1a1a18;
+    }
+    .recipe-card.in-meal-plan.selected {
+      box-shadow:
+        0 0 0 3px #1a1a18,
+        0 0 0 6px color-mix(in srgb, var(--card-accent) 50%, transparent);
+    }
+    .meal-plan-card-ctl {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      z-index: 2;
+      width: 30px;
+      height: 30px;
+      margin: 0;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .meal-plan-card-ctl:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
+    .meal-plan-card-ctl-add {
+      background: rgba(255, 255, 255, 0.92);
+      color: rgba(26, 26, 24, 0.45);
+    }
+    .meal-plan-card-ctl-add:hover {
+      background: #fff;
+      color: var(--text);
+      transform: scale(1.07);
+    }
+    .meal-plan-card-ctl-on {
+      background: rgba(255, 255, 255, 0.96);
+      color: #157a52;
+    }
+    .meal-plan-card-ctl-on:hover {
+      background: #fff;
+      transform: scale(1.07);
+    }
+
+    .prep-mode-coach-mount:empty {
+      display: none;
+    }
+    .prep-mode-coach-mount {
+      padding: 0 48px 14px;
+    }
+    .prep-mode-coach {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 11px 14px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      animation: fadeUp 0.28s ease;
+    }
+    .prep-mode-coach-text {
+      margin: 0;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .prep-mode-coach-text strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .prep-mode-coach-dismiss {
+      flex-shrink: 0;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .prep-mode-coach-dismiss:hover {
+      border-color: var(--muted);
     }
     .recipe-card .card-label-wrap {
       position: relative;
@@ -326,10 +460,13 @@
 
     /* `[hidden]` alone can lose to `.copy-btn { display: flex }` in some engines */
     #unitsToggleBtn[hidden],
-    #servingsOpenBtn[hidden] {
+    #servingsOpenBtn[hidden],
+    #mealPlanUnitsToggleBtn[hidden],
+    #mealPlanServingsOpenBtn[hidden] {
       display: none !important;
     }
-    #unitsToggleBtn {
+    #unitsToggleBtn,
+    #mealPlanUnitsToggleBtn {
       width: 8.25rem;
       min-width: 8.25rem;
       max-width: 8.25rem;
@@ -338,33 +475,48 @@
       border-color: var(--detail-accent);
       transition: background 0.15s, border-color 0.15s, color 0.15s, filter 0.15s;
     }
-    #amountToggleBtn {
+    #amountToggleBtn,
+    #mealPlanAmountToggleBtn {
       width: 9.875rem;
       min-width: 9.875rem;
       max-width: 9.875rem;
     }
-    #copyIngredientsBtn {
+    #copyIngredientsBtn,
+    #mealPlanCopyIngredientsBtn {
       width: 9.75rem;
       min-width: 9.75rem;
       max-width: 9.75rem;
     }
-    #copyFullRecipeBtn {
+    #copyFullRecipeBtn,
+    #mealPlanCopyFullRecipeBtn {
       width: 11rem;
       min-width: 11rem;
       max-width: 11rem;
     }
+    #mealPlanClearBtn {
+      width: 7.75rem;
+      min-width: 7.75rem;
+      max-width: 7.75rem;
+      justify-content: center;
+      text-align: center;
+    }
     /* Icon stays fixed; only the label area reflows when text changes (Show ↔ Hide, Metric ↔ Imperial). */
     #unitsToggleBtn,
-    #amountToggleBtn {
+    #amountToggleBtn,
+    #mealPlanUnitsToggleBtn,
+    #mealPlanAmountToggleBtn {
       justify-content: flex-start;
     }
     #unitsToggleBtn .units-toggle-label,
-    #amountToggleBtn .toggle-label {
+    #amountToggleBtn .toggle-label,
+    #mealPlanUnitsToggleBtn .units-toggle-label,
+    #mealPlanAmountToggleBtn .toggle-label {
       flex: 1 1 0;
       min-width: 0;
       text-align: center;
     }
-    #unitsToggleBtn:hover {
+    #unitsToggleBtn:hover,
+    #mealPlanUnitsToggleBtn:hover {
       filter: brightness(1.08);
     }
 
@@ -378,9 +530,94 @@
     .detail-body > * {
       min-width: 0;
     }
+    /* ── Meal plan panel ── */
+    .meal-plan-panel {
+      --detail-accent: #4a5568;
+      margin: 20px 48px 48px;
+      background: var(--surface);
+      border-radius: 18px;
+      border: 1.5px solid var(--border);
+      padding: 22px 24px 24px;
+    }
+    .meal-plan-panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 16px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .meal-plan-panel-title {
+      font-family: 'Raleway', system-ui, sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .meal-plan-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 0;
+      min-height: 0;
+    }
+    .meal-plan-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px 6px 12px;
+      border-radius: 999px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text);
+      max-width: 100%;
+    }
+    .meal-plan-chip span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .meal-plan-chip-remove {
+      flex-shrink: 0;
+      border: none;
+      background: none;
+      padding: 2px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1rem;
+      border-radius: 4px;
+      line-height: 1;
+    }
+    .meal-plan-chip-remove:hover {
+      color: var(--text);
+      background: rgba(0, 0, 0, 0.06);
+    }
+    .meal-plan-empty {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+      line-height: 1.45;
+    }
+    .meal-plan-panel-header .copy-actions {
+      max-width: 100%;
+    }
+    .meal-plan-footer {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
     @media (max-width: 680px) {
       .detail-body { grid-template-columns: 1fr; }
-      header, nav, .browse-mode, .card-strip-wrapper, .recipe-detail { padding-left: 20px; padding-right: 20px; }
+      header, nav, .browse-mode, .prep-mode-coach-mount, .card-strip-wrapper, .recipe-detail { padding-left: 20px; padding-right: 20px; }
+      .meal-plan-panel { margin-left: 20px; margin-right: 20px; }
     }
 
     .section-heading {
@@ -800,9 +1037,11 @@
 </header>
 
 <div class="browse-mode" id="browseModeBar"></div>
+<div id="prepModeCoachMount" class="prep-mode-coach-mount" aria-live="polite"></div>
 <nav id="nav"></nav>
 <div class="card-strip-wrapper"><div class="card-strip" id="cardStrip"></div></div>
 <div id="recipeDetail"></div>
+<div id="mealPlanPanelMount" aria-live="polite"></div>
 
 <div id="servingsModal" class="servings-modal" hidden>
   <div class="servings-modal-backdrop" onclick="closeServingsModal()" aria-hidden="true"></div>
@@ -1384,24 +1623,6 @@ const RECIPES = [
       'Add sesame oil and chili crisp.',
       'Toss well and top with sesame seeds.',
       'Finish with fresh cilantro.',
-    ],
-  },
-  {
-    id: 68, cuisine: 'Asian', name: 'Chaat-Style Potato',
-    ingredients: [
-      '2 cups pre-cooked baby potatoes, halved',
-      '¼ cup plain Greek yogurt',
-      '1 tsp chaat spice blend (or ½ tsp curry powder + ½ tsp cumin)',
-      '1 cup toasted cashews + pumpkin seeds, roughly crushed',
-      '2 tbsp mint chutney + 2 tbsp tamarind chutney',
-      '½ cup cherry tomatoes + ¼ cup red onion + ¼ cup cilantro',
-    ],
-    steps: [
-      'Toss potatoes with yogurt + lemon juice + chaat spice blend.',
-      'Scatter crushed toasted cashews and pumpkin seeds over the top.',
-      'Add tomatoes, red onion, and cilantro.',
-      'Drizzle both chutneys generously.',
-      'Optional: add canned chickpeas for extra texture.',
     ],
   },
   {
@@ -2144,66 +2365,8 @@ const RECIPES = [
       'Add eggs and serve immediately.',
     ],
   },
-  {
-    id: 39, cuisine: 'French', name: 'Mustardy Potato & Egg',
-    ingredients: [
-      '3 cups mixed greens',
-      '1½ cups pre-cooked baby potatoes, halved',
-      '3 hard-boiled eggs, halved',
-      '3 tbsp pre-cooked bacon bits',
-      'Dressing: Dijon vinaigrette (Dijon mustard + wine vinegar + olive oil + shallot + honey) // 3 tbsp Dijon vinaigrette (2 tbsp olive oil + 1 tbsp wine vinegar + 1½ tsp Dijon + minced shallot + ½ tsp honey)',
-    ],
-    steps: [
-      'Warm potatoes slightly in the microwave.',
-      'Toss greens with Dijon vinaigrette.',
-      'Arrange potatoes, bacon, and halved eggs on top.',
-      'Drizzle extra dressing.',
-      'Optional: add avocado.',
-    ],
-  },
-  {
-    id: 40, cuisine: 'French', name: 'Herby Salmon Potato',
-    ingredients: [
-      '3 cups mixed greens',
-      '1½ cups pre-cooked baby potatoes, halved',
-      '8 oz smoked salmon (or canned salmon)',
-      '½ cup jarred artichoke hearts, quartered',
-      '¼ cup kalamata olives',
-      '1 tbsp capers',
-      '3 tbsp fresh dill + parsley, chopped',
-      'Dressing: lemon vinaigrette (lemon juice + olive oil + Dijon + honey + garlic) // 3 tbsp lemon vinaigrette (1 tbsp lemon juice + 2 tbsp olive oil + ½ tsp Dijon + ½ tsp honey + garlic)',
-    ],
-    steps: [
-      'Toss greens lightly with a little lemon vinaigrette.',
-      'Toss warm potatoes with remaining lemon vinaigrette.',
-      'Add salmon, artichokes, and olives.',
-      'Scatter capers over the top.',
-      'Finish generously with fresh herbs.',
-      'Serve warm or at room temperature.',
-    ],
-  },
 
   // ── SPANISH & MEXICAN ─────────────────────────────────────────────────────
-  {
-    id: 49, cuisine: 'Spanish & Mexican', name: 'Ensaladilla Rusa',
-    ingredients: [
-      '2 cups potatoes, boiled and cubed',
-      '1 cup carrots, boiled and diced',
-      '1 can tuna, drained',
-      '¼ cup green olives, sliced',
-      '½ cup peas, cooked',
-      '3 hard-boiled eggs, diced',
-      '½ cup mayonnaise',
-      '¼ cup piquillo peppers (garnish)',
-    ],
-    steps: [
-      'Boil and cool potatoes and carrots separately.',
-      'Drain tuna and break into chunks.',
-      'Combine all ingredients with mayonnaise.',
-      'Adjust seasoning with salt and lemon.',
-      'Chill 1 hour, garnish with piquillo pepper strips.',
-    ],
-  },
   {
     id: 50, cuisine: 'Spanish & Mexican', name: 'Manchego & Fig',
     ingredients: [
@@ -2443,8 +2606,6 @@ const RECIPE_META_BY_ID = {
   36: ['Provençal', ['Rich & Umami'], ['Summer']],
   37: ['Lyonnaise', ['Rich & Umami'], ['Fall']],
   38: ['Bistro', ['Rich & Umami'], ['Fall']],
-  39: ['Rustic French', ['Bright & Tangy'], ['Year-round']],
-  40: ['Provençal', ['Fresh & Herb'], ['Spring']],
   41: ['Levantine', ['Bright & Tangy'], ['Summer']],
   42: ['Levantine', ['Fresh & Herb'], ['Summer']],
   43: ['Greek', ['Fresh & Herb'], ['Year-round']],
@@ -2453,7 +2614,6 @@ const RECIPE_META_BY_ID = {
   46: ['Middle Eastern', ['Rich & Umami'], ['Year-round']],
   47: ['North African', ['Smoky & Spicy'], ['Fall']],
   48: ['Greek', ['Fresh & Herb'], ['Summer']],
-  49: ['Spanish', ['Creamy'], ['Summer']],
   50: ['Spanish', ['Sweet & Savory'], ['Fall']],
   51: ['Spanish', ['Bright & Tangy'], ['Winter']],
   52: ['Greek', ['Bright & Tangy'], ['Summer']],
@@ -2472,7 +2632,6 @@ const RECIPE_META_BY_ID = {
   65: ['Japanese', ['Rich & Umami'], ['Year-round']],
   66: ['Japanese', ['Smoky & Spicy'], ['Year-round']],
   67: ['Japanese', ['Bright & Tangy'], ['Year-round']],
-  68: ['Indian', ['Bright & Tangy'], ['Year-round']],
   69: ['Indian', ['Smoky & Spicy'], ['Summer']],
   70: ['Indian', ['Bright & Tangy'], ['Year-round']],
   71: ['Indian', ['Rich & Umami'], ['Fall']],
@@ -2514,6 +2673,55 @@ applyRecipeMeta();
 let browseMode = 'cuisine';
 let activeCategory = 'All';
 let selectedId = RECIPES[0].id;
+
+const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
+const MEAL_PREP_MODE_KEY = 'meal-prep-salads:mealPrepMode';
+const PREP_MODE_COACH_KEY = 'meal-prep-salads:prepModeCoachDismissed';
+
+let mealPrepMode = false;
+/** One-time hint after turning prep mode on until dismissed. */
+let showPrepModeCoach = false;
+/** @type {number[]} */
+let mealPlanIds = [];
+let mealPlanPortions = 2;
+let mealPlanShowAmounts = false;
+/** @type {'us'|'metric'} */
+let mealPlanUnitMode = 'us';
+
+function loadMealPlanState() {
+  try {
+    mealPrepMode = localStorage.getItem(MEAL_PREP_MODE_KEY) === '1';
+  } catch (e) { /* ignore */ }
+  try {
+    const raw = localStorage.getItem(MEAL_PLAN_STORAGE_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    const valid = new Set(RECIPES.map((r) => r.id));
+    if (Array.isArray(o.ids)) mealPlanIds = o.ids.filter((id) => valid.has(id));
+    if (typeof o.portions === 'number' && o.portions >= 2 && o.portions <= 30) {
+      mealPlanPortions = Math.round(o.portions);
+    }
+    if (typeof o.showAmounts === 'boolean') mealPlanShowAmounts = o.showAmounts;
+    if (o.unitMode === 'metric' || o.unitMode === 'us') mealPlanUnitMode = o.unitMode;
+  } catch (e) { /* ignore */ }
+}
+
+function saveMealPlanState() {
+  try {
+    localStorage.setItem(MEAL_PREP_MODE_KEY, mealPrepMode ? '1' : '0');
+    localStorage.setItem(
+      MEAL_PLAN_STORAGE_KEY,
+      JSON.stringify({
+        ids: mealPlanIds,
+        portions: mealPlanPortions,
+        showAmounts: mealPlanShowAmounts,
+        unitMode: mealPlanUnitMode,
+      })
+    );
+  } catch (e) { /* ignore */ }
+}
+
+loadMealPlanState();
 
 function escapeHtml(s) {
   return String(s)
@@ -2611,7 +2819,9 @@ function renderBrowseModeBar() {
       <button type="button" class="${browseMode === 'cuisine' ? 'active' : ''}" data-browse="cuisine">Cuisine</button>
       <button type="button" class="${browseMode === 'flavor' ? 'active' : ''}" data-browse="flavor">Flavor</button>
       <button type="button" class="${browseMode === 'season' ? 'active' : ''}" data-browse="season">Season</button>
-    </div>`;
+    </div>
+    <span class="browse-mode-spacer" aria-hidden="true"></span>
+    <button type="button" class="meal-prep-mode-btn${mealPrepMode ? ' active' : ''}" data-meal-prep-toggle="1" aria-pressed="${mealPrepMode ? 'true' : 'false'}" title="Select multiple salads and copy a combined grocery list or recipes">Prep mode</button>`;
 }
 
 // ── Render Nav ────────────────────────────────────────────────────────────────
@@ -2630,16 +2840,33 @@ function renderNav() {
 function renderCards() {
   const strip = document.getElementById('cardStrip');
   const visible = recipesForCardStrip();
+  const inPlan = new Set(mealPlanIds);
   strip.innerHTML = visible.map((r) => {
     const accent = ACCENT[r.cuisine];
     const sel = r.id === selectedId ? 'selected' : '';
+    const plan = inPlan.has(r.id) ? 'in-meal-plan' : '';
     const sub =
       browseMode === 'cuisine' && r.subCuisine
         ? `<div class="card-subcuisine">${escapeHtml(r.subCuisine)}</div>`
         : '';
+    const onPlan = inPlan.has(r.id);
+    const planCtl = mealPrepMode
+      ? `<button type="button" class="meal-plan-card-ctl ${onPlan ? 'meal-plan-card-ctl-on' : 'meal-plan-card-ctl-add'}"
+           aria-pressed="${onPlan ? 'true' : 'false'}"
+           aria-label="${escapeAttr(onPlan ? `Remove ${r.name} from meal plan` : `Add ${r.name} to meal plan`)}"
+           title="${escapeAttr(onPlan ? 'Remove from plan' : 'Add to plan')}"
+           onclick="event.stopPropagation(); toggleMealPlanRecipe(${r.id})">
+        ${
+          onPlan
+            ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>'
+            : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
+        }
+      </button>`
+      : '';
     return `
-      <div class="recipe-card ${sel}" style="--card-accent:${accent}"
+      <div class="recipe-card ${sel} ${plan}" style="--card-accent:${accent}"
            onclick="selectRecipe(${r.id})">
+        ${planCtl}
         <div class="card-label-wrap">
           <div class="card-label">${escapeHtml(r.name)}</div>${sub}
         </div>
@@ -2657,6 +2884,8 @@ const SCALING_BASE_PORTIONS = 2;
 let recipePortions = 2;
 /** While the portions modal is open, preview scale before Apply. */
 let portionsDraft = null;
+/** Which UI owns the servings modal: recipe detail or meal plan panel. @type {'recipe'|'mealPlan'} */
+let servingsModalTarget = 'recipe';
 
 const ML_PER_US_TSP = 4.92892159375;
 const ML_PER_US_TBSP = 14.78676478125;
@@ -3883,6 +4112,7 @@ function refreshScaledIngredientsList() {
 
 function openServingsModal() {
   if (!showAmounts) return;
+  servingsModalTarget = 'recipe';
   const m = document.getElementById('servingsModal');
   if (!m) return;
   const r = RECIPES.find((x) => x.id === selectedId);
@@ -3901,22 +4131,58 @@ function openServingsModal() {
   refreshScaledIngredientsList();
 }
 
+function openMealPlanServingsModal() {
+  if (!mealPlanShowAmounts) return;
+  servingsModalTarget = 'mealPlan';
+  const m = document.getElementById('servingsModal');
+  if (!m) return;
+  const card = m.querySelector('.servings-modal-card');
+  if (card) card.style.setProperty('--detail-accent', '#4a5568');
+  portionsDraft = mealPlanPortions;
+  const s = document.getElementById('servingsSlider');
+  if (s) s.value = String(portionsDraft);
+  const pillNum = document.getElementById('servingsScaleNum');
+  if (pillNum) pillNum.textContent = String(portionsDraft);
+  const titleNum = document.getElementById('servingsModalTitleNum');
+  if (titleNum) titleNum.textContent = String(portionsDraft);
+  const chip = document.getElementById('mealPlanServingsChipNum');
+  if (chip) chip.textContent = String(portionsDraft);
+  m.removeAttribute('hidden');
+}
+
 function closeServingsModal() {
   portionsDraft = null;
+  servingsModalTarget = 'recipe';
   const m = document.getElementById('servingsModal');
   if (m) m.setAttribute('hidden', '');
   const chip = document.getElementById('servingsChipNum');
   if (chip) chip.textContent = String(recipePortions);
+  const mpChip = document.getElementById('mealPlanServingsChipNum');
+  if (mpChip) mpChip.textContent = String(mealPlanPortions);
   refreshScaledIngredientsList();
 }
 
 function applyServingsModal() {
   const s = document.getElementById('servingsSlider');
   if (!s) return;
-  recipePortions = Math.min(30, Math.max(2, parseInt(s.value, 10) || recipePortions));
+  const target = servingsModalTarget;
+  const fallback = target === 'mealPlan' ? mealPlanPortions : recipePortions;
+  const parsed = Math.min(30, Math.max(2, parseInt(s.value, 10) || fallback));
   portionsDraft = null;
   const m = document.getElementById('servingsModal');
   if (m) m.setAttribute('hidden', '');
+  servingsModalTarget = 'recipe';
+
+  if (target === 'mealPlan') {
+    mealPlanPortions = parsed;
+    const mpChip = document.getElementById('mealPlanServingsChipNum');
+    if (mpChip) mpChip.textContent = String(mealPlanPortions);
+    saveMealPlanState();
+    renderMealPlanPanel();
+    return;
+  }
+
+  recipePortions = parsed;
   const chip = document.getElementById('servingsChipNum');
   if (chip) chip.textContent = String(recipePortions);
   refreshScaledIngredientsList();
@@ -3926,13 +4192,14 @@ function onServingsSliderInput(val) {
   const n = parseInt(val, 10);
   if (!Number.isFinite(n)) return;
   portionsDraft = Math.min(30, Math.max(2, n));
-  const chip = document.getElementById('servingsChipNum');
+  const chipId = servingsModalTarget === 'mealPlan' ? 'mealPlanServingsChipNum' : 'servingsChipNum';
+  const chip = document.getElementById(chipId);
   if (chip) chip.textContent = String(portionsDraft);
   const pillNum = document.getElementById('servingsScaleNum');
   if (pillNum) pillNum.textContent = String(portionsDraft);
   const titleNum = document.getElementById('servingsModalTitleNum');
   if (titleNum) titleNum.textContent = String(portionsDraft);
-  refreshScaledIngredientsList();
+  if (servingsModalTarget === 'recipe') refreshScaledIngredientsList();
 }
 
 function toggleUnits() {
@@ -3948,6 +4215,94 @@ function toggleUnits() {
   const label = btn.querySelector('.units-toggle-label');
   if (label) label.textContent = unitMode === 'metric' ? 'Metric' : 'Imperial';
   btn.setAttribute('aria-pressed', unitMode === 'metric' ? 'true' : 'false');
+}
+
+function toggleMealPlanUnits() {
+  mealPlanUnitMode = mealPlanUnitMode === 'us' ? 'metric' : 'us';
+  saveMealPlanState();
+  renderMealPlanPanel();
+}
+
+function toggleMealPlanAmounts() {
+  mealPlanShowAmounts = !mealPlanShowAmounts;
+  if (!mealPlanShowAmounts) {
+    const m = document.getElementById('servingsModal');
+    if (m && !m.hasAttribute('hidden') && servingsModalTarget === 'mealPlan') closeServingsModal();
+  }
+  saveMealPlanState();
+  renderMealPlanPanel();
+}
+
+function renderMealPlanPanel() {
+  const mount = document.getElementById('mealPlanPanelMount');
+  if (!mount) return;
+  if (!mealPrepMode && mealPlanIds.length === 0) {
+    mount.innerHTML = '';
+    return;
+  }
+
+  const recipes = mealPlanIds.map((id) => RECIPES.find((r) => r.id === id)).filter(Boolean);
+  const chips = recipes
+    .map(
+      (r) => `
+    <div class="meal-plan-chip">
+      <span>${escapeHtml(r.name)}</span>
+      <button type="button" class="meal-plan-chip-remove" onclick="removeFromMealPlan(${r.id})" aria-label="Remove ${escapeAttr(r.name)} from meal plan">×</button>
+    </div>`
+    )
+    .join('');
+
+  const emptyMsg =
+    recipes.length === 0
+      ? mealPrepMode
+        ? '<p class="meal-plan-empty">Tap <strong>+</strong> on a card to add recipes to your meal plan (or the checkmark to remove).</p>'
+        : '<p class="meal-plan-empty">Turn on <strong>Prep mode</strong> in the bar above to add recipes to your meal plan.</p>'
+      : '';
+
+  const copyDisabled = recipes.length === 0 ? ' disabled' : '';
+  const clearDisabled = mealPlanIds.length === 0 ? ' disabled' : '';
+
+  mount.innerHTML = `
+    <section class="meal-plan-panel" aria-labelledby="mealPlanPanelHeading">
+      <div class="meal-plan-panel-header">
+        <div>
+          <h2 id="mealPlanPanelHeading" class="meal-plan-panel-title">This week’s meal plan</h2>
+        </div>
+        <div class="copy-actions">
+          <button type="button" id="mealPlanUnitsToggleBtn" class="copy-btn"${mealPlanShowAmounts ? ' ' : ' hidden '}aria-pressed="${mealPlanUnitMode === 'metric' ? 'true' : 'false'}" aria-label="Switch between imperial and metric units for meal plan copy" onclick="toggleMealPlanUnits()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
+            <span class="units-toggle-label">${mealPlanUnitMode === 'metric' ? 'Metric' : 'Imperial'}</span>
+          </button>
+          <button type="button" id="mealPlanAmountToggleBtn" class="copy-btn toggle-btn ${mealPlanShowAmounts ? 'active' : ''}" onclick="toggleMealPlanAmounts()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4"/><rect x="9" y="3" width="6" height="5" rx="1"/></svg>
+            <span class="toggle-label">${mealPlanShowAmounts ? 'Hide amounts' : 'Show amounts'}</span>
+          </button>
+          <button type="button" class="servings-chip" id="mealPlanServingsOpenBtn"${mealPlanShowAmounts ? ' ' : ' hidden '}onclick="openMealPlanServingsModal()" aria-label="Meal plan portions" title="Scale each salad in the plan by portions">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <span id="mealPlanServingsChipNum">${mealPlanPortions}</span>
+          </button>
+          <button type="button" id="mealPlanCopyIngredientsBtn" class="copy-btn" onclick="copyMealPlanIngredients()"${copyDisabled} aria-label="Copy all ingredients for salads in this plan">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy all ingredients
+          </button>
+          <button type="button" id="mealPlanCopyFullRecipeBtn" class="copy-btn" onclick="copyMealPlanFullRecipes()"${copyDisabled} aria-label="Copy all full recipes in this plan">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy all recipes
+          </button>
+        </div>
+      </div>
+      ${emptyMsg}
+      <div class="meal-plan-chips">${chips}</div>
+      <div class="meal-plan-footer">
+        <button type="button" id="mealPlanClearBtn" class="copy-btn" onclick="clearMealPlan()"${clearDisabled} aria-label="Clear meal plan">Clear plan</button>
+      </div>
+    </section>`;
+
+  const modal = document.getElementById('servingsModal');
+  if (modal && !modal.hasAttribute('hidden') && servingsModalTarget === 'mealPlan' && portionsDraft != null) {
+    const syncChip = document.getElementById('mealPlanServingsChipNum');
+    if (syncChip) syncChip.textContent = String(portionsDraft);
+  }
 }
 
 function renderDetail() {
@@ -4169,6 +4524,130 @@ function ingredientLineForClipboard(str) {
   return str;
 }
 
+/** Temporarily override globals used by ingredient clipboard formatting (portion scale, etc.). */
+function withClipboardOptions(opts, fn) {
+  const prev = {
+    recipePortions,
+    showAmounts,
+    unitMode,
+  };
+  if (opts.recipePortions != null) recipePortions = opts.recipePortions;
+  if (opts.showAmounts != null) showAmounts = opts.showAmounts;
+  if (opts.unitMode != null) unitMode = opts.unitMode;
+  try {
+    return fn();
+  } finally {
+    recipePortions = prev.recipePortions;
+    showAmounts = prev.showAmounts;
+    unitMode = prev.unitMode;
+  }
+}
+
+function dismissPrepModeCoach() {
+  try {
+    localStorage.setItem(PREP_MODE_COACH_KEY, '1');
+  } catch (e) { /* ignore */ }
+  showPrepModeCoach = false;
+  renderPrepModeCoach();
+}
+
+function renderPrepModeCoach() {
+  const mount = document.getElementById('prepModeCoachMount');
+  if (!mount) return;
+  if (!mealPrepMode || !showPrepModeCoach) {
+    mount.innerHTML = '';
+    return;
+  }
+  mount.innerHTML = `
+    <div class="prep-mode-coach" role="status">
+      <p class="prep-mode-coach-text"><strong>Prep mode:</strong> Tap <strong>+</strong> on a card to add it to your plan, or the checkmark to remove it. Tap the card itself to view the recipe.</p>
+      <button type="button" class="prep-mode-coach-dismiss" onclick="dismissPrepModeCoach()">Got it</button>
+    </div>`;
+}
+
+function toggleMealPrepMode() {
+  mealPrepMode = !mealPrepMode;
+  if (mealPrepMode) {
+    try {
+      showPrepModeCoach = !localStorage.getItem(PREP_MODE_COACH_KEY);
+    } catch (e) {
+      showPrepModeCoach = false;
+    }
+  } else {
+    showPrepModeCoach = false;
+  }
+  saveMealPlanState();
+  renderBrowseModeBar();
+  renderPrepModeCoach();
+  renderCards();
+  renderMealPlanPanel();
+}
+
+function toggleMealPlanRecipe(id) {
+  const idx = mealPlanIds.indexOf(id);
+  if (idx >= 0) mealPlanIds = mealPlanIds.filter((x) => x !== id);
+  else mealPlanIds = [...mealPlanIds, id];
+  saveMealPlanState();
+  renderCards();
+  renderMealPlanPanel();
+}
+
+function removeFromMealPlan(id) {
+  mealPlanIds = mealPlanIds.filter((x) => x !== id);
+  saveMealPlanState();
+  renderCards();
+  renderMealPlanPanel();
+}
+
+function clearMealPlan() {
+  mealPlanIds = [];
+  saveMealPlanState();
+  renderCards();
+  renderMealPlanPanel();
+}
+
+function copyMealPlanIngredients() {
+  if (!mealPlanIds.length) {
+    flash('No salads in your meal plan yet.');
+    return;
+  }
+  const chunks = [];
+  for (const id of mealPlanIds) {
+    const r = RECIPES.find((x) => x.id === id);
+    if (!r) continue;
+    const block = withClipboardOptions(
+      { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
+      () => r.ingredients.map(ingredientLineForClipboard).join('\n')
+    );
+    const underline = '—'.repeat(Math.min(Math.max(r.name.length + 2, 12), 42));
+    chunks.push(`${r.name}\n${underline}\n${block}`);
+  }
+  const text = chunks.join('\n\n');
+  navigator.clipboard.writeText(text).then(() => flash(`Copied ingredients for ${mealPlanIds.length} salads!`));
+}
+
+function copyMealPlanFullRecipes() {
+  if (!mealPlanIds.length) {
+    flash('No salads in your meal plan yet.');
+    return;
+  }
+  const parts = [];
+  for (const id of mealPlanIds) {
+    const r = RECIPES.find((x) => x.id === id);
+    if (!r) continue;
+    const body = withClipboardOptions(
+      { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
+      () => {
+        const lines = r.ingredients.flatMap((i) => toBulletedIngredientLines(ingredientLineForClipboard(i)));
+        return `${r.name}\n\nIngredients:\n${lines.join('\n')}\n\nSteps:\n${r.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
+      }
+    );
+    parts.push(body);
+  }
+  const text = parts.join('\n\n────────────────────────\n\n');
+  navigator.clipboard.writeText(text).then(() => flash(`Copied ${mealPlanIds.length} full recipes!`));
+}
+
 function copyIngredients(id) {
   const r = RECIPES.find((x) => x.id === id);
   const text = r.ingredients.map(ingredientLineForClipboard).join('\n');
@@ -4201,6 +4680,10 @@ function flash(msg) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.getElementById('browseModeBar').addEventListener('click', (e) => {
+  if (e.target.closest('button[data-meal-prep-toggle]')) {
+    toggleMealPrepMode();
+    return;
+  }
   const b = e.target.closest('button[data-browse]');
   if (b) selectBrowseMode(b.getAttribute('data-browse'));
 });
@@ -4212,9 +4695,11 @@ document.getElementById('nav').addEventListener('click', (e) => {
 if (recipesForCardStrip().length) selectedId = recipesForCardStrip()[0].id;
 
 renderBrowseModeBar();
+renderPrepModeCoach();
 renderNav();
 renderCards();
 renderDetail();
+renderMealPlanPanel();
 
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
