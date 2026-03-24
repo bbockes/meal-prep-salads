@@ -293,7 +293,8 @@
       background: #333;
       border-color: #333;
     }
-    .amount {
+    .amount,
+    .step-ingredient {
       font-weight: 700;
       color: var(--detail-accent);
     }
@@ -304,7 +305,8 @@
     .copy-btn svg { flex-shrink: 0; }
 
     /* `[hidden]` alone can lose to `.copy-btn { display: flex }` in some engines */
-    #unitsToggleBtn[hidden] {
+    #unitsToggleBtn[hidden],
+    #servingsOpenBtn[hidden] {
       display: none !important;
     }
     #unitsToggleBtn {
@@ -323,7 +325,12 @@
     .detail-body {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 36px;
+      column-gap: 56px;
+      row-gap: 36px;
+    }
+    /* Let fr tracks shrink below content min-width so a wide ingredients row can’t widen the card */
+    .detail-body > * {
+      min-width: 0;
     }
     @media (max-width: 680px) {
       .detail-body { grid-template-columns: 1fr; }
@@ -392,6 +399,11 @@
       color: var(--muted);
       margin-top: 1px;
     }
+    /* One flex child so gap isn’t inserted between each text node and inline highlight span */
+    .step-content {
+      flex: 1;
+      min-width: 0;
+    }
 
     .empty-state {
       margin: 28px 48px 48px;
@@ -399,6 +411,198 @@
       color: var(--muted);
       font-size: 0.92rem;
       padding: 48px 0;
+    }
+
+    .section-heading.ingredients-heading-row {
+      position: relative;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+    /* Chip is absolutely positioned so it doesn’t inflate grid min-content width; reserve space when visible */
+    .ingredients-heading-row:has(#servingsOpenBtn:not([hidden])) {
+      padding-right: 6.75rem;
+    }
+    .ingredients-heading-row .section-heading-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .servings-chip {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px 6px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .servings-chip:hover {
+      background: var(--bg);
+      border-color: var(--muted);
+    }
+    .servings-chip svg { flex-shrink: 0; opacity: 0.75; }
+
+    .servings-modal[hidden] {
+      display: none !important;
+    }
+    .servings-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .servings-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(26, 26, 24, 0.35);
+    }
+    .servings-modal-card {
+      position: relative;
+      width: 100%;
+      max-width: 340px;
+      background: var(--surface);
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+      padding: 18px 18px 16px;
+    }
+    .servings-modal-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .servings-modal-title {
+      display: flex;
+      align-items: baseline;
+      /* Single visual space; avoids stray text nodes between spans + collapsed spaces */
+      gap: 0.35em;
+    }
+    .servings-modal-title-num {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--detail-accent, #2e86ab);
+      font-variant-numeric: tabular-nums;
+    }
+    .servings-modal-title-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .servings-modal-close {
+      border: none;
+      background: none;
+      padding: 4px;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1.1rem;
+      border-radius: 6px;
+    }
+    .servings-modal-close:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+    .servings-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .servings-slider-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+    /* Native range fill + thumb stay aligned (custom WebKit track gradients often desync from thumb). */
+    .servings-slider {
+      width: 100%;
+      height: 1.25rem;
+      cursor: pointer;
+      accent-color: var(--detail-accent, #2e86ab);
+    }
+    .servings-scale-pill {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      min-width: 3.2rem;
+      text-align: center;
+    }
+    .servings-scale-pill strong {
+      color: var(--detail-accent, #2e86ab);
+      font-weight: 700;
+    }
+    .servings-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .servings-btn-cancel {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .servings-btn-cancel:hover {
+      background: var(--bg);
+      border-color: var(--muted);
+    }
+    .servings-btn-apply {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: none;
+      background: var(--detail-accent, #2e86ab);
+      color: #fff;
+      cursor: pointer;
+      transition: filter 0.15s, opacity 0.15s;
+    }
+    .servings-btn-apply:hover {
+      filter: brightness(1.08);
     }
   </style>
 </head>
@@ -412,6 +616,26 @@
 <nav id="nav"></nav>
 <div class="card-strip-wrapper"><div class="card-strip" id="cardStrip"></div></div>
 <div id="recipeDetail"></div>
+
+<div id="servingsModal" class="servings-modal" hidden>
+  <div class="servings-modal-backdrop" onclick="closeServingsModal()" aria-hidden="true"></div>
+  <div class="servings-modal-card" role="dialog" aria-modal="true" aria-labelledby="servingsModalTitle" style="--detail-accent: #2e86ab" onclick="event.stopPropagation()">
+    <div class="servings-modal-top">
+      <div id="servingsModalTitle" class="servings-modal-title"><span class="servings-modal-title-num" id="servingsModalTitleNum">2</span><span class="servings-modal-title-label">Servings</span></div>
+      <button type="button" class="servings-modal-close" onclick="closeServingsModal()" aria-label="Close">×</button>
+    </div>
+    <div class="servings-slider-row">
+      <div class="servings-slider-wrap">
+        <input type="range" id="servingsSlider" class="servings-slider" min="2" max="30" step="1" value="2" oninput="onServingsSliderInput(this.value)" />
+      </div>
+      <div class="servings-scale-pill" id="servingsScalePill">× <strong id="servingsScaleNum">2</strong></div>
+    </div>
+    <div class="servings-modal-actions">
+      <button type="button" class="servings-btn-cancel" onclick="closeServingsModal()">Cancel</button>
+      <button type="button" class="servings-btn-apply" onclick="applyServingsModal()">Apply</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -2266,6 +2490,10 @@ function escapeAttr(s) {
     .replace(/"/g, '&quot;');
 }
 
+function escapeRegExp(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function isDistinctSubCuisine(r) {
   if (!r.subCuisine) return false;
   return r.subCuisine.trim().toLowerCase() !== String(r.cuisine).trim().toLowerCase();
@@ -2367,8 +2595,14 @@ function renderCards() {
 // ── Render Detail ─────────────────────────────────────────────────────────────
 // ── Amount toggle state ───────────────────────────────────────────────────────
 let showAmounts = false;
-/** `us` shown as "Imperial" (cups/oz). Metric = ml/L + g/kg. @type {'us'|'metric'} */
+/** `us` shown as "Imperial" (cups/oz). Metric = ml/L + g/kg; liquids show approximate g only (no ml). @type {'us'|'metric'} */
 let unitMode = 'us';
+/** Recipe text is written for this many servings; slider default matches → scale factor 1. */
+const SCALING_BASE_SERVINGS = 2;
+let recipeServings = 2;
+/** While the servings modal is open, preview scale before Apply. */
+let servingsDraft = null;
+
 const ML_PER_US_TSP = 4.92892159375;
 const ML_PER_US_TBSP = 14.78676478125;
 const ML_PER_US_CUP = 236.5882365;
@@ -2398,6 +2632,22 @@ const UNIT_ALIASES = [
   ['quarts', 'qt'],
   ['quart', 'qt'],
   ['pints', 'pint'],
+  ['heads', 'head'],
+  ['bunches', 'bunch'],
+  ['cloves', 'clove'],
+  ['slices', 'slice'],
+  ['strips', 'strip'],
+  ['pieces', 'piece'],
+  ['sprigs', 'sprig'],
+  ['cans', 'can'],
+  ['packages', 'package'],
+  ['pouches', 'pouch'],
+  ['scoops', 'scoop'],
+  ['handfuls', 'handful'],
+  ['pinches', 'pinch'],
+  ['dashes', 'dash'],
+  ['sheets', 'sheet'],
+  ['pkgs', 'pkg'],
 ];
 
 const UNICODE_FRAC = {
@@ -2479,6 +2729,10 @@ function splitAmountNumberAndUnit(amountStr) {
     'milliliter',
     'millilitres',
     'millilitre',
+    'packages',
+    'package',
+    'pouches',
+    'pouch',
     'cups',
     'cup',
     'quarts',
@@ -2489,6 +2743,34 @@ function splitAmountNumberAndUnit(amountStr) {
     'ounce',
     'pints',
     'pint',
+    'bunches',
+    'bunch',
+    'heads',
+    'head',
+    'cloves',
+    'clove',
+    'slices',
+    'slice',
+    'strips',
+    'strip',
+    'pieces',
+    'piece',
+    'sprigs',
+    'sprig',
+    'cans',
+    'can',
+    'scoops',
+    'scoop',
+    'handfuls',
+    'handful',
+    'pinches',
+    'pinch',
+    'dashes',
+    'dash',
+    'sheets',
+    'sheet',
+    'pkgs',
+    'pkg',
     'tbsp',
     'tsp',
     'lbs',
@@ -2513,6 +2795,65 @@ function splitAmountNumberAndUnit(amountStr) {
   return null;
 }
 
+function effectiveRecipeServings() {
+  return servingsDraft != null ? servingsDraft : recipeServings;
+}
+
+function servingScaleFactor() {
+  return effectiveRecipeServings() / SCALING_BASE_SERVINGS;
+}
+
+function formatQuantityForDisplay(n) {
+  if (!Number.isFinite(n) || n < 0) return String(n);
+  const rounded = Math.round(n * 10000) / 10000;
+  const symFracs = [
+    [0.125, '⅛'],
+    [0.25, '¼'],
+    [0.333, '⅓'],
+    [0.3333, '⅓'],
+    [0.375, '⅜'],
+    [0.5, '½'],
+    [0.625, '⅝'],
+    [0.666, '⅔'],
+    [0.6667, '⅔'],
+    [0.75, '¾'],
+    [0.875, '⅞'],
+  ];
+  for (let i = 0; i < symFracs.length; i++) {
+    if (Math.abs(rounded - symFracs[i][0]) < 0.051) return symFracs[i][1];
+  }
+  const w = Math.floor(rounded);
+  const frac = rounded - w;
+  if (w >= 1 && Math.abs(frac - 0.5) < 0.06) return `${w}½`;
+  if (w >= 1 && Math.abs(frac - 0.25) < 0.06) return `${w}¼`;
+  if (w >= 1 && Math.abs(frac - 0.75) < 0.06) return `${w}¾`;
+  const ri = Math.round(rounded);
+  if (Math.abs(rounded - ri) < 0.06) return String(ri);
+  const t = Math.round(rounded * 100) / 100;
+  if (Math.abs(t - Math.round(t)) < 0.001) return String(Math.round(t));
+  const s = String(t);
+  return s.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+}
+
+function scaleAmountString(amountStr, factor) {
+  if (!Number.isFinite(factor) || Math.abs(factor - 1) < 1e-9) return amountStr;
+  const sp = splitAmountNumberAndUnit(amountStr);
+  if (!sp) return amountStr;
+  const q = parseQuantityValue(sp.numPart);
+  if (q == null) return amountStr;
+  const trimmed = String(amountStr).trim();
+  const np = sp.numPart.trim();
+  const idx = trimmed.startsWith(np) ? 0 : trimmed.indexOf(np);
+  const tail = idx >= 0 ? trimmed.slice(idx + np.length).trim() : '';
+  let scaledNum;
+  if (Array.isArray(q)) {
+    scaledNum = `${formatQuantityForDisplay(q[0] * factor)}–${formatQuantityForDisplay(q[1] * factor)}`;
+  } else {
+    scaledNum = formatQuantityForDisplay(q * factor);
+  }
+  return tail ? `${scaledNum} ${tail}` : scaledNum;
+}
+
 function formatMetricMl(ml) {
   if (ml >= 1000) {
     const L = ml / 1000;
@@ -2533,7 +2874,31 @@ function formatMetricG(g) {
   return `${Math.round(g)} g`;
 }
 
-/** Liquids → metric ml; solids stay volume→g via rough g/cup (recipe sites rarely have perfect densities). */
+/** Rough g/ml to convert liquid volumes to grams in metric mode (approximate). */
+function gramsPerMlForLiquid(rest) {
+  const r = String(rest).toLowerCase();
+  if (/\b(honey|molasses)\b/.test(r)) return 1.42;
+  if (/\bmaple syrup\b/.test(r)) return 1.37;
+  if (/\bagave\b/.test(r)) return 1.36;
+  if (/\bsyrup\b/.test(r)) return 1.3;
+  if (/\b(oil|olive oil|sesame oil|truffle oil)\b/.test(r)) return 0.92;
+  if (/\b(mayo|mayonnaise)\b/.test(r)) return 0.91;
+  if (/\bcoconut milk\b/.test(r)) return 1.02;
+  if (/\b(milk|almond milk|oat milk|soy milk|buttermilk)\b/.test(r)) return 1.03;
+  if (/\b(cream|half-and-half|whipping cream|heavy cream)\b/.test(r)) return 0.99;
+  if (/\b(yogurt|greek yogurt)\b/.test(r)) return 1.05;
+  if (/\b(sour cream|crema|crème fraîche|crème fraiche)\b/.test(r)) return 1.0;
+  if (/\b(soy sauce|tamari|fish sauce|oyster sauce|worcestershire)\b/.test(r)) return 1.15;
+  if (/\b(ketchup|hot sauce|sriracha|chili crisp)\b/.test(r)) return 1.05;
+  if (/\bpesto\b/.test(r)) return 0.95;
+  if (/\b(tahini|hummus)\b/.test(r)) return 1.05;
+  if (/\b(vinegar|rice vinegar|cider vinegar|balsamic)\b/.test(r)) return 1.01;
+  if (/\b(wine|sherry|vermouth|mirin)\b/.test(r)) return 0.99;
+  if (/\b(juice|broth|stock|brine|pickle juice)\b/.test(r)) return 1.0;
+  return 1.0;
+}
+
+/** Liquids → approximate g from volume; solids stay volume→g via rough g/cup. */
 function isIngredientLiquid(rest) {
   const r = String(rest).toLowerCase();
   if (/\bcream cheese|cottage cheese|ricotta\b/.test(r)) return false;
@@ -2588,7 +2953,7 @@ function ingredientDescriptorForClassification(rest) {
   return parts.length ? parts[0].trim() : String(rest).trim();
 }
 
-/** Metric: US volume → ml if liquid, → g if solid (heuristic); weights stay g/kg. */
+/** Metric: US volume → approximate g if liquid, → g if solid (heuristic); weights stay g/kg. */
 function convertQuantityToMetric(value, unit, rest) {
   const restStr = rest == null ? '' : String(rest);
   const classifyOn = ingredientDescriptorForClassification(restStr);
@@ -2600,33 +2965,43 @@ function convertQuantityToMetric(value, unit, rest) {
     return fmt(v);
   };
 
+  const formatLiquidGrams = (mlLo, mlHi) => {
+    const d = gramsPerMlForLiquid(classifyOn);
+    return toRangeStr(formatMetricG, mlLo * d, mlHi * d);
+  };
+
   const volToMetric = () => {
     const liquid = isIngredientLiquid(classifyOn);
     if (liquid) {
       if (unit === 'tsp') {
         const toMl = (v) => v * ML_PER_US_TSP;
-        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
-        return formatMetricMl(toMl(value));
+        if (Array.isArray(value)) return formatLiquidGrams(toMl(value[0]), toMl(value[1]));
+        const m = toMl(value);
+        return formatLiquidGrams(m, m);
       }
       if (unit === 'tbsp') {
         const toMl = (v) => v * ML_PER_US_TBSP;
-        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
-        return formatMetricMl(toMl(value));
+        if (Array.isArray(value)) return formatLiquidGrams(toMl(value[0]), toMl(value[1]));
+        const m = toMl(value);
+        return formatLiquidGrams(m, m);
       }
       if (unit === 'cup') {
         const toMl = (v) => v * ML_PER_US_CUP;
-        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
-        return formatMetricMl(toMl(value));
+        if (Array.isArray(value)) return formatLiquidGrams(toMl(value[0]), toMl(value[1]));
+        const m = toMl(value);
+        return formatLiquidGrams(m, m);
       }
       if (unit === 'pint') {
         const toMl = (v) => v * ML_PER_US_PINT;
-        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
-        return formatMetricMl(toMl(value));
+        if (Array.isArray(value)) return formatLiquidGrams(toMl(value[0]), toMl(value[1]));
+        const m = toMl(value);
+        return formatLiquidGrams(m, m);
       }
       if (unit === 'qt') {
         const toMl = (v) => v * ML_PER_US_QT;
-        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
-        return formatMetricMl(toMl(value));
+        if (Array.isArray(value)) return formatLiquidGrams(toMl(value[0]), toMl(value[1]));
+        const m = toMl(value);
+        return formatLiquidGrams(m, m);
       }
     }
     const gPerCup = gramsPerUsCupForSolid(classifyOn);
@@ -2684,11 +3059,20 @@ function convertQuantityToMetric(value, unit, rest) {
     return formatMetricG(toG(value));
   }
   if (unit === 'ml') {
+    if (isIngredientLiquid(classifyOn)) {
+      if (Array.isArray(value)) return formatLiquidGrams(value[0], value[1]);
+      return formatLiquidGrams(value, value);
+    }
     if (Array.isArray(value)) return toRangeStr(formatMetricMl, value[0], value[1]);
     return formatMetricMl(value);
   }
   if (unit === 'l') {
     const toMl = (v) => v * 1000;
+    if (isIngredientLiquid(classifyOn)) {
+      if (Array.isArray(value)) return formatLiquidGrams(toMl(value[0]), toMl(value[1]));
+      const m = toMl(value);
+      return formatLiquidGrams(m, m);
+    }
     if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
     return formatMetricMl(toMl(value));
   }
@@ -2705,6 +3089,11 @@ function displayAmountText(amountStr, restHint) {
   const converted = convertQuantityToMetric(value, sp.unit, restHint == null ? '' : restHint);
   if (!converted) return amountStr;
   return converted;
+}
+
+function formatAmountForDisplay(amountStr, restHint) {
+  const scaled = scaleAmountString(amountStr, servingScaleFactor());
+  return displayAmountText(scaled, restHint);
 }
 
 // Parses "2 cups arugula" → { amount: '2 cups', rest: 'arugula' }
@@ -2766,7 +3155,7 @@ function boldCompositeSauceBody(body) {
 
   const { amount, rest } = parseIngredient(body);
   if (amount) {
-    const disp = displayAmountText(amount, rest);
+    const disp = formatAmountForDisplay(amount, rest);
     return `<span class="amount">${escapeHtml(disp)}</span> ${boldCompositeSauceBody(rest)}`;
   }
 
@@ -2912,12 +3301,311 @@ function renderIngredient(str) {
   if (!amount) {
     inner = escapeHtml(str);
   } else if (showAmounts) {
-    const disp = displayAmountText(amount, rest);
+    const disp = formatAmountForDisplay(amount, rest);
     inner = `<span class="amount">${escapeHtml(disp)}</span> ${escapeHtml(rest)}`;
   } else {
     inner = escapeHtml(rest);
   }
   return `<li><span class="bullet"></span><span class="ingredient-body">${inner}</span></li>`;
+}
+
+const INGREDIENT_STEP_STOP_PHRASES = new Set([
+  'or',
+  'and',
+  'the',
+  'a',
+  'an',
+  'to',
+  'of',
+  'as',
+  'if',
+  'in',
+  'on',
+  'at',
+  'for',
+  'up',
+  'by',
+]);
+
+/** Strip trailing "(…)" segments from ingredient names, repeatedly. */
+function stripTrailingParentheticals(s) {
+  let t = String(s).trim();
+  let prev;
+  do {
+    prev = t;
+    const m = t.match(/^(.+)\s*\([^()]*\)\s*$/);
+    if (m) t = m[1].trim();
+  } while (t !== prev);
+  return t;
+}
+
+const WEAK_PREP_PREFIX =
+  /^(shredded|thinly|finely|roughly|grated|minced|chopped|diced|cubed|halved|sliced|crushed|packed|bagged|divided|frozen)\s+/i;
+
+const INGREDIENT_DROP_MIDDLE = new Set([
+  'red',
+  'white',
+  'yellow',
+  'green',
+  'black',
+  'fresh',
+  'small',
+  'large',
+  'medium',
+]);
+
+/** Steps often use plural; ingredients often singular — map both ways for the last word only. */
+const LAST_WORD_PLURAL_PAIR = new Map([
+  ['tomato', 'tomatoes'],
+  ['tomatoes', 'tomato'],
+  ['onion', 'onions'],
+  ['onions', 'onion'],
+  ['apple', 'apples'],
+  ['apples', 'apple'],
+  ['peach', 'peaches'],
+  ['peaches', 'peach'],
+  ['pear', 'pears'],
+  ['pears', 'pear'],
+  ['cucumber', 'cucumbers'],
+  ['cucumbers', 'cucumber'],
+  ['carrot', 'carrots'],
+  ['carrots', 'carrot'],
+  ['pepper', 'peppers'],
+  ['peppers', 'pepper'],
+  ['berry', 'berries'],
+  ['berries', 'berry'],
+  ['cherry', 'cherries'],
+  ['cherries', 'cherry'],
+  ['grape', 'grapes'],
+  ['grapes', 'grape'],
+  ['bean', 'beans'],
+  ['beans', 'bean'],
+  ['lime', 'limes'],
+  ['limes', 'lime'],
+  ['lemon', 'lemons'],
+  ['lemons', 'lemon'],
+  ['avocado', 'avocados'],
+  ['avocados', 'avocado'],
+  ['potato', 'potatoes'],
+  ['potatoes', 'potato'],
+]);
+
+const GREENS_STEP_TRIGGER =
+  /\b(romaine|kale|lettuce|arugula|spinach|spring mix|mixed greens|mesclun|butter lettuce|endive|frisée|frisee|radicchio|mixed green)\b/i;
+
+function tokenizePhraseWords(s) {
+  return String(s)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/** Consecutive suffixes; skip windows that start with "or" (from "rotisserie or chicken"). */
+function ingredientSuffixPhrases(words) {
+  const out = [];
+  const n = words.length;
+  for (let i = 0; i < n; i++) {
+    if (words[i].toLowerCase() === 'or') continue;
+    const slice = words.slice(i);
+    const phrase = slice.join(' ');
+    if (phrase.length >= 2 && !INGREDIENT_STEP_STOP_PHRASES.has(phrase.toLowerCase())) out.push(phrase);
+  }
+  return out;
+}
+
+function ingredientDropMiddleVariants(words) {
+  const out = [];
+  if (words.length < 3) return out;
+  for (let j = 1; j < words.length - 1; j++) {
+    if (INGREDIENT_DROP_MIDDLE.has(words[j].toLowerCase())) {
+      out.push([...words.slice(0, j), ...words.slice(j + 1)].join(' '));
+    }
+  }
+  return out;
+}
+
+function ingredientPluralPhraseVariants(phrase) {
+  const parts = tokenizePhraseWords(phrase);
+  if (!parts.length) return [phrase];
+  const last = parts[parts.length - 1];
+  const low = last.toLowerCase();
+  const altLast = LAST_WORD_PLURAL_PAIR.get(low);
+  if (!altLast) return [phrase];
+  const rebuilt = [...parts.slice(0, -1), altLast].join(' ');
+  return rebuilt.toLowerCase() === phrase.toLowerCase() ? [phrase] : [phrase, rebuilt];
+}
+
+function pushPhraseVariants(bucket, phrase) {
+  const p = String(phrase).trim();
+  if (p.length < 2 || INGREDIENT_STEP_STOP_PHRASES.has(p.toLowerCase())) return;
+  bucket.push(p);
+  for (const v of ingredientPluralPhraseVariants(p)) {
+    if (v !== p) bucket.push(v);
+  }
+}
+
+function expandIngredientChunkToPhrases(rawChunk, bucket) {
+  let base = stripTrailingParentheticals(rawChunk.trim());
+  const bases = new Set([base]);
+  const prep = base.replace(WEAK_PREP_PREFIX, '').trim();
+  if (prep && prep !== base) bases.add(prep);
+
+  for (const b of bases) {
+    const comma = b.split(',')[0].trim();
+    const variants = new Set([b]);
+    if (comma !== b) variants.add(comma);
+
+    for (const v of variants) {
+      const words = tokenizePhraseWords(v);
+      for (const suf of ingredientSuffixPhrases(words)) {
+        pushPhraseVariants(bucket, suf);
+        for (const dropped of ingredientDropMiddleVariants(tokenizePhraseWords(suf))) {
+          for (const s2 of ingredientSuffixPhrases(tokenizePhraseWords(dropped))) {
+            pushPhraseVariants(bucket, s2);
+          }
+        }
+      }
+    }
+  }
+}
+
+function maybePushGreensAlias(text, bucket) {
+  if (GREENS_STEP_TRIGGER.test(text)) pushPhraseVariants(bucket, 'greens');
+}
+
+function maybePushBbqAlias(text, bucket) {
+  const t = String(text).trim();
+  if (/^bbq\b/i.test(t)) pushPhraseVariants(bucket, 'BBQ');
+}
+
+function collectIngredientHighlightPhrases(ingredientLines) {
+  const phrases = [];
+  for (const line of ingredientLines) {
+    const sauce = line.match(/^Sauce:\s*(.*)$/i);
+    if (sauce && sauce[1].trim()) {
+      const stripped = stripCompositeSauceAmounts(sauce[1]);
+      for (const part of stripped.split(/\s*\+\s*/)) {
+        const t = part.trim();
+        expandIngredientChunkToPhrases(t, phrases);
+        maybePushBbqAlias(t, phrases);
+      }
+    } else {
+      const { amount, rest } = parseIngredient(line);
+      const raw = (amount ? rest : line).trim();
+      const chunks = raw.includes(' + ') ? splitPlusAtDepthZero(raw) : [raw];
+      for (const ch of chunks) {
+        expandIngredientChunkToPhrases(ch, phrases);
+        maybePushGreensAlias(ch, phrases);
+        maybePushBbqAlias(ch, phrases);
+      }
+    }
+  }
+  const seen = new Set();
+  const out = [];
+  for (const p of phrases) {
+    const low = p.toLowerCase();
+    if (seen.has(low)) continue;
+    if (p.length < 2 || INGREDIENT_STEP_STOP_PHRASES.has(low)) continue;
+    seen.add(low);
+    out.push(p);
+  }
+  return out.sort((a, b) => b.length - a.length);
+}
+
+function buildIngredientPhraseStartPattern(phrase) {
+  const parts = phrase.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return null;
+  return new RegExp(`^${parts.map(escapeRegExp).join('\\s+')}\\b`, 'i');
+}
+
+/** Highlight ingredient names in steps (same accent as quantities when shown). */
+function formatStepLineHtml(stepText, recipe) {
+  const step = String(stepText);
+  const phrases = collectIngredientHighlightPhrases(recipe.ingredients || []);
+  if (!phrases.length) return escapeHtml(step);
+  const patterns = phrases
+    .map((p) => buildIngredientPhraseStartPattern(p))
+    .filter(Boolean);
+  let i = 0;
+  let html = '';
+  while (i < step.length) {
+    let bestLen = 0;
+    const sub = step.slice(i);
+    for (const re of patterns) {
+      const m = sub.match(re);
+      if (m && m[0].length > bestLen) bestLen = m[0].length;
+    }
+    if (bestLen > 0) {
+      const chunk = step.slice(i, i + bestLen);
+      html += `<span class="step-ingredient">${escapeHtml(chunk)}</span>`;
+      i += bestLen;
+    } else {
+      html += escapeHtml(step[i]);
+      i++;
+    }
+  }
+  return html;
+}
+
+function refreshScaledIngredientsList() {
+  const r = RECIPES.find((x) => x.id === selectedId);
+  const listEl = document.getElementById('ingredientsList');
+  if (!r || !listEl || !showAmounts) return;
+  listEl.innerHTML = r.ingredients.map((i) => renderIngredient(i)).join('');
+}
+
+function openServingsModal() {
+  if (!showAmounts) return;
+  const m = document.getElementById('servingsModal');
+  if (!m) return;
+  const r = RECIPES.find((x) => x.id === selectedId);
+  const card = m.querySelector('.servings-modal-card');
+  if (r && card) card.style.setProperty('--detail-accent', ACCENT[r.cuisine] || '#2e86ab');
+  servingsDraft = recipeServings;
+  const s = document.getElementById('servingsSlider');
+  if (s) s.value = String(servingsDraft);
+  const pillNum = document.getElementById('servingsScaleNum');
+  if (pillNum) pillNum.textContent = String(servingsDraft);
+  const titleNum = document.getElementById('servingsModalTitleNum');
+  if (titleNum) titleNum.textContent = String(servingsDraft);
+  const chip = document.getElementById('servingsChipNum');
+  if (chip) chip.textContent = String(servingsDraft);
+  m.removeAttribute('hidden');
+  refreshScaledIngredientsList();
+}
+
+function closeServingsModal() {
+  servingsDraft = null;
+  const m = document.getElementById('servingsModal');
+  if (m) m.setAttribute('hidden', '');
+  const chip = document.getElementById('servingsChipNum');
+  if (chip) chip.textContent = String(recipeServings);
+  refreshScaledIngredientsList();
+}
+
+function applyServingsModal() {
+  const s = document.getElementById('servingsSlider');
+  if (!s) return;
+  recipeServings = Math.min(30, Math.max(2, parseInt(s.value, 10) || recipeServings));
+  servingsDraft = null;
+  const m = document.getElementById('servingsModal');
+  if (m) m.setAttribute('hidden', '');
+  const chip = document.getElementById('servingsChipNum');
+  if (chip) chip.textContent = String(recipeServings);
+  refreshScaledIngredientsList();
+}
+
+function onServingsSliderInput(val) {
+  const n = parseInt(val, 10);
+  if (!Number.isFinite(n)) return;
+  servingsDraft = Math.min(30, Math.max(2, n));
+  const chip = document.getElementById('servingsChipNum');
+  if (chip) chip.textContent = String(servingsDraft);
+  const pillNum = document.getElementById('servingsScaleNum');
+  if (pillNum) pillNum.textContent = String(servingsDraft);
+  const titleNum = document.getElementById('servingsModalTitleNum');
+  if (titleNum) titleNum.textContent = String(servingsDraft);
+  refreshScaledIngredientsList();
 }
 
 function toggleUnits() {
@@ -2971,8 +3659,14 @@ function renderDetail() {
       </div>
       <div class="detail-body">
         <div>
-          <div class="section-heading">
-            <span>🛒</span> Ingredients
+          <div class="section-heading ingredients-heading-row">
+            <div class="section-heading-label">
+              <span>🛒</span> Ingredients
+            </div>
+            <button type="button" class="servings-chip" id="servingsOpenBtn"${showAmounts ? ' ' : ' hidden '}onclick="openServingsModal()" aria-label="Recipe servings" title="Scale by servings">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+              <span id="servingsChipNum">${recipeServings}</span>
+            </button>
           </div>
           <ul id="ingredientsList" class="ingredients-list">
             ${r.ingredients.map(i => renderIngredient(i)).join('')}
@@ -2983,7 +3677,7 @@ function renderDetail() {
             <span>📋</span> Steps
           </div>
           <ul class="steps-list">
-            ${r.steps.map((s, i) => `<li><span class="step-num">${i+1}</span>${s}</li>`).join('')}
+            ${r.steps.map((s, i) => `<li><span class="step-num">${i + 1}</span><span class="step-content">${formatStepLineHtml(s, r)}</span></li>`).join('')}
           </ul>
         </div>
       </div>
@@ -3010,11 +3704,21 @@ function toggleAmounts() {
     if (showAmounts) unitsBtn.removeAttribute('hidden');
     else unitsBtn.setAttribute('hidden', '');
   }
+  const servingsBtn = document.getElementById('servingsOpenBtn');
+  if (servingsBtn) {
+    if (showAmounts) servingsBtn.removeAttribute('hidden');
+    else {
+      servingsBtn.setAttribute('hidden', '');
+      closeServingsModal();
+    }
+  }
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 function selectCategory(cat) {
+  closeServingsModal();
   activeCategory = cat;
+  recipeServings = 2;
   const visible = recipesForCardStrip();
   if (visible.length) selectedId = visible[0].id;
   renderNav();
@@ -3025,8 +3729,10 @@ function selectCategory(cat) {
 function selectBrowseMode(mode) {
   if (mode !== 'cuisine' && mode !== 'flavor' && mode !== 'season') return;
   if (mode === browseMode) return;
+  closeServingsModal();
   browseMode = mode;
   activeCategory = 'All';
+  recipeServings = 2;
   const visible = recipesForCardStrip();
   if (visible.length) selectedId = visible[0].id;
   renderBrowseModeBar();
@@ -3036,6 +3742,8 @@ function selectBrowseMode(mode) {
 }
 
 function selectRecipe(id) {
+  closeServingsModal();
+  recipeServings = 2;
   selectedId = id;
   renderCards();
   renderDetail();
@@ -3046,7 +3754,7 @@ function formatPlainIngredientChunk(ch) {
   if (!t) return '';
   const { amount, rest } = parseIngredient(t);
   if (amount && rest) {
-    const a = displayAmountText(amount, rest);
+    const a = formatAmountForDisplay(amount, rest);
     return `${a} ${rest}`.trim();
   }
   return t;
@@ -3085,21 +3793,7 @@ function ingredientLineForClipboard(str) {
 
   const { amount, rest } = parseIngredient(str);
   if (amount && rest) {
-    return `${displayAmountText(amount, rest)} ${rest}`;
-  }
-  return str;
-}
-
-function ingredientLineForFullCopy(str) {
-  const sauceMatch = str.match(/^Sauce:\s*(.*)$/i);
-  if (sauceMatch) {
-    const body = sauceMatch[1];
-    if (!body.trim()) return str;
-    return 'Sauce: ' + plainSauceBodyFromComposite(body);
-  }
-  const { amount, rest } = parseIngredient(str);
-  if (amount && rest) {
-    return `${displayAmountText(amount, rest)} ${rest}`;
+    return `${formatAmountForDisplay(amount, rest)} ${rest}`;
   }
   return str;
 }
@@ -3112,7 +3806,7 @@ function copyIngredients(id) {
 
 function copyFullRecipe(id) {
   const r = RECIPES.find(x => x.id === id);
-  const lines = r.ingredients.map((i) => '• ' + ingredientLineForFullCopy(i));
+  const lines = r.ingredients.map((i) => '• ' + ingredientLineForClipboard(i));
   const text = `${r.name}\n\nIngredients:\n${lines.join('\n')}\n\nSteps:\n${r.steps.map((s,i) => `${i+1}. ${s}`).join('\n')}`;
   navigator.clipboard.writeText(text).then(() => flash('Full recipe copied!'));
 }
@@ -3146,6 +3840,12 @@ renderBrowseModeBar();
 renderNav();
 renderCards();
 renderDetail();
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const m = document.getElementById('servingsModal');
+  if (m && !m.hasAttribute('hidden')) closeServingsModal();
+});
 </script>
 </body>
 </html>
