@@ -303,6 +303,23 @@
     }
     .copy-btn svg { flex-shrink: 0; }
 
+    /* `[hidden]` alone can lose to `.copy-btn { display: flex }` in some engines */
+    #unitsToggleBtn[hidden] {
+      display: none !important;
+    }
+    #unitsToggleBtn {
+      box-sizing: border-box;
+      width: 7.25rem;
+      justify-content: center;
+      background: var(--text);
+      color: #fff;
+      border-color: var(--text);
+    }
+    #unitsToggleBtn:hover {
+      background: #333;
+      border-color: #333;
+    }
+
     .detail-body {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -2350,6 +2367,345 @@ function renderCards() {
 // ── Render Detail ─────────────────────────────────────────────────────────────
 // ── Amount toggle state ───────────────────────────────────────────────────────
 let showAmounts = false;
+/** `us` shown as "Imperial" (cups/oz). Metric = ml/L + g/kg. @type {'us'|'metric'} */
+let unitMode = 'us';
+const ML_PER_US_TSP = 4.92892159375;
+const ML_PER_US_TBSP = 14.78676478125;
+const ML_PER_US_CUP = 236.5882365;
+const ML_PER_US_PINT = 473.176473;
+const ML_PER_US_QT = 946.352946;
+const G_PER_OZ = 28.349523125;
+
+const UNIT_ALIASES = [
+  ['tablespoons', 'tbsp'],
+  ['tablespoon', 'tbsp'],
+  ['teaspoons', 'tsp'],
+  ['teaspoon', 'tsp'],
+  ['cups', 'cup'],
+  ['ounces', 'oz'],
+  ['ounce', 'oz'],
+  ['pounds', 'lb'],
+  ['pound', 'lb'],
+  ['lbs', 'lb'],
+  ['milliliters', 'ml'],
+  ['milliliter', 'ml'],
+  ['millilitres', 'ml'],
+  ['millilitre', 'ml'],
+  ['liters', 'l'],
+  ['liter', 'l'],
+  ['litres', 'l'],
+  ['litre', 'l'],
+  ['quarts', 'qt'],
+  ['quart', 'qt'],
+  ['pints', 'pint'],
+];
+
+const UNICODE_FRAC = {
+  '¼': 1 / 4,
+  '½': 1 / 2,
+  '¾': 3 / 4,
+  '⅓': 1 / 3,
+  '⅔': 2 / 3,
+  '⅛': 1 / 8,
+  '⅜': 3 / 8,
+  '⅝': 5 / 8,
+  '⅞': 7 / 8,
+};
+
+function parseSingleQuantity(numPart) {
+  let s = String(numPart).trim();
+  if (!s) return null;
+  let total = 0;
+  const uf = s.match(/[¼½¾⅓⅔⅛⅜⅝⅞]/);
+  if (uf) {
+    total += UNICODE_FRAC[uf[0]] || 0;
+    s = s.replace(/[¼½¾⅓⅔⅛⅜⅝⅞]/g, '').trim();
+  }
+  const fracOnly = s.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (fracOnly) {
+    const a = parseInt(fracOnly[1], 10);
+    const b = parseInt(fracOnly[2], 10);
+    if (b) return total + a / b;
+    return null;
+  }
+  const mixed = s.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  if (mixed) {
+    const whole = parseInt(mixed[1], 10);
+    const a = parseInt(mixed[2], 10);
+    const b = parseInt(mixed[3], 10);
+    if (b) return total + whole + a / b;
+    return null;
+  }
+  if (/^\d/.test(s)) {
+    const n = parseFloat(s.replace(/[^\d.]/g, ''));
+    if (!Number.isNaN(n)) return total + n;
+  }
+  if (total) return total;
+  return null;
+}
+
+function parseQuantityValue(numPart) {
+  const trimmed = String(numPart).trim();
+  const rangeSep = /[–\-]/;
+  if (rangeSep.test(trimmed)) {
+    const parts = trimmed.split(rangeSep).map((p) => p.trim()).filter(Boolean);
+    if (parts.length === 2) {
+      const a = parseSingleQuantity(parts[0]);
+      const b = parseSingleQuantity(parts[1]);
+      if (a != null && b != null) return [Math.min(a, b), Math.max(a, b)];
+    }
+  }
+  const one = parseSingleQuantity(trimmed);
+  return one == null ? null : one;
+}
+
+function normalizeUnitToken(unitRaw) {
+  let u = String(unitRaw).toLowerCase().replace(/\.$/, '');
+  for (const [long, short] of UNIT_ALIASES) {
+    if (u === long) return short;
+  }
+  return u;
+}
+
+function splitAmountNumberAndUnit(amountStr) {
+  const s = String(amountStr).trim();
+  /* Longer tokens first so "tbsp" is not parsed as "tsp". */
+  const sorted = [
+    'tablespoons',
+    'tablespoon',
+    'teaspoons',
+    'teaspoon',
+    'milliliters',
+    'milliliter',
+    'millilitres',
+    'millilitre',
+    'cups',
+    'cup',
+    'quarts',
+    'quart',
+    'pounds',
+    'pound',
+    'ounces',
+    'ounce',
+    'pints',
+    'pint',
+    'tbsp',
+    'tsp',
+    'lbs',
+    'lb',
+    'kg',
+    'oz',
+    'ml',
+    'qt',
+    'g',
+    'l',
+  ];
+  const lower = s.toLowerCase();
+  for (const tok of sorted) {
+    if (lower.endsWith(tok)) {
+      const num = s.slice(0, s.length - tok.length).trim();
+      const next = s[s.length - tok.length - 1];
+      if (num && (next === ' ' || next === undefined)) {
+        return { numPart: num, unit: normalizeUnitToken(tok) };
+      }
+    }
+  }
+  return null;
+}
+
+function formatMetricMl(ml) {
+  if (ml >= 1000) {
+    const L = ml / 1000;
+    const t = L >= 10 ? L.toFixed(0) : L.toFixed(1).replace(/\.0$/, '');
+    return `${t} L`;
+  }
+  if (ml < 10) return `${Math.round(ml * 10) / 10} ml`.replace(/\.0$/, '');
+  return `${Math.round(ml)} ml`;
+}
+
+function formatMetricG(g) {
+  if (g >= 1000) {
+    const kg = g / 1000;
+    const t = kg >= 10 ? kg.toFixed(1).replace(/\.0$/, '') : kg.toFixed(2).replace(/\.?0+$/, '');
+    return `${t} kg`;
+  }
+  if (g < 10) return `${Math.round(g * 10) / 10} g`.replace(/\.0$/, '');
+  return `${Math.round(g)} g`;
+}
+
+/** Liquids → metric ml; solids stay volume→g via rough g/cup (recipe sites rarely have perfect densities). */
+function isIngredientLiquid(rest) {
+  const r = String(rest).toLowerCase();
+  if (/\bcream cheese|cottage cheese|ricotta\b/.test(r)) return false;
+  if (/\bwatermelon\b/.test(r)) return false;
+  if (/\b(crumbled|crumbles)\b.*\b(feta|goat|blue)\b|\bfeta crumb|goat cheese|blue cheese crumb\b/.test(r)) return false;
+
+  return (
+    /\b(sauce|dressing|vinaigrette|gravy|glaze|marinade|aioli)\b/.test(r) ||
+    /\b(oil|vinegar|balsamic)\b/.test(r) ||
+    /\b(juice)\b/.test(r) ||
+    /\b(milk|coconut milk|almond milk|oat milk|soy milk)\b/.test(r) ||
+    /\b(buttermilk|half-and-half|heavy cream|whipping cream)\b/.test(r) ||
+    /\b(mayo|mayonnaise|yogurt|greek yogurt)\b/.test(r) ||
+    /\b(sour cream|crema|crème fraîche|crème fraiche)\b/.test(r) ||
+    /\b(honey|syrup|molasses|agave)\b/.test(r) ||
+    /\b(broth|stock)\b/.test(r) ||
+    /\b(wine|sherry|vermouth)\b/.test(r) ||
+    /\b(tamari|soy sauce|fish sauce|oyster sauce)\b/.test(r) ||
+    /\b(worcestershire|hot sauce|sriracha|ketchup|chili crisp)\b/.test(r) ||
+    /\b(bbq|ranch\b|caesar\b|italian dressing|sesame dressing|peanut sauce|nuoc cham|ponzu|hoisin|gochujang|buffalo)\b/.test(r) ||
+    /\b(mirin|rice vinegar|apple cider vinegar|cider vinegar)\b/.test(r) ||
+    /\b(pesto|tahini|hummus)\b/.test(r) ||
+    /\b(in adobo|from adobo|chipotle.*adobo)\b/.test(r) ||
+    /\b(pickle juice|brine)\b/.test(r) ||
+    /\b(maple syrup|sesame oil|olive oil|truffle oil)\b/.test(r) ||
+    /\b(mustard\b.*dressing|dijon vinaigrette)\b/.test(r)
+  );
+}
+
+function gramsPerUsCupForSolid(rest) {
+  const r = String(rest).toLowerCase();
+  if (/\b(lettuce|romaine|kale|spinach|arugula|spring mix|mixed greens|butter lettuce|endive|frisée|frisee|radicchio|mesclun)\b/.test(r)) return 40;
+  if (/\b(cilantro|parsley|basil|mint|dill|chives|thyme|oregano|rosemary|tarragon|microgreens)\b/.test(r)) return 20;
+  if (/\b(scallion|green onion)\b/.test(r)) return 55;
+  if (/\b(chips|croutons|tortilla strips|wonton strips|ramen|pita chips|papdi|breadcrumbs|panko)\b/.test(r)) return 40;
+  if (/\b(chicken|turkey|beef|pork|steak|salmon|tuna|shrimp|bacon|ham|rotisserie|prosciutto|serrano|deli ham)\b/.test(r)) return 140;
+  if (/\b(tofu|tempeh|karaage|fried chicken)\b/.test(r)) return 140;
+  if (/\b(feta|parmesan|mozzarella|cheddar|halloumi|manchego|pecorino|cotija|provolone|gouda|swiss cheese|pearl mozzarella)\b/.test(r)) return 115;
+  if (/\b(beans\b|chickpeas|black beans|kidney beans|lentils|edamame)\b/.test(r)) return 180;
+  if (/\b(quinoa|rice|farro|orzo|pasta|wild rice|barley|vermicelli|noodles? cooked|glass noodles)\b/.test(r)) return 185;
+  if (/\b(egg|eggs|hard-boiled|soft-boiled|poached egg)\b/.test(r)) return 140;
+  if (/\b(walnuts|pecans|almonds|peanuts|pepitas|pistachios|cashews|pine nuts|marcona|candied pecans)\b/.test(r)) return 120;
+  if (/\b(cabbage|carrot|broccoli|cauliflower|cucumber|tomato|pepper|bell pepper|onion|shallot|apple|pear|peach|berries|grapes|potato|squash|beet|zucchini|jalapeño|jalapeno|poblano|corn kernels|peas|snap pea|sugar snap|radish|celery|mushroom|daikon|jicama|asparagus|green bean|beans,|bean sprouts)\b/.test(r)) return 100;
+  if (/\b(avocado)\b/.test(r)) return 150;
+  if (/\b(beets?|potatoes?|sweet potato)\b/.test(r)) return 165;
+  return 110;
+}
+
+/** First segment of a composite ("a + b") so we classify on the right ingredient. */
+function ingredientDescriptorForClassification(rest) {
+  const parts = splitPlusAtDepthZero(String(rest).trim());
+  return parts.length ? parts[0].trim() : String(rest).trim();
+}
+
+/** Metric: US volume → ml if liquid, → g if solid (heuristic); weights stay g/kg. */
+function convertQuantityToMetric(value, unit, rest) {
+  const restStr = rest == null ? '' : String(rest);
+  const classifyOn = ingredientDescriptorForClassification(restStr);
+  const toRangeStr = (fmt, lo, hi) => {
+    if (typeof lo === 'number' && typeof hi === 'number' && lo !== hi) {
+      return `${fmt(lo)}–${fmt(hi)}`;
+    }
+    const v = typeof lo === 'number' ? lo : hi;
+    return fmt(v);
+  };
+
+  const volToMetric = () => {
+    const liquid = isIngredientLiquid(classifyOn);
+    if (liquid) {
+      if (unit === 'tsp') {
+        const toMl = (v) => v * ML_PER_US_TSP;
+        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
+        return formatMetricMl(toMl(value));
+      }
+      if (unit === 'tbsp') {
+        const toMl = (v) => v * ML_PER_US_TBSP;
+        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
+        return formatMetricMl(toMl(value));
+      }
+      if (unit === 'cup') {
+        const toMl = (v) => v * ML_PER_US_CUP;
+        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
+        return formatMetricMl(toMl(value));
+      }
+      if (unit === 'pint') {
+        const toMl = (v) => v * ML_PER_US_PINT;
+        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
+        return formatMetricMl(toMl(value));
+      }
+      if (unit === 'qt') {
+        const toMl = (v) => v * ML_PER_US_QT;
+        if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
+        return formatMetricMl(toMl(value));
+      }
+    }
+    const gPerCup = gramsPerUsCupForSolid(classifyOn);
+    const gPerTbsp = gPerCup / 16;
+    const gPerTsp = gPerCup / 48;
+    if (unit === 'tsp') {
+      const toG = (v) => v * gPerTsp;
+      if (Array.isArray(value)) return toRangeStr(formatMetricG, toG(value[0]), toG(value[1]));
+      return formatMetricG(toG(value));
+    }
+    if (unit === 'tbsp') {
+      const toG = (v) => v * gPerTbsp;
+      if (Array.isArray(value)) return toRangeStr(formatMetricG, toG(value[0]), toG(value[1]));
+      return formatMetricG(toG(value));
+    }
+    if (unit === 'cup') {
+      const toG = (v) => v * gPerCup;
+      if (Array.isArray(value)) return toRangeStr(formatMetricG, toG(value[0]), toG(value[1]));
+      return formatMetricG(toG(value));
+    }
+    if (unit === 'pint') {
+      const toG = (v) => v * gPerCup * 2;
+      if (Array.isArray(value)) return toRangeStr(formatMetricG, toG(value[0]), toG(value[1]));
+      return formatMetricG(toG(value));
+    }
+    if (unit === 'qt') {
+      const toG = (v) => v * gPerCup * 4;
+      if (Array.isArray(value)) return toRangeStr(formatMetricG, toG(value[0]), toG(value[1]));
+      return formatMetricG(toG(value));
+    }
+    return null;
+  };
+
+  if (unit === 'tsp' || unit === 'tbsp' || unit === 'cup' || unit === 'pint' || unit === 'qt') {
+    return volToMetric();
+  }
+  if (unit === 'oz') {
+    const toG = (v) => v * G_PER_OZ;
+    if (Array.isArray(value)) return toRangeStr(formatMetricG, toG(value[0]), toG(value[1]));
+    return formatMetricG(toG(value));
+  }
+  if (unit === 'lb') {
+    const toG = (v) => v * 453.592;
+    if (Array.isArray(value)) return toRangeStr(formatMetricG, toG(value[0]), toG(value[1]));
+    return formatMetricG(toG(value));
+  }
+  if (unit === 'g') {
+    const id = (v) => v;
+    if (Array.isArray(value)) return toRangeStr(formatMetricG, id(value[0]), id(value[1]));
+    return formatMetricG(id(value));
+  }
+  if (unit === 'kg') {
+    const toG = (v) => v * 1000;
+    if (Array.isArray(value)) return toRangeStr(formatMetricG, toG(value[0]), toG(value[1]));
+    return formatMetricG(toG(value));
+  }
+  if (unit === 'ml') {
+    if (Array.isArray(value)) return toRangeStr(formatMetricMl, value[0], value[1]);
+    return formatMetricMl(value);
+  }
+  if (unit === 'l') {
+    const toMl = (v) => v * 1000;
+    if (Array.isArray(value)) return toRangeStr(formatMetricMl, toMl(value[0]), toMl(value[1]));
+    return formatMetricMl(toMl(value));
+  }
+  return null;
+}
+
+function displayAmountText(amountStr, restHint) {
+  if (unitMode === 'us') return amountStr;
+  const sp = splitAmountNumberAndUnit(amountStr);
+  if (!sp) return amountStr;
+  const q = parseQuantityValue(sp.numPart);
+  if (q == null) return amountStr;
+  const value = Array.isArray(q) ? q : q;
+  const converted = convertQuantityToMetric(value, sp.unit, restHint == null ? '' : restHint);
+  if (!converted) return amountStr;
+  return converted;
+}
 
 // Parses "2 cups arugula" → { amount: '2 cups', rest: 'arugula' }
 // Also handles fractions like ¼, ½, ¾ and ranges like "1–2"
@@ -2410,7 +2766,8 @@ function boldCompositeSauceBody(body) {
 
   const { amount, rest } = parseIngredient(body);
   if (amount) {
-    return `<span class="amount">${escapeHtml(amount)}</span> ${boldCompositeSauceBody(rest)}`;
+    const disp = displayAmountText(amount, rest);
+    return `<span class="amount">${escapeHtml(disp)}</span> ${boldCompositeSauceBody(rest)}`;
   }
 
   if (body.startsWith('(')) {
@@ -2555,11 +2912,27 @@ function renderIngredient(str) {
   if (!amount) {
     inner = escapeHtml(str);
   } else if (showAmounts) {
-    inner = `<span class="amount">${escapeHtml(amount)}</span> ${escapeHtml(rest)}`;
+    const disp = displayAmountText(amount, rest);
+    inner = `<span class="amount">${escapeHtml(disp)}</span> ${escapeHtml(rest)}`;
   } else {
     inner = escapeHtml(rest);
   }
   return `<li><span class="bullet"></span><span class="ingredient-body">${inner}</span></li>`;
+}
+
+function toggleUnits() {
+  unitMode = unitMode === 'us' ? 'metric' : 'us';
+  const r = RECIPES.find((x) => x.id === selectedId);
+  const listEl = document.getElementById('ingredientsList');
+  const btn = document.getElementById('unitsToggleBtn');
+  if (!r || !listEl || !btn) {
+    renderDetail();
+    return;
+  }
+  listEl.innerHTML = r.ingredients.map((i) => renderIngredient(i)).join('');
+  const label = btn.querySelector('.units-toggle-label');
+  if (label) label.textContent = unitMode === 'metric' ? 'Metric' : 'Imperial';
+  btn.setAttribute('aria-pressed', unitMode === 'metric' ? 'true' : 'false');
 }
 
 function renderDetail() {
@@ -2579,6 +2952,9 @@ function renderDetail() {
           <h2 class="detail-title">${escapeHtml(r.name)}</h2>
         </div>
         <div class="copy-actions">
+          <button type="button" id="unitsToggleBtn" class="copy-btn"${showAmounts ? ' ' : ' hidden '}aria-pressed="${unitMode === 'metric' ? 'true' : 'false'}" aria-label="Switch between imperial and metric units" onclick="toggleUnits()">
+            <span class="units-toggle-label">${unitMode === 'metric' ? 'Metric' : 'Imperial'}</span>
+          </button>
           <button type="button" id="amountToggleBtn" class="copy-btn toggle-btn ${showAmounts ? 'active' : ''}" onclick="toggleAmounts()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4"/><rect x="9" y="3" width="6" height="5" rx="1"/></svg>
             <span class="toggle-label">${showAmounts ? 'Hide amounts' : 'Show amounts'}</span>
@@ -2616,17 +2992,24 @@ function renderDetail() {
 
 function toggleAmounts() {
   showAmounts = !showAmounts;
+
   const r = RECIPES.find((x) => x.id === selectedId);
   const listEl = document.getElementById('ingredientsList');
   const btn = document.getElementById('amountToggleBtn');
+  const unitsBtn = document.getElementById('unitsToggleBtn');
   if (!r || !listEl || !btn) {
     renderDetail();
     return;
   }
+
   listEl.innerHTML = r.ingredients.map((i) => renderIngredient(i)).join('');
   btn.classList.toggle('active', showAmounts);
   const label = btn.querySelector('.toggle-label');
   if (label) label.textContent = showAmounts ? 'Hide amounts' : 'Show amounts';
+  if (unitsBtn) {
+    if (showAmounts) unitsBtn.removeAttribute('hidden');
+    else unitsBtn.setAttribute('hidden', '');
+  }
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -2658,19 +3041,67 @@ function selectRecipe(id) {
   renderDetail();
 }
 
+function formatPlainIngredientChunk(ch) {
+  const t = ch.trim();
+  if (!t) return '';
+  const { amount, rest } = parseIngredient(t);
+  if (amount && rest) {
+    const a = displayAmountText(amount, rest);
+    return `${a} ${rest}`.trim();
+  }
+  return t;
+}
+
+function plainSauceBodyFromComposite(body) {
+  const chunks = splitPlusAtDepthZero(body.trim());
+  return chunks
+    .map((ch, i) => {
+      let c = ch;
+      if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+      return formatPlainIngredientChunk(c);
+    })
+    .join(' + ');
+}
+
 function ingredientLineForClipboard(str) {
-  if (showAmounts) return str;
+  if (!showAmounts) {
+    const sauceMatch = str.match(/^Sauce:\s*(.*)$/i);
+    if (sauceMatch) {
+      const body = sauceMatch[1];
+      if (!body.trim()) return str;
+      return 'Sauce: ' + stripCompositeSauceAmounts(body);
+    }
+    const { amount, rest } = parseIngredient(str);
+    if (!amount) return str;
+    return rest;
+  }
 
   const sauceMatch = str.match(/^Sauce:\s*(.*)$/i);
   if (sauceMatch) {
     const body = sauceMatch[1];
     if (!body.trim()) return str;
-    return 'Sauce: ' + stripCompositeSauceAmounts(body);
+    return 'Sauce: ' + plainSauceBodyFromComposite(body);
   }
 
   const { amount, rest } = parseIngredient(str);
-  if (!amount) return str;
-  return rest;
+  if (amount && rest) {
+    return `${displayAmountText(amount, rest)} ${rest}`;
+  }
+  return str;
+}
+
+function ingredientLineForFullCopy(str) {
+  const sauceMatch = str.match(/^Sauce:\s*(.*)$/i);
+  if (sauceMatch) {
+    const body = sauceMatch[1];
+    if (!body.trim()) return str;
+    return 'Sauce: ' + plainSauceBodyFromComposite(body);
+  }
+  const { amount, rest } = parseIngredient(str);
+  if (amount && rest) {
+    return `${displayAmountText(amount, rest)} ${rest}`;
+  }
+  return str;
 }
 
 function copyIngredients(id) {
@@ -2681,7 +3112,8 @@ function copyIngredients(id) {
 
 function copyFullRecipe(id) {
   const r = RECIPES.find(x => x.id === id);
-  const text = `${r.name}\n\nIngredients:\n${r.ingredients.map(i => '• ' + i).join('\n')}\n\nSteps:\n${r.steps.map((s,i) => `${i+1}. ${s}`).join('\n')}`;
+  const lines = r.ingredients.map((i) => '• ' + ingredientLineForFullCopy(i));
+  const text = `${r.name}\n\nIngredients:\n${lines.join('\n')}\n\nSteps:\n${r.steps.map((s,i) => `${i+1}. ${s}`).join('\n')}`;
   navigator.clipboard.writeText(text).then(() => flash('Full recipe copied!'));
 }
 
