@@ -592,17 +592,23 @@
     .meal-plan-chip-remove {
       flex-shrink: 0;
       border: none;
-      background: none;
-      padding: 2px;
+      background: transparent;
+      padding: 4px 7px;
+      margin: -2px -4px -2px 0;
       cursor: pointer;
       color: var(--muted);
       font-size: 1rem;
-      border-radius: 4px;
+      border-radius: 999px;
       line-height: 1;
+      transition: background 0.15s ease, color 0.15s ease;
     }
     .meal-plan-chip-remove:hover {
-      color: var(--text);
-      background: rgba(0, 0, 0, 0.06);
+      color: #9b2c2a;
+      background: rgba(199, 61, 58, 0.14);
+    }
+    .meal-plan-chip-remove:focus-visible {
+      outline: 2px solid rgba(199, 61, 58, 0.45);
+      outline-offset: 1px;
     }
     .meal-plan-empty {
       font-size: var(--prose-font-size);
@@ -4589,6 +4595,15 @@ function ingredientLineForClipboard(str) {
   return str;
 }
 
+function ingredientLineForClipboardSingleRecipe(str) {
+  const dressingClipboardMatch = str.match(/^Dressing:\s*(.*)$/i);
+  if (!dressingClipboardMatch) return ingredientLineForClipboard(str);
+  const body = pickDressingBodyFromLine(str);
+  if (!body.trim()) return str;
+  // Single-recipe copy wants no blank line between dressing header and its ingredients.
+  return plainDressingForClipboard(body).replace(/\n\n+/, '\n');
+}
+
 /** Temporarily override globals used by ingredient clipboard formatting (portion scale, etc.). */
 function withClipboardOptions(opts, fn) {
   const prev = {
@@ -4656,8 +4671,25 @@ function copyMealPlanIngredients() {
   if (!r) return;
   const text = withClipboardOptions(
     { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
-    () => r.ingredients.map(ingredientLineForClipboard).join('\n')
-  ).trim();
+    () => {
+      const saladLines = [];
+      /** @type {string[]} */
+      const dressingBlocks = [];
+      for (const ing of r.ingredients) {
+        const rendered = ingredientLineForClipboardSingleRecipe(ing);
+        if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
+        else saladLines.push(String(rendered || '').trim());
+      }
+      const out = [];
+      for (const l of saladLines.filter(Boolean)) out.push(l);
+      if (dressingBlocks.length) {
+        // One blank line between last salad ingredient and the dressing line.
+        out.push('');
+        out.push(...dressingBlocks);
+      }
+      return out.join('\n').trimEnd() + '\n';
+    }
+  );
   navigator.clipboard.writeText(text).then(() => flash('Copied ingredients!'));
 }
 
@@ -4982,7 +5014,23 @@ function copyMealPlanFullRecipes() {
 
 function copyIngredients(id) {
   const r = RECIPES.find((x) => x.id === id);
-  const text = r.ingredients.map(ingredientLineForClipboard).join('\n');
+  const text = withClipboardOptions({ recipePortions, showAmounts, unitMode }, () => {
+    const saladLines = [];
+    /** @type {string[]} */
+    const dressingBlocks = [];
+    for (const ing of r.ingredients) {
+      const rendered = ingredientLineForClipboardSingleRecipe(ing);
+      if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
+      else saladLines.push(String(rendered || '').trim());
+    }
+    const out = [];
+    for (const l of saladLines.filter(Boolean)) out.push(l);
+    if (dressingBlocks.length) {
+      out.push('');
+      out.push(...dressingBlocks);
+    }
+    return out.join('\n').trimEnd() + '\n';
+  });
   navigator.clipboard.writeText(text).then(() => flash('Ingredients copied!'));
 }
 
