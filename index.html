@@ -4684,6 +4684,7 @@ function formatPlainIngredientChunk(ch) {
   if (!t) return '';
   const { amount, rest } = parseIngredient(t);
   if (amount && rest) {
+    if (!showAmounts) return String(rest).trim();
     const a = formatAmountForDisplay(amount, rest);
     return `${a} ${rest}`.trim();
   }
@@ -4705,26 +4706,33 @@ function plainSubrecipeItemLinesOnly(innerRaw, trailingAfter) {
   return lines;
 }
 
-/** One dressing arm for clipboard: “Label:” on its own line, then ingredients stacked. */
-function plainDressingComboPartBlock(chunk) {
-  let c = chunk.trim();
-  const region = findFirstBalancedParenRegion(c);
-  if (!region) return formatPlainIngredientChunk(c);
-  const label = displayComboSegmentLabel(dressingChunkLabel(c));
-  const inner = c.slice(region.pIdx + 1, region.end);
-  const after = c.slice(region.end + 1).trim();
-  const items = plainSubrecipeItemLinesOnly(inner, after);
-  if (!items.length) return `${label}:`;
-  return [`${label}:`, ...items].join('\n');
-}
-
 function normalizeDressingChunkForClipboard(ch, i) {
   let c = String(ch).trim();
   if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
   return c;
 }
 
-/** Plain-text dressing for copy: title line, then one line per component (or recipe), like other ingredients. */
+/** One DIY subsection for clipboard: “DIY Label:” then ingredient lines. */
+function plainDressingDiyBlockFromChunk(chunk, chunkIndex) {
+  const c = normalizeDressingChunkForClipboard(String(chunk).trim(), chunkIndex);
+  if (!c) return '';
+  const region = findFirstBalancedParenRegion(c);
+  const label = displayComboSegmentLabel(dressingChunkLabel(c));
+  if (!region) {
+    const line = formatPlainIngredientChunk(c);
+    return line ? `DIY ${label}:\n${line}` : `DIY ${label}:`;
+  }
+  const inner = c.slice(region.pIdx + 1, region.end);
+  const after = c.slice(region.end + 1).trim();
+  const items = plainSubrecipeItemLinesOnly(inner, after);
+  if (!items.length) return `DIY ${label}:`;
+  return `DIY ${label}:\n${items.join('\n')}`;
+}
+
+/**
+ * Plain-text dressing for copy: combo title with other ingredients (“Dressing: A + B”), blank line,
+ * then each arm as “DIY Label:” + recipe lines.
+ */
 function plainDressingForClipboard(body) {
   const trimmed = body.trim();
   const rawChunks = splitPlusAtDepthZero(trimmed);
@@ -4736,18 +4744,15 @@ function plainDressingForClipboard(body) {
     const region = findFirstBalancedParenRegion(c);
     if (region) {
       const label = displayComboSegmentLabel(dressingChunkLabel(c));
-      const inner = c.slice(region.pIdx + 1, region.end);
-      const after = c.slice(region.end + 1).trim();
-      const items = plainSubrecipeItemLinesOnly(inner, after);
-      const body = items.length ? items.join('\n') : '';
-      return body ? `Dressing: ${label}\n\n${body}` : `Dressing: ${label}`;
+      const diy = plainDressingDiyBlockFromChunk(c, 0);
+      return `Dressing: ${label}\n\n${diy}`;
     }
     return `Dressing: ${formatPlainIngredientChunk(c)}`;
   }
 
   const title = chunks.map((c) => displayComboSegmentLabel(dressingChunkLabel(c))).join(' + ');
-  const blocks = chunks.map((c) => plainDressingComboPartBlock(c));
-  return `Dressing: ${title}\n\n${blocks.join('\n\n')}`;
+  const diyBlocks = chunks.map((c, i) => plainDressingDiyBlockFromChunk(c, i)).filter(Boolean);
+  return `Dressing: ${title}\n\n${diyBlocks.join('\n\n')}`;
 }
 
 function ingredientLineForClipboard(str) {
@@ -4776,8 +4781,7 @@ function ingredientLineForClipboardSingleRecipe(str) {
   if (!dressingClipboardMatch) return ingredientLineForClipboard(str);
   const body = pickDressingBodyFromLine(str);
   if (!body.trim()) return str;
-  // Single-recipe copy wants no blank line between dressing header and its ingredients.
-  return plainDressingForClipboard(body).replace(/\n\n+/, '\n');
+  return plainDressingForClipboard(body);
 }
 
 /** Temporarily override globals used by ingredient clipboard formatting (portion scale, etc.). */
@@ -5188,19 +5192,27 @@ function consolidateIngredientLinesForCopy(lines, unitMode) {
     if (!items || !items.length) continue;
     items.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     out.push(`${cat}:`);
-    for (const it of items) out.push(`- ${it}`);
+    for (const it of items) out.push(it);
     out.push('');
   }
 
   // Always render dressings at the very end, and do not duplicate their components elsewhere.
   if (dressingBlocks.length) {
     out.push('Dressings:');
+    out.push('');
     for (const block of dressingBlocks) {
       const lines = block
         .split('\n')
         .map((s) => s.trim())
         .filter(Boolean);
       if (!lines.length) continue;
+      const hasDiyHeaders = lines.some((l) => /^DIY\s+.+\:/i.test(l));
+      if (hasDiyHeaders && /^dressing:\s*/i.test(lines[0])) {
+        out.push(lines.join('\n'));
+        out.push('');
+        continue;
+      }
+
       const titleLine = lines[0].startsWith('Dressing:') ? lines[0] : `Dressing: ${lines[0]}`;
       const title = titleLine.replace(/^Dressing:\s*/i, '').trim();
 
@@ -5209,7 +5221,7 @@ function consolidateIngredientLinesForCopy(lines, unitMode) {
         .slice(1)
         .filter((l) => l && !/^[^:]{1,40}:\s*$/.test(l));
 
-      out.push(`- ${title}`);
+      out.push(`Dressing: ${title}`);
       out.push(`If you'd like to make it yourself:`);
 
       /** @type {Map<string, string[]>} */
@@ -5252,8 +5264,7 @@ function copyMealPlanIngredientsConsolidated() {
     const r = RECIPES.find((x) => x.id === id);
     if (!r) continue;
     const blockLines = withClipboardOptions(
-      // Consolidation requires amounts; we always include amounts for the consolidated copy.
-      { recipePortions: mealPlanPortions, showAmounts: true, unitMode: mealPlanUnitMode },
+      { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
       () => r.ingredients.map(ingredientLineForClipboard)
     );
     if (!blockLines || !blockLines.length) continue;
@@ -5284,8 +5295,8 @@ function copyMealPlanFullRecipes() {
     const body = withClipboardOptions(
       { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
       () => {
-        const lines = r.ingredients.flatMap((i) => toBulletedIngredientLines(ingredientLineForClipboard(i)));
-        return `${r.name}\n\nIngredients:\n${lines.join('\n')}\n\nSteps:\n${r.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
+        const ingredientsBlock = ingredientsBlockForFullRecipeCopy(r);
+        return `${r.name}\n\nIngredients:\n${ingredientsBlock}\n\nSteps:\n${r.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
       }
     );
     parts.push(body);
@@ -5307,23 +5318,30 @@ function copyIngredients(id) {
     }
     const out = [];
     for (const l of saladLines.filter(Boolean)) out.push(l);
-    if (dressingBlocks.length) {
-      out.push('');
-      out.push(...dressingBlocks);
-    }
+    if (dressingBlocks.length) for (const b of dressingBlocks) out.push(b);
     return out.join('\n').trimEnd() + '\n';
   });
   navigator.clipboard.writeText(text).then(() => flash('Ingredients copied!'));
 }
 
-function toBulletedIngredientLines(clipboardBlock) {
-  return clipboardBlock.split('\n').map((line) => (line.length ? '• ' + line : line));
+/** Full-recipe copy: plain ingredient lines (no bullets), same dressing / DIY layout as copy ingredients. */
+function ingredientsBlockForFullRecipeCopy(r) {
+  const saladLines = [];
+  const dressingBlocks = [];
+  for (const ing of r.ingredients) {
+    const rendered = ingredientLineForClipboardSingleRecipe(ing);
+    if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
+    else saladLines.push(String(rendered || '').trim());
+  }
+  const ingParts = [...saladLines.filter(Boolean)];
+  if (dressingBlocks.length) ingParts.push(...dressingBlocks);
+  return ingParts.join('\n');
 }
 
 function copyFullRecipe(id) {
   const r = RECIPES.find(x => x.id === id);
-  const lines = r.ingredients.flatMap((i) => toBulletedIngredientLines(ingredientLineForClipboard(i)));
-  const text = `${r.name}\n\nIngredients:\n${lines.join('\n')}\n\nSteps:\n${r.steps.map((s,i) => `${i+1}. ${s}`).join('\n')}`;
+  const ingredientsBlock = ingredientsBlockForFullRecipeCopy(r);
+  const text = `${r.name}\n\nIngredients:\n${ingredientsBlock}\n\nSteps:\n${r.steps.map((s,i) => `${i+1}. ${s}`).join('\n')}`;
   navigator.clipboard.writeText(text).then(() => flash('Full recipe copied!'));
 }
 
