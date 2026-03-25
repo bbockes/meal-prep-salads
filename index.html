@@ -567,6 +567,9 @@
       font-weight: 600;
       color: var(--text);
     }
+    .dressing-heading .dressing-single-name {
+      text-transform: lowercase;
+    }
     .copy-btn svg { flex-shrink: 0; }
 
     /* `[hidden]` alone can lose to `.copy-btn { display: flex }` in some engines */
@@ -3971,7 +3974,7 @@ function renderSingleDressingBlockHtml(chunk) {
   if (!region) {
     return (
       '<span class="dressing-heading dressing-heading-single">' +
-      '<span class="dressing-prefix">Dressing:</span> ' +
+      '<span class="dressing-prefix">dressing:</span> ' +
       `<span class="dressing-single-name">${boldCompositeDressingBody(c)}</span></span>`
     );
   }
@@ -3982,7 +3985,7 @@ function renderSingleDressingBlockHtml(chunk) {
   if (!label) {
     return (
       '<span class="dressing-heading dressing-heading-single">' +
-      '<span class="dressing-prefix">Dressing:</span> ' +
+      '<span class="dressing-prefix">dressing:</span> ' +
       `<span class="dressing-single-name">${boldCompositeDressingBody(c)}</span></span>`
     );
   }
@@ -3991,7 +3994,7 @@ function renderSingleDressingBlockHtml(chunk) {
   if (after) body += `<span class="dressing-tail"> ${boldCompositeDressingBody(after)}</span>`;
   return (
     '<span class="dressing-heading dressing-heading-single">' +
-    '<span class="dressing-prefix">Dressing:</span> ' +
+    '<span class="dressing-prefix">dressing:</span> ' +
     `<span class="dressing-single-name">${boldCompositeDressingBody(label)}</span></span>` +
     `<span class="dressing-stack dressing-stack-single">${body}</span>`
   );
@@ -4029,18 +4032,20 @@ function renderDressingBlockHtml(body) {
     .map((ch, i) => {
       let c = ch.trim();
       if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
-      return escapeHtml(displayComboSegmentLabel(dressingChunkLabel(c)));
+      return escapeHtml(displayComboSegmentLabel(dressingChunkLabel(c)).toLowerCase());
     })
     .join(' + ');
+  // Only expand arms that include a “( … )” sub-recipe; simple adds (garlic, lemon, olive oil) stay in the title only.
   const partLines = chunks
     .map((ch, i) => {
       let c = ch.trim();
       if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+      if (!findFirstBalancedParenRegion(c)) return '';
       return formatDressingComboPartLine(c);
     })
     .join('');
   return (
-    `<span class="dressing-heading dressing-heading-combo"><span class="dressing-prefix">Dressing:</span> ` +
+    `<span class="dressing-heading dressing-heading-combo"><span class="dressing-prefix">dressing:</span> ` +
     `<span class="dressing-combo-names">${comboTitle}</span></span>` +
     `<span class="dressing-stack dressing-stack-combo">${partLines}</span>`
   );
@@ -4729,15 +4734,23 @@ function plainDressingDiyBlockFromChunk(chunk, chunkIndex) {
   return `DIY ${label}:\n${items.join('\n')}`;
 }
 
+/** Lowercase “dressing:” prefix and title for lists; DIY lines stay `DIY Label:`. */
+function dressingHeadlineLowerForClipboard(raw) {
+  const s = String(raw || '').trim();
+  const m = s.match(/^dressing:\s*(.*)$/i);
+  const body = (m ? m[1] : s).trim().toLowerCase();
+  return body ? `dressing: ${body}` : 'dressing:';
+}
+
 /**
- * Plain-text dressing for copy: combo title with other ingredients (“Dressing: A + B”), blank line,
+ * Plain-text dressing for copy: “dressing:” + lowered title, blank line,
  * then each arm as “DIY Label:” + recipe lines.
  */
 function plainDressingForClipboard(body) {
   const trimmed = body.trim();
   const rawChunks = splitPlusAtDepthZero(trimmed);
   const chunks = rawChunks.map((ch, i) => normalizeDressingChunkForClipboard(ch, i)).filter(Boolean);
-  if (!chunks.length) return `Dressing: ${trimmed}`;
+  if (!chunks.length) return dressingHeadlineLowerForClipboard(trimmed);
 
   if (chunks.length === 1) {
     const c = chunks[0];
@@ -4745,14 +4758,22 @@ function plainDressingForClipboard(body) {
     if (region) {
       const label = displayComboSegmentLabel(dressingChunkLabel(c));
       const diy = plainDressingDiyBlockFromChunk(c, 0);
-      return `Dressing: ${label}\n\n${diy}`;
+      return `${dressingHeadlineLowerForClipboard(label)}\n\n${diy}`;
     }
-    return `Dressing: ${formatPlainIngredientChunk(c)}`;
+    return dressingHeadlineLowerForClipboard(formatPlainIngredientChunk(c));
   }
 
   const title = chunks.map((c) => displayComboSegmentLabel(dressingChunkLabel(c))).join(' + ');
-  const diyBlocks = chunks.map((c, i) => plainDressingDiyBlockFromChunk(c, i)).filter(Boolean);
-  return `Dressing: ${title}\n\n${diyBlocks.join('\n\n')}`;
+  /** @type {string[]} */
+  const diyBlocks = [];
+  for (let i = 0; i < chunks.length; i++) {
+    if (!findFirstBalancedParenRegion(chunks[i])) continue;
+    const block = plainDressingDiyBlockFromChunk(chunks[i], i);
+    if (block) diyBlocks.push(block);
+  }
+  const head = dressingHeadlineLowerForClipboard(title);
+  if (!diyBlocks.length) return head;
+  return `${head}\n\n${diyBlocks.join('\n\n')}`;
 }
 
 function ingredientLineForClipboard(str) {
@@ -4850,38 +4871,7 @@ function copyMealPlanIngredients() {
     flash('No salads in your meal plan yet.');
     return;
   }
-  // Default behavior: when the plan has multiple recipes, copy a consolidated, categorized list.
-  if (mealPlanIds.length > 1) {
-    copyMealPlanIngredientsConsolidated();
-    return;
-  }
-
-  // Single recipe: keep it simple (no title).
-  const id = mealPlanIds[0];
-  const r = RECIPES.find((x) => x.id === id);
-  if (!r) return;
-  const text = withClipboardOptions(
-    { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
-    () => {
-      const saladLines = [];
-      /** @type {string[]} */
-      const dressingBlocks = [];
-      for (const ing of r.ingredients) {
-        const rendered = ingredientLineForClipboardSingleRecipe(ing);
-        if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
-        else saladLines.push(String(rendered || '').trim());
-      }
-      const out = [];
-      for (const l of saladLines.filter(Boolean)) out.push(l);
-      if (dressingBlocks.length) {
-        // One blank line between last salad ingredient and the dressing line.
-        out.push('');
-        out.push(...dressingBlocks);
-      }
-      return out.join('\n').trimEnd() + '\n';
-    }
-  );
-  navigator.clipboard.writeText(text).then(() => flash('Copied ingredients!'));
+  copyMealPlanIngredientsConsolidated();
 }
 
 function normalizeIngredientRestForKey(rest) {
@@ -5104,6 +5094,60 @@ function formatBaseQuantityForUnitMode(base, unitMode) {
   return null;
 }
 
+const INGREDIENT_AISLE_ORDER = ['Greens', 'Vegetables', 'Fruit', 'Proteins', 'Dairy', 'Spices & Herbs', 'Grains', 'Nuts & Seeds', 'Pantry', 'Other'];
+
+/** Sort plain ingredient lines (one string per line) by aisle then name. */
+function sortIngredientLinesByAisle(lines) {
+  const byCat = new Map();
+  for (const line of lines) {
+    const t = String(line || '').trim();
+    if (!t) continue;
+    const { rest } = parseIngredient(t);
+    const canon = canonicalizeIngredientRest(rest == null ? t : rest);
+    const cat = ingredientCategoryForRestKey(canon.key);
+    const arr = byCat.get(cat) || [];
+    arr.push(t);
+    byCat.set(cat, arr);
+  }
+  const out = [];
+  for (const cat of INGREDIENT_AISLE_ORDER) {
+    const items = byCat.get(cat);
+    if (!items || !items.length) continue;
+    items.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    out.push(...items);
+  }
+  return out;
+}
+
+/** Drop duplicate lines that map to the same canonical ingredient key (keeps first, aisle order preserved). */
+function dedupeIngredientLinesByKey(lines) {
+  const seen = new Set();
+  const out = [];
+  for (const it of lines) {
+    const t = String(it || '').trim();
+    if (!t) continue;
+    const { rest } = parseIngredient(t);
+    const canon = canonicalizeIngredientRest(rest == null ? t : rest);
+    const key = canon.key ? String(canon.key).toLowerCase() : t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+  }
+  return out;
+}
+
+/** Blank line before each `DIY …:` header after the first (combo dressings in consolidated copy). */
+function joinDiyBlockLinesWithSectionBreaks(diyLines) {
+  const out = [];
+  for (let i = 0; i < diyLines.length; i++) {
+    const line = String(diyLines[i] || '').trim();
+    if (!line) continue;
+    if (out.length && /^DIY\s+.+\:/i.test(line)) out.push('');
+    out.push(line);
+  }
+  return out.join('\n');
+}
+
 function consolidateIngredientLinesForCopy(lines, unitMode) {
   /** @type {Map<string, {base: {family: string, baseUnit: string, baseValue: number}, restKey: string, display: string}>} */
   const sums = new Map();
@@ -5179,79 +5223,83 @@ function consolidateIngredientLinesForCopy(lines, unitMode) {
     pushCat(cat, line);
   }
 
-  // Dressings get their own section and are excluded from all other categories.
-  const dressingBlocks = dressings
-    .map((s) => String(s || '').trim())
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  // Dressings get their own section and are excluded from all other categories (meal-plan order, not sorted).
+  const dressingBlocks = dressings.map((s) => String(s || '').trim()).filter(Boolean);
 
-  const CAT_ORDER = ['Greens', 'Vegetables', 'Fruit', 'Proteins', 'Dairy', 'Spices & Herbs', 'Grains', 'Nuts & Seeds', 'Pantry', 'Other'];
-  const out = [];
-  for (const cat of CAT_ORDER) {
+  /** @type {string[]} */
+  const saladItems = [];
+  for (const cat of INGREDIENT_AISLE_ORDER) {
     const items = byCat.get(cat);
     if (!items || !items.length) continue;
     items.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    out.push(`${cat}:`);
-    for (const it of items) out.push(it);
-    out.push('');
+    for (const it of items) saladItems.push(it);
   }
 
-  // Always render dressings at the very end, and do not duplicate their components elsewhere.
-  if (dressingBlocks.length) {
-    out.push('Dressings:');
-    out.push('');
-    for (const block of dressingBlocks) {
-      const lines = block
-        .split('\n')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (!lines.length) continue;
-      const hasDiyHeaders = lines.some((l) => /^DIY\s+.+\:/i.test(l));
-      if (hasDiyHeaders && /^dressing:\s*/i.test(lines[0])) {
-        out.push(lines.join('\n'));
-        out.push('');
-        continue;
-      }
+  const saladListed = dedupeIngredientLinesByKey(saladItems);
 
-      const titleLine = lines[0].startsWith('Dressing:') ? lines[0] : `Dressing: ${lines[0]}`;
-      const title = titleLine.replace(/^Dressing:\s*/i, '').trim();
+  /** @type {string[]} */
+  const dressingHeadlines = [];
+  /** @type {string[]} */
+  const dressingDiyBodies = [];
 
-      // Drop sub-headings like "Ranch:" / "Herbs:" inside the dressing blocks.
-      const ingredients = lines
-        .slice(1)
-        .filter((l) => l && !/^[^:]{1,40}:\s*$/.test(l));
+  for (const block of dressingBlocks) {
+    const lines = block
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!lines.length) continue;
 
-      out.push(`Dressing: ${title}`);
-      out.push(`If you'd like to make it yourself:`);
+    const titleLine = dressingHeadlineLowerForClipboard(lines[0]);
+    dressingHeadlines.push(titleLine);
 
-      /** @type {Map<string, string[]>} */
-      const diyByCat = new Map();
-      const diyOrder = ['Vegetables', 'Fruit', 'Proteins', 'Dairy', 'Spices & Herbs', 'Nuts & Seeds', 'Grains', 'Pantry', 'Other'];
-      const diyPush = (cat, s) => {
-        const arr = diyByCat.get(cat) || [];
-        arr.push(s);
-        diyByCat.set(cat, arr);
-      };
-      for (const ing of ingredients) {
-        const t = String(ing || '').trim();
-        if (!t) continue;
-        const { rest } = parseIngredient(t);
-        const canon = canonicalizeIngredientRest(rest == null ? t : rest);
-        const cat = ingredientCategoryForRestKey(canon.key);
-        diyPush(cat, t);
-      }
-      for (const cat of diyOrder) {
-        const items = diyByCat.get(cat);
-        if (!items || !items.length) continue;
-        items.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-        // Order by aisle, but don't print aisle headers.
-        for (const it of items) out.push(it);
-      }
-      out.push('');
+    const firstDiyIdx = lines.findIndex((l) => /^DIY\s+.+\:/i.test(l));
+    if (firstDiyIdx >= 0) {
+      dressingDiyBodies.push(joinDiyBlockLinesWithSectionBreaks(lines.slice(firstDiyIdx)));
+      continue;
     }
-    out.push('');
+
+    const title = titleLine.replace(/^dressing:\s*/i, '').trim();
+    const ingredients = lines
+      .slice(1)
+      .filter((l) => l && !/^[^:]{1,40}:\s*$/.test(l));
+
+    /** @type {Map<string, string[]>} */
+    const diyByCat = new Map();
+    const diyPush = (cat, s) => {
+      const arr = diyByCat.get(cat) || [];
+      arr.push(s);
+      diyByCat.set(cat, arr);
+    };
+    for (const ing of ingredients) {
+      const t = String(ing || '').trim();
+      if (!t) continue;
+      const { rest } = parseIngredient(t);
+      const canon = canonicalizeIngredientRest(rest == null ? t : rest);
+      const cat = ingredientCategoryForRestKey(canon.key);
+      diyPush(cat, t);
+    }
+    const diyOrdered = [];
+    for (const cat of INGREDIENT_AISLE_ORDER) {
+      const items = diyByCat.get(cat);
+      if (!items || !items.length) continue;
+      items.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      for (const it of items) diyOrdered.push(it);
+    }
+    const diyPart = diyOrdered.length ? dedupeIngredientLinesByKey(diyOrdered).join('\n') : '';
+    if (diyPart) dressingDiyBodies.push(diyPart);
   }
-  return out.join('\n').trim();
+
+  const outParts = [];
+  if (saladListed.length) outParts.push(saladListed.join('\n'));
+  if (dressingHeadlines.length) {
+    const headChunk = dressingHeadlines.join('\n');
+    if (outParts.length) outParts[outParts.length - 1] += '\n' + headChunk;
+    else outParts.push(headChunk);
+  }
+  const diyJoined = dressingDiyBodies.filter(Boolean).join('\n\n');
+  if (diyJoined) outParts.push(diyJoined);
+
+  return outParts.join('\n\n').trim();
 }
 
 function copyMealPlanIngredientsConsolidated() {
@@ -5280,7 +5328,7 @@ function copyMealPlanIngredientsConsolidated() {
     }
   }
   const text = consolidateIngredientLinesForCopy(lines, mealPlanUnitMode).trim();
-  navigator.clipboard.writeText(text).then(() => flash('Copied consolidated ingredients!'));
+  navigator.clipboard.writeText(text).then(() => flash('Copied ingredients!'));
 }
 
 function copyMealPlanFullRecipes() {
@@ -5295,7 +5343,7 @@ function copyMealPlanFullRecipes() {
     const body = withClipboardOptions(
       { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
       () => {
-        const ingredientsBlock = ingredientsBlockForFullRecipeCopy(r);
+        const ingredientsBlock = ingredientsBlockForFullRecipeCopy(r, { mealPlanCopy: true });
         return `${r.name}\n\nIngredients:\n${ingredientsBlock}\n\nSteps:\n${r.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
       }
     );
@@ -5316,16 +5364,19 @@ function copyIngredients(id) {
       if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
       else saladLines.push(String(rendered || '').trim());
     }
-    const out = [];
-    for (const l of saladLines.filter(Boolean)) out.push(l);
+    const out = [...sortIngredientLinesByAisle(saladLines.filter(Boolean))];
     if (dressingBlocks.length) for (const b of dressingBlocks) out.push(b);
     return out.join('\n').trimEnd() + '\n';
   });
   navigator.clipboard.writeText(text).then(() => flash('Ingredients copied!'));
 }
 
-/** Full-recipe copy: plain ingredient lines (no bullets), same dressing / DIY layout as copy ingredients. */
-function ingredientsBlockForFullRecipeCopy(r) {
+/**
+ * Full-recipe copy: plain lines (no bullets). Salad lines (non-dressing) are grocery-aisle ordered; dressing blocks stay in recipe order.
+ * `opts.mealPlanCopy`: also de-dupes salad lines by ingredient key; dressing follows last salad line with no blank line (DIY blocks still use internal spacing).
+ */
+function ingredientsBlockForFullRecipeCopy(r, opts) {
+  const mealPlan = opts && opts.mealPlanCopy;
   const saladLines = [];
   const dressingBlocks = [];
   for (const ing of r.ingredients) {
@@ -5333,7 +5384,15 @@ function ingredientsBlockForFullRecipeCopy(r) {
     if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
     else saladLines.push(String(rendered || '').trim());
   }
-  const ingParts = [...saladLines.filter(Boolean)];
+  const salad = saladLines.filter(Boolean);
+  if (mealPlan) {
+    const saladSorted = dedupeIngredientLinesByKey(sortIngredientLinesByAisle(salad));
+    const saladPart = saladSorted.join('\n');
+    if (!dressingBlocks.length) return saladPart;
+    if (!saladPart) return dressingBlocks.join('\n\n');
+    return `${saladPart}\n${dressingBlocks.join('\n\n')}`;
+  }
+  const ingParts = [...sortIngredientLinesByAisle(salad)];
   if (dressingBlocks.length) ingParts.push(...dressingBlocks);
   return ingParts.join('\n');
 }
