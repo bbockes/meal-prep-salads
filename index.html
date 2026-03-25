@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#f4f3ef" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>Super Simple Meal Prep Salads</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232d8650'/%3E%3Cpath fill='%23fff' d='M9 15c1.5-3 4-5 7-5s5.5 2 7 5l-7 11-7-11z'/%3E%3C/svg%3E" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%232d8650'/%3E%3Cpath fill='%23fff' d='M50 85c9-34 45-34 54 0 9 34-27 62-27 62s-36-28-27-62z'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Raleway:wght@700;800&display=swap" rel="stylesheet" />
@@ -39,11 +43,81 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      min-height: 100dvh;
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    .copy-btn:focus-visible,
+    .servings-chip:focus-visible,
+    .servings-modal-close:focus-visible,
+    .servings-btn-cancel:focus-visible,
+    .servings-btn-apply:focus-visible,
+    .servings-slider:focus-visible {
+      outline: 2px solid var(--text);
+      outline-offset: 2px;
+    }
+
+    nav button:focus-visible,
+    .browse-mode button:focus-visible,
+    .browse-smart-picks-tip-btn:focus-visible {
+      outline: 2px solid var(--text);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .recipe-card:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 2px;
+      z-index: 1;
+    }
+
+    .copy-btn.copy-btn--success:not(#unitsToggleBtn):not(#mealPlanUnitsToggleBtn) {
+      border-color: #2d8650;
+      background: rgba(45, 134, 80, 0.12);
+      color: #14532d;
+    }
+
+    @media (pointer: coarse) {
+      nav button {
+        min-height: 44px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+      }
+      .browse-mode-toggle button {
+        min-height: 44px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+      .browse-smart-picks-btn,
+      .meal-prep-mode-btn {
+        min-height: 44px;
+      }
+      .copy-btn,
+      .servings-chip {
+        min-height: 44px;
+      }
+      .meal-plan-card-ctl {
+        width: 44px;
+        height: 44px;
+      }
     }
 
     /* ── Header ── */
     header {
-      padding: 28px 48px 0;
+      padding: max(28px, env(safe-area-inset-top, 0px)) 48px 0;
       display: flex;
       align-items: baseline;
       gap: 12px;
@@ -159,6 +233,41 @@
     .browse-mode-tail {
       display: contents;
     }
+
+    .browse-smart-picks-hint {
+      flex: 1 1 100%;
+      width: 100%;
+      margin: 0;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    @media (min-width: 1025px) {
+      .browse-smart-picks-hint {
+        display: none;
+      }
+    }
+
+    .browse-context-banner {
+      margin: 0;
+      padding: 9px 48px 11px;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--surface) 88%, var(--bg));
+      border-bottom: 1px solid var(--border);
+      box-sizing: border-box;
+    }
+    .browse-context-banner[hidden] {
+      display: none !important;
+    }
+    nav.nav--smart-picks {
+      opacity: 0.86;
+    }
+    nav.nav--smart-picks button {
+      transition: opacity 0.15s ease;
+    }
+
     .meal-prep-mode-btn {
       font-family: 'DM Sans', sans-serif;
       font-size: 0.84rem;
@@ -351,19 +460,36 @@
     .card-strip-wrapper {
       padding: 16px 48px 0;
       overflow: visible;
+      position: relative;
+    }
+    .card-strip-wrapper::after {
+      content: '';
+      position: absolute;
+      top: 16px;
+      bottom: 6px;
+      right: 48px;
+      width: max(20px, env(safe-area-inset-right, 0px));
+      max-width: 36px;
+      pointer-events: none;
+      z-index: 3;
+      background: linear-gradient(to left, var(--bg), transparent);
     }
     .card-strip {
       display: flex;
       gap: 14px;
       overflow-x: auto;
-      /* Extra top room so hover lift + selection rings aren’t clipped at the strip edge */
-      padding: 10px 0 6px 6px;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 16px;
+      -webkit-overflow-scrolling: touch;
+      /* Room for selection / meal-plan rings (up to 6px) + rounded corners; don’t clip first/last card */
+      padding: 10px 16px 14px 16px;
       scrollbar-width: none;
     }
     .card-strip::-webkit-scrollbar { display: none; }
 
     .recipe-card {
       flex: 0 0 200px;
+      scroll-snap-align: start;
       height: 140px;
       border-radius: 14px;
       overflow: hidden;
@@ -703,10 +829,17 @@
       grid-template-columns: 1fr 1fr;
       column-gap: 56px;
       row-gap: 36px;
+      align-items: start;
     }
     /* Let fr tracks shrink below content min-width so a wide ingredients row can’t widen the card */
     .detail-body > * {
       min-width: 0;
+    }
+    .detail-body > div > .section-heading:first-child,
+    .detail-body > div > .ingredients-heading-row:first-child {
+      min-height: 2.75rem;
+      box-sizing: border-box;
+      margin-top: 0;
     }
     /* ── Meal plan panel ── */
     .meal-plan-panel {
@@ -813,10 +946,14 @@
       header,
       nav,
       .browse-mode,
+      .browse-context-banner,
       .prep-mode-coach-mount,
       .card-strip-wrapper {
         padding-left: 18px;
         padding-right: 18px;
+      }
+      .card-strip-wrapper::after {
+        right: 18px;
       }
       .recipe-detail {
         margin: 24px 18px 28px;
@@ -927,10 +1064,14 @@
       header,
       nav,
       .browse-mode,
+      .browse-context-banner,
       .prep-mode-coach-mount,
       .card-strip-wrapper {
         padding-left: 14px;
         padding-right: 14px;
+      }
+      .card-strip-wrapper::after {
+        right: 14px;
       }
       .ingredients-heading-row:has(#servingsOpenBtn:not([hidden])) {
         padding-right: 0;
@@ -1388,6 +1529,7 @@
 </header>
 
 <div class="browse-mode" id="browseModeBar"></div>
+<div id="browseContextBanner" class="browse-context-banner" role="status" hidden></div>
 <nav id="nav"></nav>
 <div class="card-strip-wrapper"><div class="card-strip" id="cardStrip"></div></div>
 <div id="recipeDetail"></div>
@@ -3200,11 +3342,28 @@ function recipesForCardStrip() {
   return raw;
 }
 
+function renderBrowseContextBanner() {
+  const banner = document.getElementById('browseContextBanner');
+  if (!banner) return;
+  if (activeCategory === OVERLAP_NAV_CAT) {
+    banner.hidden = false;
+    banner.textContent =
+      'Smart Picks ranks salads by overlap with your meal plan. Choose Cuisine, Flavor, Season, or any category below to go back to normal browsing.';
+  } else {
+    banner.hidden = true;
+    banner.textContent = '';
+  }
+}
+
 function renderBrowseModeBar() {
   const el = document.getElementById('browseModeBar');
   if (!el) return;
   const smartPicksBrowsing = activeCategory === OVERLAP_NAV_CAT;
   const smartPicksReady = mealPlanIds.length > 0;
+  const smartPicksLockedHint =
+    mealPrepMode && !smartPicksReady
+      ? '<p class="browse-smart-picks-hint">Add at least one salad to your meal plan to use Smart Picks.</p>'
+      : '';
   const smartPicksHtml = mealPrepMode
     ? `<span class="browse-smart-picks-cluster">
       <button type="button" class="browse-smart-picks-btn${activeCategory === OVERLAP_NAV_CAT ? ' active' : ''}" data-smart-picks="1" aria-pressed="${activeCategory === OVERLAP_NAV_CAT ? 'true' : 'false'}"${smartPicksReady ? '' : ' disabled aria-disabled="true"'} title="${smartPicksReady ? '' : escapeAttr('Add at least one salad to your meal plan to use Smart Picks.')}">${escapeHtml(OVERLAP_NAV_CAT)}</button>
@@ -3225,12 +3384,14 @@ function renderBrowseModeBar() {
       ${smartPicksHtml}
       <span class="browse-mode-spacer" aria-hidden="true"></span>
       <button type="button" class="meal-prep-mode-btn${mealPrepMode ? ' active' : ''}" data-meal-prep-toggle="1" aria-pressed="${mealPrepMode ? 'true' : 'false'}" title="Select multiple salads and copy a combined grocery list or recipes">Prep mode</button>
-    </div>`;
+    </div>${smartPicksLockedHint}`;
+  renderBrowseContextBanner();
 }
 
 // ── Render Nav ────────────────────────────────────────────────────────────────
 function renderNav() {
   const nav = document.getElementById('nav');
+  nav.classList.toggle('nav--smart-picks', activeCategory === OVERLAP_NAV_CAT);
   const cats = getNavTabs();
   nav.innerHTML = cats.map((cat) => {
     const accent = accentForNavCat(cat);
@@ -3238,6 +3399,7 @@ function renderNav() {
     return `<button type="button" class="${active}" data-filter="${escapeAttr(cat)}"
       style="--accent:${accent}">${escapeHtml(cat)}</button>`;
   }).join('');
+  renderBrowseContextBanner();
 }
 
 // ── Render Cards ──────────────────────────────────────────────────────────────
@@ -3269,7 +3431,11 @@ function renderCards() {
       : '';
     return `
       <div class="recipe-card ${sel} ${plan}" style="--card-accent:${accent}"
-           onclick="selectRecipe(${r.id})">
+           role="button"
+           tabindex="0"
+           aria-label="${escapeAttr(`View ${r.name}`)}"
+           onclick="selectRecipe(${r.id})"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRecipe(${r.id});}">
         ${planCtl}
         <div class="card-label-wrap">
           <div class="card-label">${escapeHtml(r.name)}</div>${sub}
@@ -4576,6 +4742,65 @@ function refreshScaledIngredientsList() {
   listEl.innerHTML = r.ingredients.map((i) => renderIngredient(i, hintCtx)).join('');
 }
 
+let servingsModalReturnFocus = null;
+let servingsModalTabTrap = null;
+
+function servingsModalFocusables() {
+  const m = document.getElementById('servingsModal');
+  if (!m) return [];
+  const card = m.querySelector('.servings-modal-card');
+  if (!card) return [];
+  return [...card.querySelectorAll('button, input, [href], select, textarea')].filter((n) => {
+    if (n.disabled || n.getAttribute('aria-hidden') === 'true') return false;
+    const r = n.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  });
+}
+
+function onServingsModalTabTrap(e) {
+  if (e.key !== 'Tab') return;
+  const list = servingsModalFocusables();
+  if (list.length === 0) return;
+  const first = list[0];
+  const last = list[list.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    }
+  } else if (document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
+function enableServingsModalFocusTrap() {
+  if (servingsModalTabTrap) {
+    document.removeEventListener('keydown', servingsModalTabTrap, true);
+    servingsModalTabTrap = null;
+  }
+  servingsModalReturnFocus = document.activeElement;
+  const list = servingsModalFocusables();
+  if (list[0]) list[0].focus();
+  servingsModalTabTrap = onServingsModalTabTrap;
+  document.addEventListener('keydown', servingsModalTabTrap, true);
+}
+
+function disableServingsModalFocusTrap() {
+  if (servingsModalTabTrap) {
+    document.removeEventListener('keydown', servingsModalTabTrap, true);
+    servingsModalTabTrap = null;
+  }
+  if (servingsModalReturnFocus && typeof servingsModalReturnFocus.focus === 'function') {
+    try {
+      servingsModalReturnFocus.focus({ preventScroll: true });
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  servingsModalReturnFocus = null;
+}
+
 function openServingsModal() {
   if (!showAmounts) return;
   servingsModalTarget = 'recipe';
@@ -4595,6 +4820,7 @@ function openServingsModal() {
   if (chip) chip.textContent = String(portionsDraft);
   m.removeAttribute('hidden');
   refreshScaledIngredientsList();
+  requestAnimationFrame(() => enableServingsModalFocusTrap());
 }
 
 function openMealPlanServingsModal() {
@@ -4614,9 +4840,11 @@ function openMealPlanServingsModal() {
   const chip = document.getElementById('mealPlanServingsChipNum');
   if (chip) chip.textContent = String(portionsDraft);
   m.removeAttribute('hidden');
+  requestAnimationFrame(() => enableServingsModalFocusTrap());
 }
 
 function closeServingsModal() {
+  disableServingsModalFocusTrap();
   portionsDraft = null;
   servingsModalTarget = 'recipe';
   const m = document.getElementById('servingsModal');
@@ -4635,6 +4863,7 @@ function applyServingsModal() {
   const fallback = target === 'mealPlan' ? mealPlanPortions : recipePortions;
   const parsed = Math.min(30, Math.max(2, parseInt(s.value, 10) || fallback));
   portionsDraft = null;
+  disableServingsModalFocusTrap();
   const m = document.getElementById('servingsModal');
   if (m) m.setAttribute('hidden', '');
   servingsModalTarget = 'recipe';
@@ -5545,7 +5774,14 @@ function copyMealPlanIngredientsConsolidated() {
     }
   }
   const text = consolidateIngredientLinesForCopy(lines, mealPlanUnitMode).trim();
-  navigator.clipboard.writeText(text).then(() => flash('Copied ingredients!'));
+  const btn = document.getElementById('mealPlanCopyIngredientsBtn');
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      flash('Copied ingredients!');
+      feedbackCopySuccess(btn);
+    })
+    .catch(() => flash('Couldn’t copy — try again or check permissions.'));
 }
 
 function copyMealPlanFullRecipes() {
@@ -5567,7 +5803,21 @@ function copyMealPlanFullRecipes() {
     parts.push(body);
   }
   const text = parts.join('\n\n────────────────────────\n\n');
-  navigator.clipboard.writeText(text).then(() => flash(`Copied ${mealPlanIds.length} full recipes!`));
+  const btn = document.getElementById('mealPlanCopyFullRecipeBtn');
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      flash(`Copied ${mealPlanIds.length} full recipes!`);
+      feedbackCopySuccess(btn);
+    })
+    .catch(() => flash('Couldn’t copy — try again or check permissions.'));
+}
+
+function feedbackCopySuccess(btn) {
+  if (!btn || !(btn instanceof HTMLElement) || btn.disabled) return;
+  btn.classList.add('copy-btn--success');
+  window.clearTimeout(btn._copySuccessT);
+  btn._copySuccessT = window.setTimeout(() => btn.classList.remove('copy-btn--success'), 1200);
 }
 
 function copyIngredients(id) {
@@ -5585,7 +5835,14 @@ function copyIngredients(id) {
     if (dressingBlocks.length) for (const b of dressingBlocks) out.push(b);
     return out.join('\n').trimEnd() + '\n';
   });
-  navigator.clipboard.writeText(text).then(() => flash('Ingredients copied!'));
+  const btn = document.getElementById('copyIngredientsBtn');
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      flash('Ingredients copied!');
+      feedbackCopySuccess(btn);
+    })
+    .catch(() => flash('Couldn’t copy — try again or check permissions.'));
 }
 
 /**
@@ -5618,16 +5875,36 @@ function copyFullRecipe(id) {
   const r = RECIPES.find(x => x.id === id);
   const ingredientsBlock = ingredientsBlockForFullRecipeCopy(r);
   const text = `${r.name}\n\nIngredients:\n${ingredientsBlock}\n\nSteps:\n${r.steps.map((s,i) => `${i+1}. ${s}`).join('\n')}`;
-  navigator.clipboard.writeText(text).then(() => flash('Full recipe copied!'));
+  const btn = document.getElementById('copyFullRecipeBtn');
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      flash('Full recipe copied!');
+      feedbackCopySuccess(btn);
+    })
+    .catch(() => flash('Couldn’t copy — try again or check permissions.'));
 }
 
 function flash(msg) {
   const t = document.createElement('div');
   Object.assign(t.style, {
-    position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)',
-    background:'#1a1a18', color:'#fff', padding:'9px 18px', borderRadius:'8px',
-    fontSize:'0.82rem', fontWeight:'500', zIndex:999, pointerEvents:'none',
-    transition:'opacity 0.4s', opacity:'1',
+    position: 'fixed',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    bottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
+    maxWidth: 'calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))',
+    background: '#1a1a18',
+    color: '#fff',
+    padding: '9px 18px',
+    borderRadius: '8px',
+    fontSize: '0.82rem',
+    fontWeight: '500',
+    zIndex: '1000',
+    pointerEvents: 'none',
+    transition: 'opacity 0.4s',
+    opacity: '1',
+    textAlign: 'center',
+    boxSizing: 'border-box',
   });
   t.textContent = msg;
   document.body.appendChild(t);
