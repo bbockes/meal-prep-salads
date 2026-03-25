@@ -1050,7 +1050,6 @@
 </header>
 
 <div class="browse-mode" id="browseModeBar"></div>
-<div id="prepModeCoachMount" class="prep-mode-coach-mount" aria-live="polite"></div>
 <nav id="nav"></nav>
 <div class="card-strip-wrapper"><div class="card-strip" id="cardStrip"></div></div>
 <div id="recipeDetail"></div>
@@ -1119,7 +1118,8 @@ const RECIPES = [
     id: 1, cuisine: 'American', name: 'Guacamole Greens',
     ingredients: [
       '2 cups rotisserie chicken, shredded',
-      '3 cups mixed greens + romaine',
+      '2 cups mixed greens',
+      '1 cup romaine',
       '1 avocado, cubed',
       '1 cup cherry tomatoes, halved',
       '¼ cup pickled red onions',
@@ -1139,7 +1139,8 @@ const RECIPES = [
     id: 2, cuisine: 'American', name: 'BBQ Chicken Salad',
     ingredients: [
       '2 cups rotisserie or grilled chicken, shredded',
-      '3 cups romaine + kale mix',
+      '2 cups romaine',
+      '1 cup kale mix',
       '1 cup shredded cabbage',
       '¼ cup pickled red onions',
       '1 cup cherry tomatoes, halved',
@@ -1160,7 +1161,8 @@ const RECIPES = [
     ingredients: [
       '2 cups rotisserie chicken, shredded',
       '3 tbsp buffalo sauce',
-      '3 cups romaine + kale, chopped',
+      '2 cups romaine',
+      '1 cup kale, chopped',
       '¼ cup pickled red onions',
       '1 cup cherry tomatoes, halved',
       '½ cup shredded carrots',
@@ -1219,7 +1221,8 @@ const RECIPES = [
   {
     id: 7, cuisine: 'American', name: 'Chicken Avocado Ranch',
     ingredients: [
-      '3 cups romaine + spring mix',
+      '2 cups romaine',
+      '1 cup spring mix',
       '2 cups blackened chicken (rotisserie + Cajun seasoning)',
       '1 avocado, sliced',
       '¼ cup pickled red onions',
@@ -1239,7 +1242,8 @@ const RECIPES = [
   {
     id: 8, cuisine: 'American', name: 'Super Green Goddess',
     ingredients: [
-      '3 cups baby spinach + kale mix',
+      '2 cups baby spinach',
+      '1 cup kale mix',
       '1 can chickpeas, drained',
       '1 cup pre-cut sweet potato cubes',
       '1 cup broccoli florets',
@@ -1315,7 +1319,8 @@ const RECIPES = [
   {
     id: 15, cuisine: 'American', name: 'Steak Honey Crunch',
     ingredients: [
-      '3 cups romaine + arugula',
+      '2 cups romaine',
+      '1 cup arugula',
       '8 oz steak, cooked and sliced thin',
       '½ cup cooked quinoa',
       '¼ cup pickled red onions',
@@ -1334,7 +1339,8 @@ const RECIPES = [
   {
     id: 16, cuisine: 'American', name: 'Citrus Shrimp Avocado',
     ingredients: [
-      '3 cups spring mix + arugula',
+      '2 cups spring mix',
+      '1 cup arugula',
       '8 oz cooked shrimp',
       '1 avocado, sliced',
       '1 cup orange segments',
@@ -1526,7 +1532,8 @@ const RECIPES = [
   {
     id: 27, cuisine: 'Spanish & Mexican', name: 'Salmon Taco Salad',
     ingredients: [
-      '3 cups spring mix + romaine',
+      '2 cups spring mix',
+      '1 cup romaine',
       '8 oz salmon fillet',
       '1 avocado, sliced',
       '1 cup shredded cabbage',
@@ -1642,7 +1649,8 @@ const RECIPES = [
     id: 69, cuisine: 'Asian', name: 'Tandoori Chicken Salad',
     ingredients: [
       '2 chicken thighs, marinated in ¼ cup yogurt + 2 tsp tandoori spices',
-      '3 cups romaine + baby spinach',
+      '2 cups romaine',
+      '1 cup baby spinach',
       '1 cucumber, sliced',
       '1 cup cherry tomatoes, halved',
       '¼ cup red onion, thinly sliced',
@@ -2008,7 +2016,8 @@ const RECIPES = [
     id: 41, cuisine: 'Mediterranean', name: 'Sumac Garden Salad',
     ingredients: [
       '½ cup toasted pumpkin seeds',
-      '3 cups romaine + purslane (or arugula)',
+      '2 cups romaine',
+      '1 cup purslane (or arugula)',
       '1 cup tomatoes, diced',
       '1 cucumber, sliced',
       '4 radishes, sliced',
@@ -2109,7 +2118,8 @@ const RECIPES = [
     id: 46, cuisine: 'Mediterranean', name: 'Hummus Crunch',
     ingredients: [
       '½ cup store-bought hummus',
-      '3 cups romaine + kale, chopped',
+      '2 cups romaine',
+      '1 cup kale, chopped',
       '1 can chickpeas, drained',
       '¼ cup feta crumbles',
       '1 cup cherry tomatoes, halved',
@@ -2148,7 +2158,8 @@ const RECIPES = [
   {
     id: 48, cuisine: 'Mediterranean', name: 'Mediterranean Lemon Herb',
     ingredients: [
-      '3 cups romaine + arugula',
+      '2 cups romaine',
+      '1 cup arugula',
       '2 cups rotisserie chicken or 1 can chickpeas',
       '1 cucumber, sliced',
       '1 cup cherry tomatoes, halved',
@@ -2229,7 +2240,8 @@ const RECIPES = [
     id: 74, cuisine: 'Mediterranean', name: 'Lebanese Sumac Salad',
     ingredients: [
       '½ cup toasted sunflower seeds',
-      '3 cups romaine + purslane (or arugula)',
+      '2 cups romaine',
+      '1 cup purslane (or arugula)',
       '1 cup cherry tomatoes, halved',
       '2 Persian cucumbers, sliced',
       '4 radishes, sliced',
@@ -2541,7 +2553,8 @@ const RECIPES = [
   {
     id: 60, cuisine: 'Spanish & Mexican', name: 'Chipotle Black Bean',
     ingredients: [
-      '3 cups spring mix + romaine',
+      '2 cups spring mix',
+      '1 cup romaine',
       '1 can black beans, drained',
       '1 cup sweet potato, roasted and cubed',
       '½ cup corn, charred',
@@ -2689,11 +2702,8 @@ let selectedId = RECIPES[0].id;
 
 const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
 const MEAL_PREP_MODE_KEY = 'meal-prep-salads:mealPrepMode';
-const PREP_MODE_COACH_KEY = 'meal-prep-salads:prepModeCoachDismissed';
 
 let mealPrepMode = false;
-/** One-time hint after turning prep mode on until dismissed. */
-let showPrepModeCoach = false;
 /** @type {number[]} */
 let mealPlanIds = [];
 let mealPlanPortions = 2;
@@ -4598,42 +4608,10 @@ function withClipboardOptions(opts, fn) {
   }
 }
 
-function dismissPrepModeCoach() {
-  try {
-    localStorage.setItem(PREP_MODE_COACH_KEY, '1');
-  } catch (e) { /* ignore */ }
-  showPrepModeCoach = false;
-  renderPrepModeCoach();
-}
-
-function renderPrepModeCoach() {
-  const mount = document.getElementById('prepModeCoachMount');
-  if (!mount) return;
-  if (!mealPrepMode || !showPrepModeCoach) {
-    mount.innerHTML = '';
-    return;
-  }
-  mount.innerHTML = `
-    <div class="prep-mode-coach" role="status">
-      <p class="prep-mode-coach-text"><strong>Prep mode:</strong> Tap <strong>+</strong> on a card to add it to your plan, or the checkmark to remove it. Tap the card itself to view the recipe.</p>
-      <button type="button" class="prep-mode-coach-dismiss" onclick="dismissPrepModeCoach()">Got it</button>
-    </div>`;
-}
-
 function toggleMealPrepMode() {
   mealPrepMode = !mealPrepMode;
-  if (mealPrepMode) {
-    try {
-      showPrepModeCoach = !localStorage.getItem(PREP_MODE_COACH_KEY);
-    } catch (e) {
-      showPrepModeCoach = false;
-    }
-  } else {
-    showPrepModeCoach = false;
-  }
   saveMealPlanState();
   renderBrowseModeBar();
-  renderPrepModeCoach();
   renderCards();
   renderMealPlanPanel();
 }
@@ -4666,19 +4644,318 @@ function copyMealPlanIngredients() {
     flash('No salads in your meal plan yet.');
     return;
   }
-  const chunks = [];
+  // Default behavior: when the plan has multiple recipes, copy a consolidated, categorized list.
+  if (mealPlanIds.length > 1) {
+    copyMealPlanIngredientsConsolidated();
+    return;
+  }
+
+  // Single recipe: keep it simple (no title).
+  const id = mealPlanIds[0];
+  const r = RECIPES.find((x) => x.id === id);
+  if (!r) return;
+  const text = withClipboardOptions(
+    { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
+    () => r.ingredients.map(ingredientLineForClipboard).join('\n')
+  ).trim();
+  navigator.clipboard.writeText(text).then(() => flash('Copied ingredients!'));
+}
+
+function normalizeIngredientRestForKey(rest) {
+  let r = String(rest || '').trim().toLowerCase();
+  r = r.replace(/\s+/g, ' ');
+  r = r.replace(/\s*\((optional|to taste)\)\s*$/i, '');
+  r = r.replace(/,\s*(optional|to taste)\s*$/i, '');
+  r = r.replace(/\s*\bto taste\b\s*$/i, '');
+  r = r.replace(/^\s*of\s+/i, '');
+  return r.trim();
+}
+
+function canonicalizeIngredientRest(restRaw) {
+  const raw = String(restRaw || '').trim();
+  const lower = raw.toLowerCase();
+
+  // Strip trailing parentheticals for keying (keep for display elsewhere if needed).
+  let core = raw.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  core = core.replace(/\s+/g, ' ');
+
+  // Split off common prep descriptors for keying.
+  const prepStripped = core
+    .replace(/,\s*(chopped|shredded|thinly sliced|sliced|diced|minced|halved|torn|crushed)\b.*$/i, '')
+    .replace(/\b(pre-cut|bagged|store-bought)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const t = prepStripped.toLowerCase();
+
+  // Canonical aliases (small curated set; extend over time).
+  const ALIASES = [
+    [/\bscallions?\b/g, 'green onion'],
+    [/\bspring mix\b/g, 'spring mix'],
+    [/\bmixed greens?\b/g, 'mixed greens'],
+    [/\bromaine\b/g, 'romaine'],
+    [/\bkale\b/g, 'kale'],
+    [/\barugula\b/g, 'arugula'],
+    [/\bspinach\b/g, 'spinach'],
+    [/\bcherry tomatoes?\b/g, 'cherry tomatoes'],
+    [/\bpumpkin seeds?\b/g, 'pepitas'],
+    [/\bpepitas\b/g, 'pepitas'],
+  ];
+
+  for (const [re, canon] of ALIASES) {
+    if (re.test(t)) return { key: canon, display: core };
+  }
+
+  // Proteins: unify common chicken variants into a single key.
+  if (/\bchicken\b/.test(t) && !/\b(chicken stock|chicken broth)\b/.test(t)) {
+    return { key: 'chicken', display: core };
+  }
+  if (/\bshrimp\b/.test(t)) return { key: 'shrimp', display: core };
+  if (/\bsteak\b/.test(t) || /\bbeef\b/.test(t)) return { key: 'beef/steak', display: core };
+
+  // Default: normalized rest for key; keep original-ish for display.
+  return { key: normalizeIngredientRestForKey(prepStripped), display: core };
+}
+
+function ingredientCategoryForRestKey(restKey) {
+  const r = String(restKey || '').toLowerCase();
+  if (!r) return 'Other';
+  if (/\b(romaine|kale|spinach|arugula|spring mix|mixed greens|greens|lettuce|cabbage|slaw)\b/.test(r)) return 'Greens';
+  if (/\b(chicken|shrimp|beef\/steak|steak|salmon|tuna|turkey|pork|bacon|ham|tofu|tempeh)\b/.test(r)) return 'Proteins';
+  if (/\b(feta|goat cheese|parmesan|mozzarella|cheddar|blue cheese|yogurt|sour cream|milk|buttermilk|cream|butter|ghee)\b/.test(r)) return 'Dairy';
+  if (/\b(apple|orange|lemon|lime|grapes|berries|strawberries|blueberries|peach|pear|mango|avocado)\b/.test(r)) return 'Fruit';
+  if (/\b(cilantro|parsley|basil|mint|dill|chives|thyme|oregano|rosemary|tarragon|sage|bay leaf|microgreens|garlic|ginger|scallion|green onion)\b/.test(r)) return 'Spices & Herbs';
+  if (/\b(tomat(?:o|oes)|cucumber(?:s)?|onion(?:s)?|shallot(?:s)?|pepper(?:s)?|jalape(?:n)?o(?:s)?|carrot(?:s)?|broccoli|cauliflower|corn|radish(?:es)?|celery|mushroom(?:s)?|zucchini|squash|beet(?:s)?|sweet potato(?:es)?|potato(?:es)?|asparagus|green bean(?:s)?|bean sprouts?|beansprouts?|daikon|jicama)\b/.test(r)) return 'Vegetables';
+  if (/\b(quinoa|rice|farro|orzo|pasta|wild rice|barley|noodles)\b/.test(r)) return 'Grains';
+  if (/\b(walnut(?:s)?|pecan(?:s)?|almond(?:s)?|peanut(?:s)?|cashew(?:s)?|pistachio(?:s)?|pine nuts?|pepitas|pumpkin seeds?|sunflower seeds?|sesame)\b/.test(r)) return 'Nuts & Seeds';
+  if (/\b(salt|pepper|paprika|smoked paprika|cumin|coriander|turmeric|curry powder|tandoori|chili powder|red pepper flakes|cayenne|sumac|za'atar|zaatar|garam masala|taco seasoning|italian seasoning|onion powder|garlic powder)\b/.test(r)) return 'Spices & Herbs';
+  if (/\b(dressing|vinaigrette|sauce|bbq|ranch|caesar|mayo|mayonnaise|mustard|dijon|vinegar|oil|hot sauce|sriracha|tamari|soy sauce|fish sauce|hoisin|gochujang|worcestershire|honey|maple syrup|molasses|agave|anchovy|anchovies|anchovy paste)\b/.test(r)) return 'Pantry';
+  return 'Other';
+}
+
+function quantityToBase(value, unit) {
+  // Base units: volume → ml, weight → g, discrete/other → null.
+  const u = String(unit || '').toLowerCase();
+  const v = Number(value);
+  if (!Number.isFinite(v)) return null;
+
+  const ML_PER_TSP = 4.92892;
+  const ML_PER_TBSP = 14.7868;
+  const ML_PER_CUP = 236.588;
+  const ML_PER_PINT = 473.176;
+  const ML_PER_QT = 946.353;
+
+  if (u === 'tsp') return { family: 'vol', baseUnit: 'ml', baseValue: v * ML_PER_TSP };
+  if (u === 'tbsp') return { family: 'vol', baseUnit: 'ml', baseValue: v * ML_PER_TBSP };
+  if (u === 'cup' || u === 'cups') return { family: 'vol', baseUnit: 'ml', baseValue: v * ML_PER_CUP };
+  if (u === 'pint') return { family: 'vol', baseUnit: 'ml', baseValue: v * ML_PER_PINT };
+  if (u === 'qt') return { family: 'vol', baseUnit: 'ml', baseValue: v * ML_PER_QT };
+  if (u === 'ml') return { family: 'vol', baseUnit: 'ml', baseValue: v };
+  if (u === 'l') return { family: 'vol', baseUnit: 'ml', baseValue: v * 1000 };
+
+  if (u === 'g') return { family: 'wt', baseUnit: 'g', baseValue: v };
+  if (u === 'kg') return { family: 'wt', baseUnit: 'g', baseValue: v * 1000 };
+  if (u === 'oz') return { family: 'wt', baseUnit: 'g', baseValue: v * 28.3495 };
+  if (u === 'lb') return { family: 'wt', baseUnit: 'g', baseValue: v * 453.592 };
+
+  return null;
+}
+
+function formatBaseQuantityForUnitMode(base, unitMode) {
+  if (!base || !Number.isFinite(base.baseValue)) return null;
+  if (unitMode === 'metric') {
+    if (base.family === 'wt') return formatMetricG(base.baseValue);
+    if (base.family === 'vol') return formatMetricMl(base.baseValue);
+    return null;
+  }
+
+  // US display: volumes as tsp/tbsp/cups (normalized), weights as oz/lb.
+  if (base.family === 'vol') {
+    const tsp = base.baseValue / 4.92892;
+    const amt = `${formatQuantityForDisplay(tsp)} tsp`;
+    return normalizeScaledUsVolume(amt);
+  }
+  if (base.family === 'wt') {
+    const oz = base.baseValue / 28.3495;
+    if (oz >= 16) {
+      const lb = oz / 16;
+      return `${formatQuantityForDisplay(lb)} lb`;
+    }
+    return `${formatQuantityForDisplay(oz)} oz`;
+  }
+  return null;
+}
+
+function consolidateIngredientLinesForCopy(lines, unitMode) {
+  /** @type {Map<string, {base: {family: string, baseUnit: string, baseValue: number}, restKey: string, display: string}>} */
+  const sums = new Map();
+  /** @type {string[]} */
+  const passthrough = [];
+  /** @type {string[]} */
+  const dressings = [];
+
+  for (const raw of lines) {
+    const line = String(raw || '').trim();
+    if (!line) continue;
+    if (/^dressing:\s*/i.test(line)) {
+      // Keep dressing recipes together and don't duplicate their component ingredients elsewhere.
+      dressings.push(line);
+      continue;
+    }
+    const { amount, rest } = parseIngredient(line);
+    if (!amount) {
+      passthrough.push(line);
+      continue;
+    }
+    if (/\b(to taste|handful|pinch|dash)\b/i.test(amount) || /\b(to taste)\b/i.test(rest || '')) {
+      passthrough.push(line);
+      continue;
+    }
+
+    const sp = splitAmountNumberAndUnit(amount);
+    if (!sp) {
+      passthrough.push(line);
+      continue;
+    }
+    const q = parseQuantityValue(sp.numPart);
+    if (q == null || Array.isArray(q)) {
+      passthrough.push(line);
+      continue;
+    }
+    const base = quantityToBase(q, sp.unit);
+    if (!base) {
+      passthrough.push(line);
+      continue;
+    }
+    const canon = canonicalizeIngredientRest(rest);
+    const keyRest = canon.key;
+    if (!keyRest) {
+      passthrough.push(line);
+      continue;
+    }
+    const key = `${base.family}|${keyRest}`;
+    const prev = sums.get(key);
+    if (!prev) sums.set(key, { base, restKey: keyRest, display: canon.display });
+    else prev.base.baseValue += base.baseValue;
+  }
+
+  /** @type {Map<string, string[]>} */
+  const byCat = new Map();
+  const pushCat = (cat, s) => {
+    const arr = byCat.get(cat) || [];
+    arr.push(s);
+    byCat.set(cat, arr);
+  };
+
+  for (const v of sums.values()) {
+    const amt = formatBaseQuantityForUnitMode(v.base, unitMode);
+    const txt = amt ? `${amt} ${v.display}`.trim() : v.display;
+    pushCat(ingredientCategoryForRestKey(v.restKey), txt);
+  }
+
+  // Put passthrough items into best-effort categories too.
+  for (const line of passthrough) {
+    const { amount, rest } = parseIngredient(line);
+    const canon = canonicalizeIngredientRest(rest);
+    const cat = ingredientCategoryForRestKey(canon.key);
+    pushCat(cat, line);
+  }
+
+  // Dressings get their own section and are excluded from all other categories.
+  const dressingBlocks = dressings
+    .map((s) => String(s || '').trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+  const CAT_ORDER = ['Greens', 'Vegetables', 'Fruit', 'Proteins', 'Dairy', 'Spices & Herbs', 'Grains', 'Nuts & Seeds', 'Pantry', 'Other'];
+  const out = [];
+  for (const cat of CAT_ORDER) {
+    const items = byCat.get(cat);
+    if (!items || !items.length) continue;
+    items.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    out.push(`${cat}:`);
+    for (const it of items) out.push(`- ${it}`);
+    out.push('');
+  }
+
+  // Always render dressings at the very end, and do not duplicate their components elsewhere.
+  if (dressingBlocks.length) {
+    out.push('Dressings:');
+    for (const block of dressingBlocks) {
+      const lines = block
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!lines.length) continue;
+      const titleLine = lines[0].startsWith('Dressing:') ? lines[0] : `Dressing: ${lines[0]}`;
+      const title = titleLine.replace(/^Dressing:\s*/i, '').trim();
+
+      // Drop sub-headings like "Ranch:" / "Herbs:" inside the dressing blocks.
+      const ingredients = lines
+        .slice(1)
+        .filter((l) => l && !/^[^:]{1,40}:\s*$/.test(l));
+
+      out.push(`- ${title}`);
+      out.push(`If you'd like to make it yourself:`);
+
+      /** @type {Map<string, string[]>} */
+      const diyByCat = new Map();
+      const diyOrder = ['Vegetables', 'Fruit', 'Proteins', 'Dairy', 'Spices & Herbs', 'Nuts & Seeds', 'Grains', 'Pantry', 'Other'];
+      const diyPush = (cat, s) => {
+        const arr = diyByCat.get(cat) || [];
+        arr.push(s);
+        diyByCat.set(cat, arr);
+      };
+      for (const ing of ingredients) {
+        const t = String(ing || '').trim();
+        if (!t) continue;
+        const { rest } = parseIngredient(t);
+        const canon = canonicalizeIngredientRest(rest == null ? t : rest);
+        const cat = ingredientCategoryForRestKey(canon.key);
+        diyPush(cat, t);
+      }
+      for (const cat of diyOrder) {
+        const items = diyByCat.get(cat);
+        if (!items || !items.length) continue;
+        items.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+        // Order by aisle, but don't print aisle headers.
+        for (const it of items) out.push(it);
+      }
+      out.push('');
+    }
+    out.push('');
+  }
+  return out.join('\n').trim();
+}
+
+function copyMealPlanIngredientsConsolidated() {
+  if (!mealPlanIds.length) {
+    flash('No salads in your meal plan yet.');
+    return;
+  }
+  const lines = [];
   for (const id of mealPlanIds) {
     const r = RECIPES.find((x) => x.id === id);
     if (!r) continue;
-    const block = withClipboardOptions(
-      { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
-      () => r.ingredients.map(ingredientLineForClipboard).join('\n')
+    const blockLines = withClipboardOptions(
+      // Consolidation requires amounts; we always include amounts for the consolidated copy.
+      { recipePortions: mealPlanPortions, showAmounts: true, unitMode: mealPlanUnitMode },
+      () => r.ingredients.map(ingredientLineForClipboard)
     );
-    const underline = '—'.repeat(Math.min(Math.max(r.name.length + 2, 12), 42));
-    chunks.push(`${r.name}\n${underline}\n${block}`);
+    if (!blockLines || !blockLines.length) continue;
+    for (const rendered of blockLines) {
+      const t = String(rendered || '').trim();
+      if (!t) continue;
+      // Preserve multi-line dressing blocks as a single item so subheadings like "Herbs:" don't leak into Other.
+      if (/^dressing:\s*/i.test(t)) {
+        lines.push(t);
+        continue;
+      }
+      lines.push(...t.split('\n').map((s) => s.trim()).filter(Boolean));
+    }
   }
-  const text = chunks.join('\n\n');
-  navigator.clipboard.writeText(text).then(() => flash(`Copied ingredients for ${mealPlanIds.length} salads!`));
+  const text = consolidateIngredientLinesForCopy(lines, mealPlanUnitMode).trim();
+  navigator.clipboard.writeText(text).then(() => flash('Copied consolidated ingredients!'));
 }
 
 function copyMealPlanFullRecipes() {
@@ -4750,7 +5027,6 @@ document.getElementById('nav').addEventListener('click', (e) => {
 if (recipesForCardStrip().length) selectedId = recipesForCardStrip()[0].id;
 
 renderBrowseModeBar();
-renderPrepModeCoach();
 renderNav();
 renderCards();
 renderDetail();
