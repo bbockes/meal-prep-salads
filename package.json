@@ -1,0 +1,11 @@
+{
+  "name": "meal-prep-salads",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate-images": "node scripts/generate-recipe-images.mjs"
+  },
+  "dependencies": {
+    "@fal-ai/client": "^1.7.2"
+  }
+}
