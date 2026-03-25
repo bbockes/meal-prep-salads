@@ -153,8 +153,11 @@
       color: var(--text);
     }
     .browse-mode-spacer {
-      flex: 1;
+      flex: 1 1 auto;
       min-width: 4px;
+    }
+    .browse-mode-tail {
+      display: contents;
     }
     .meal-prep-mode-btn {
       font-family: 'DM Sans', sans-serif;
@@ -234,7 +237,7 @@
       font-family: 'DM Sans', sans-serif;
       font-size: 0.7rem;
       font-weight: 700;
-      font-style: italic;
+      font-style: normal;
       line-height: 1;
       cursor: pointer;
       padding: 0;
@@ -285,6 +288,63 @@
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
+    }
+
+    @media (max-width: 1024px) {
+      .browse-smart-picks-tip-wrap {
+        display: none;
+      }
+      .browse-mode {
+        align-items: stretch;
+        gap: 10px;
+      }
+      .browse-mode-label {
+        flex: 0 0 100%;
+      }
+      .browse-mode-toggle {
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+      .browse-mode-toggle button {
+        flex: 1 1 0;
+        min-width: 0;
+        text-align: center;
+      }
+      .browse-mode-tail {
+        display: flex;
+        flex: 1 1 100%;
+        width: 100%;
+        gap: 10px;
+        align-items: stretch;
+        box-sizing: border-box;
+      }
+      .browse-mode-tail .browse-mode-spacer {
+        display: none;
+      }
+      .browse-mode-tail .browse-smart-picks-cluster {
+        flex: 1 1 50%;
+        min-width: 0;
+        max-width: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .browse-mode-tail .browse-smart-picks-btn {
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: center;
+      }
+      .browse-mode-tail .meal-prep-mode-btn {
+        flex: 1 1 50%;
+        min-width: 0;
+        text-align: center;
+        margin-left: 0;
+      }
+      .browse-mode-tail:not(:has(.browse-smart-picks-cluster)) .meal-prep-mode-btn {
+        flex: 1 1 100%;
+      }
     }
 
     /* ── Card Strip ── */
@@ -744,10 +804,158 @@
       border-top: 1px solid var(--border);
     }
 
+    @media (max-width: 900px) {
+      .detail-body {
+        grid-template-columns: 1fr;
+        column-gap: 0;
+        row-gap: 28px;
+      }
+      header,
+      nav,
+      .browse-mode,
+      .prep-mode-coach-mount,
+      .card-strip-wrapper {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+      .recipe-detail {
+        margin: 24px 18px 28px;
+        padding: 26px 20px;
+      }
+      .empty-state {
+        margin: 24px 18px 40px;
+      }
+      .meal-plan-panel {
+        margin: 13px 18px 40px;
+      }
+      nav {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+      }
+      nav::-webkit-scrollbar {
+        display: none;
+      }
+      nav button {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 10px 14px 12px;
+      }
+      .detail-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+      }
+      .detail-header .copy-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+        justify-content: stretch;
+      }
+      .detail-header .copy-actions > .copy-btn,
+      .detail-header .copy-actions > .servings-chip {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+      /* ID rules above beat class selectors — redeclare so full-width sticks on narrow viewports */
+      #unitsToggleBtn,
+      #mealPlanUnitsToggleBtn,
+      #amountToggleBtn,
+      #mealPlanAmountToggleBtn,
+      #copyIngredientsBtn,
+      #mealPlanCopyIngredientsBtn,
+      #copyFullRecipeBtn,
+      #mealPlanCopyFullRecipeBtn {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+      /* Full-width row: keep icon + label grouped and centered (desktop uses icon-left + label stretch for fixed widths). */
+      #amountToggleBtn,
+      #mealPlanAmountToggleBtn {
+        justify-content: center;
+      }
+      #amountToggleBtn .toggle-label,
+      #mealPlanAmountToggleBtn .toggle-label {
+        flex: 0 1 auto;
+      }
+      .meal-plan-panel-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+      }
+      .meal-plan-panel-header .copy-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+        max-width: none;
+      }
+      .meal-plan-panel-header .copy-actions > .copy-btn,
+      .meal-plan-panel-header .copy-actions > .servings-chip {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+      #mealPlanClearBtn {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+    }
+
     @media (max-width: 680px) {
-      .detail-body { grid-template-columns: 1fr; }
-      header, nav, .browse-mode, .prep-mode-coach-mount, .card-strip-wrapper, .recipe-detail { padding-left: 20px; padding-right: 20px; }
-      .meal-plan-panel { margin-left: 20px; margin-right: 20px; }
+      html {
+        font-size: 100%;
+      }
+      :root {
+        --prose-font-size: 1rem;
+      }
+      .recipe-detail {
+        margin: 20px 14px 24px;
+        padding: 22px 16px;
+      }
+      .detail-title {
+        font-size: 1.45rem;
+      }
+      .meal-plan-panel {
+        margin-left: 14px;
+        margin-right: 14px;
+        padding: 18px 16px 20px;
+      }
+      header,
+      nav,
+      .browse-mode,
+      .prep-mode-coach-mount,
+      .card-strip-wrapper {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+      .ingredients-heading-row:has(#servingsOpenBtn:not([hidden])) {
+        padding-right: 0;
+      }
+      .ingredients-heading-row {
+        flex-wrap: wrap;
+      }
+      .ingredients-heading-row .servings-chip {
+        position: static;
+        transform: none;
+        align-self: flex-end;
+        margin-top: 8px;
+      }
+      .recipe-card {
+        flex: 0 0 clamp(158px, 46vw, 210px);
+      }
+      .recipe-card .card-label {
+        font-size: 0.98rem;
+        line-height: 1.25;
+      }
+      .meal-plan-footer #mealPlanClearBtn {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
     }
 
     .section-heading {
@@ -786,6 +994,8 @@
     .ingredient-body {
       flex: 1;
       min-width: 0;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .ingredient-plan-overlap-hint {
       margin-left: 0.4em;
@@ -809,6 +1019,8 @@
       flex-direction: column;
       align-items: flex-start;
       gap: 0.35rem;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .dressing-heading {
       line-height: 1.25;
@@ -945,6 +1157,8 @@
       min-width: 0;
       font-size: var(--prose-font-size);
       line-height: 1.4;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
 
     .empty-state {
@@ -2989,6 +3203,7 @@ function recipesForCardStrip() {
 function renderBrowseModeBar() {
   const el = document.getElementById('browseModeBar');
   if (!el) return;
+  const smartPicksBrowsing = activeCategory === OVERLAP_NAV_CAT;
   const smartPicksReady = mealPlanIds.length > 0;
   const smartPicksHtml = mealPrepMode
     ? `<span class="browse-smart-picks-cluster">
@@ -3002,13 +3217,15 @@ function renderBrowseModeBar() {
   el.innerHTML = `
     <span class="browse-mode-label">Browse by</span>
     <div class="browse-mode-toggle" role="group" aria-label="Browse recipes by">
-      <button type="button" class="${browseMode === 'cuisine' ? 'active' : ''}" data-browse="cuisine">Cuisine</button>
-      <button type="button" class="${browseMode === 'flavor' ? 'active' : ''}" data-browse="flavor">Flavor</button>
-      <button type="button" class="${browseMode === 'season' ? 'active' : ''}" data-browse="season">Season</button>
+      <button type="button" class="${browseMode === 'cuisine' && !smartPicksBrowsing ? 'active' : ''}" data-browse="cuisine">Cuisine</button>
+      <button type="button" class="${browseMode === 'flavor' && !smartPicksBrowsing ? 'active' : ''}" data-browse="flavor">Flavor</button>
+      <button type="button" class="${browseMode === 'season' && !smartPicksBrowsing ? 'active' : ''}" data-browse="season">Season</button>
     </div>
-    ${smartPicksHtml}
-    <span class="browse-mode-spacer" aria-hidden="true"></span>
-    <button type="button" class="meal-prep-mode-btn${mealPrepMode ? ' active' : ''}" data-meal-prep-toggle="1" aria-pressed="${mealPrepMode ? 'true' : 'false'}" title="Select multiple salads and copy a combined grocery list or recipes">Prep mode</button>`;
+    <div class="browse-mode-tail">
+      ${smartPicksHtml}
+      <span class="browse-mode-spacer" aria-hidden="true"></span>
+      <button type="button" class="meal-prep-mode-btn${mealPrepMode ? ' active' : ''}" data-meal-prep-toggle="1" aria-pressed="${mealPrepMode ? 'true' : 'false'}" title="Select multiple salads and copy a combined grocery list or recipes">Prep mode</button>
+    </div>`;
 }
 
 // ── Render Nav ────────────────────────────────────────────────────────────────
@@ -4663,7 +4880,7 @@ function selectCategory(cat) {
 
 function selectBrowseMode(mode) {
   if (mode !== 'cuisine' && mode !== 'flavor' && mode !== 'season') return;
-  if (mode === browseMode) return;
+  if (mode === browseMode && activeCategory !== OVERLAP_NAV_CAT) return;
   closeServingsModal();
   browseMode = mode;
   activeCategory = 'All';
