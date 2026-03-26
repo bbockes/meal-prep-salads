@@ -11,6 +11,7 @@
  *   node scripts/generate-recipe-images.mjs --limit=3
  *   node scripts/generate-recipe-images.mjs --skip-existing
  *   node scripts/generate-recipe-images.mjs --batch   # no pause between images
+ *   MEAL_PREP_IMAGES_BATCH=1 node …                # same as --batch (no prompts)
  */
 
 import fs from 'fs';
@@ -27,15 +28,40 @@ const IMAGES_DIR = path.join(ROOT, 'images');
 
 const PROMPT_SUFFIX = ` The bowl is viewed perfectly from above, at a strict 90-degree overhead perspective, filling most of the frame with minimal empty space. Arrange the ingredients naturally but attractively so each component is clearly visible from above, highlighting color, texture, and preparation style—e.g., sliced, roasted, crumbled, or toasted. Emphasize contrasts between elements: crisp greens, creamy components, crunchy toppings, and a light drizzle of dressing with a subtle sheen. Use natural soft daylight with even lighting and minimal shadows, a clean neutral background (light stone, marble, or wood), and a bowl that matches the salad style (rustic ceramic or modern minimal). Maintain sharp focus across the entire bowl, true-to-life colors, and realistic textures, creating a polished, professional food magazine shot without artificial colors, stylization, or unnecessary props.`;
 
+/** Turn en/em/minus signs into ASCII `-` so pasted flags still match (e.g. `–batch` → `--batch`). */
+function normalizeFlagToken(raw) {
+  return String(raw).trim().replace(/[\u2013\u2014\u2212]/g, '-');
+}
+
+function envMeansBatch(value) {
+  const v = String(value ?? '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
 function parseArgs(argv) {
   const out = { dryRun: false, slug: null, limit: null, skipExisting: false, batch: false };
-  for (const a of argv) {
+  for (const raw of argv) {
+    const a = normalizeFlagToken(raw);
     if (a === '--dry-run') out.dryRun = true;
     if (a === '--skip-existing') out.skipExisting = true;
-    if (a === '--batch' || a === '--yes') out.batch = true;
+    if (
+      a === '--batch' ||
+      a === '--yes' ||
+      a === '--no-prompt' ||
+      a === '-batch' ||
+      a === '-yes' ||
+      a === '-no-prompt'
+    ) {
+      out.batch = true;
+    }
+    const batchEq = a.match(/^(-{1,2})batch=(.+)$/);
+    if (batchEq && envMeansBatch(batchEq[2])) out.batch = true;
+    const yesEq = a.match(/^(-{1,2})yes=(.+)$/);
+    if (yesEq && envMeansBatch(yesEq[2])) out.batch = true;
     if (a.startsWith('--slug=')) out.slug = a.slice('--slug='.length);
     if (a.startsWith('--limit=')) out.limit = Math.max(1, parseInt(a.slice('--limit='.length), 10) || 0);
   }
+  if (envMeansBatch(process.env.MEAL_PREP_IMAGES_BATCH)) out.batch = true;
   return out;
 }
 
@@ -108,7 +134,9 @@ async function main() {
   if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
 
   if (args.dryRun) {
-    console.log(`Would generate ${list.length} image(s) into ${IMAGES_DIR}`);
+    console.log(
+      `Would generate ${list.length} image(s) into ${IMAGES_DIR} (${args.batch ? 'batch' : 'interactive'} mode)`,
+    );
     for (const r of list) {
       console.log(`  [${r.id}] ${r.slug}.png — ${r.name}`);
       console.log(`    prompt length: ${r.prompt.length} chars`);
@@ -122,6 +150,12 @@ async function main() {
   }
 
   fal.config({ credentials: process.env.FAL_KEY });
+
+  console.log(
+    args.batch
+      ? 'Mode: batch — no prompts between images (MEAL_PREP_IMAGES_BATCH or --batch).'
+      : 'Mode: interactive — press Enter after each image, or use --batch.',
+  );
 
   const rl = args.batch ? null : readline.createInterface({ input, output });
 

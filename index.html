@@ -248,19 +248,6 @@
       }
     }
 
-    .browse-context-banner {
-      margin: 0;
-      padding: 9px 48px 11px;
-      font-size: 0.78rem;
-      line-height: 1.45;
-      color: var(--muted);
-      background: color-mix(in srgb, var(--surface) 88%, var(--bg));
-      border-bottom: 1px solid var(--border);
-      box-sizing: border-box;
-    }
-    .browse-context-banner[hidden] {
-      display: none !important;
-    }
     nav.nav--smart-picks {
       opacity: 0.86;
     }
@@ -946,7 +933,6 @@
       header,
       nav,
       .browse-mode,
-      .browse-context-banner,
       .prep-mode-coach-mount,
       .card-strip-wrapper {
         padding-left: 18px;
@@ -1064,7 +1050,6 @@
       header,
       nav,
       .browse-mode,
-      .browse-context-banner,
       .prep-mode-coach-mount,
       .card-strip-wrapper {
         padding-left: 14px;
@@ -1529,7 +1514,6 @@
 </header>
 
 <div class="browse-mode" id="browseModeBar"></div>
-<div id="browseContextBanner" class="browse-context-banner" role="status" hidden></div>
 <nav id="nav"></nav>
 <div class="card-strip-wrapper"><div class="card-strip" id="cardStrip"></div></div>
 <div id="recipeDetail"></div>
@@ -1566,16 +1550,16 @@ const ACCENT = {
   Asian:         '#1b8670',
 };
 
-const FLAVOR_KEYS = ['Bright & Tangy', 'Creamy', 'Smoky & Spicy', 'Fresh & Herb', 'Sweet & Savory', 'Rich & Umami'];
+const FLAVOR_KEYS = ['Tangy', 'Creamy', 'Spicy', 'Fresh', 'Savory', 'Umami'];
 const SEASON_KEYS = ['Spring', 'Summer', 'Fall', 'Winter', 'Year-round'];
 
 const FLAVOR_ACCENTS = {
-  'Bright & Tangy': '#2bb0a3',
+  'Tangy': '#2bb0a3',
   'Creamy': '#8b78b8',
-  'Smoky & Spicy': '#c23b3b',
-  'Fresh & Herb': '#4a9b6e',
-  'Sweet & Savory': '#b57d1f',
-  'Rich & Umami': '#5d4e44',
+  'Spicy': '#c23b3b',
+  'Fresh': '#4a9b6e',
+  'Savory': '#b57d1f',
+  'Umami': '#5d4e44',
 };
 const SEASON_ACCENTS = {
   'Spring': '#5d8f6e',
@@ -3074,89 +3058,89 @@ const RECIPES = [
 
 // [subCuisine, primaryFlavorTag[], primarySeason[]] — one flavor + one season each so Browse by Flavor/Season lists each recipe once.
 const RECIPE_META_BY_ID = {
-  1: ['American', ['Fresh & Herb'], ['Summer']],
-  2: ['American', ['Smoky & Spicy'], ['Summer']],
-  3: ['American', ['Smoky & Spicy'], ['Year-round']],
-  4: ['American', ['Sweet & Savory'], ['Winter']],
-  5: ['Italian', ['Rich & Umami'], ['Year-round']],
-  6: ['American', ['Rich & Umami'], ['Summer']],
+  1: ['American', ['Fresh'], ['Summer']],
+  2: ['American', ['Spicy'], ['Summer']],
+  3: ['American', ['Spicy'], ['Year-round']],
+  4: ['American', ['Savory'], ['Winter']],
+  5: ['Italian', ['Umami'], ['Year-round']],
+  6: ['American', ['Umami'], ['Summer']],
   7: ['American', ['Creamy'], ['Summer']],
-  8: ['American', ['Fresh & Herb'], ['Spring']],
-  9: ['American', ['Fresh & Herb'], ['Spring']],
-  10: ['American', ['Sweet & Savory'], ['Fall']],
-  11: ['Italian', ['Rich & Umami'], ['Year-round']],
-  12: ['Mexican', ['Smoky & Spicy'], ['Year-round']],
+  8: ['American', ['Fresh'], ['Spring']],
+  9: ['American', ['Fresh'], ['Spring']],
+  10: ['American', ['Savory'], ['Fall']],
+  11: ['Italian', ['Umami'], ['Year-round']],
+  12: ['Mexican', ['Spicy'], ['Year-round']],
   13: ['American', ['Creamy'], ['Summer']],
-  14: ['Mexican', ['Smoky & Spicy'], ['Year-round']],
-  15: ['American', ['Sweet & Savory'], ['Fall']],
-  16: ['American', ['Bright & Tangy'], ['Summer']],
-  17: ['American', ['Sweet & Savory'], ['Summer']],
+  14: ['Mexican', ['Spicy'], ['Year-round']],
+  15: ['American', ['Savory'], ['Fall']],
+  16: ['American', ['Tangy'], ['Summer']],
+  17: ['American', ['Savory'], ['Summer']],
   18: ['American', ['Creamy'], ['Summer']],
-  19: ['Japanese', ['Rich & Umami'], ['Year-round']],
-  20: ['Thai', ['Bright & Tangy'], ['Summer']],
-  21: ['Southeast Asian', ['Rich & Umami'], ['Year-round']],
-  22: ['Thai', ['Bright & Tangy'], ['Summer']],
-  23: ['Japanese', ['Fresh & Herb'], ['Year-round']],
-  24: ['Japanese', ['Bright & Tangy'], ['Spring']],
-  25: ['Japanese', ['Rich & Umami'], ['Year-round']],
-  26: ['Japanese', ['Fresh & Herb'], ['Year-round']],
-  27: ['Mexican', ['Bright & Tangy'], ['Summer']],
-  28: ['Japanese', ['Rich & Umami'], ['Year-round']],
-  29: ['Italian', ['Bright & Tangy'], ['Summer']],
-  30: ['Italian', ['Fresh & Herb'], ['Year-round']],
-  31: ['Italian', ['Bright & Tangy'], ['Spring']],
-  32: ['Italian', ['Rich & Umami'], ['Year-round']],
-  33: ['Italian', ['Sweet & Savory'], ['Fall']],
-  34: ['Italian', ['Fresh & Herb'], ['Summer']],
+  19: ['Japanese', ['Umami'], ['Year-round']],
+  20: ['Thai', ['Tangy'], ['Summer']],
+  21: ['Southeast Asian', ['Umami'], ['Year-round']],
+  22: ['Thai', ['Tangy'], ['Summer']],
+  23: ['Japanese', ['Fresh'], ['Year-round']],
+  24: ['Japanese', ['Tangy'], ['Spring']],
+  25: ['Japanese', ['Umami'], ['Year-round']],
+  26: ['Japanese', ['Fresh'], ['Year-round']],
+  27: ['Mexican', ['Tangy'], ['Summer']],
+  28: ['Japanese', ['Umami'], ['Year-round']],
+  29: ['Italian', ['Tangy'], ['Summer']],
+  30: ['Italian', ['Fresh'], ['Year-round']],
+  31: ['Italian', ['Tangy'], ['Spring']],
+  32: ['Italian', ['Umami'], ['Year-round']],
+  33: ['Italian', ['Savory'], ['Fall']],
+  34: ['Italian', ['Fresh'], ['Summer']],
   35: ['Italian', ['Creamy'], ['Summer']],
-  36: ['Provençal', ['Rich & Umami'], ['Summer']],
-  37: ['Lyonnaise', ['Rich & Umami'], ['Fall']],
-  38: ['Bistro', ['Rich & Umami'], ['Fall']],
-  41: ['Levantine', ['Bright & Tangy'], ['Summer']],
-  42: ['Levantine', ['Fresh & Herb'], ['Summer']],
-  43: ['Greek', ['Fresh & Herb'], ['Year-round']],
-  44: ['Greek', ['Rich & Umami'], ['Fall']],
-  45: ['Greek', ['Bright & Tangy'], ['Year-round']],
-  46: ['Middle Eastern', ['Rich & Umami'], ['Year-round']],
-  47: ['North African', ['Smoky & Spicy'], ['Fall']],
-  48: ['Greek', ['Fresh & Herb'], ['Summer']],
-  50: ['Spanish', ['Sweet & Savory'], ['Fall']],
-  51: ['Spanish', ['Bright & Tangy'], ['Winter']],
-  52: ['Greek', ['Bright & Tangy'], ['Summer']],
-  53: ['Greek', ['Fresh & Herb'], ['Year-round']],
+  36: ['Provençal', ['Umami'], ['Summer']],
+  37: ['Lyonnaise', ['Umami'], ['Fall']],
+  38: ['Bistro', ['Umami'], ['Fall']],
+  41: ['Levantine', ['Tangy'], ['Summer']],
+  42: ['Levantine', ['Fresh'], ['Summer']],
+  43: ['Greek', ['Fresh'], ['Year-round']],
+  44: ['Greek', ['Umami'], ['Fall']],
+  45: ['Greek', ['Tangy'], ['Year-round']],
+  46: ['Middle Eastern', ['Umami'], ['Year-round']],
+  47: ['North African', ['Spicy'], ['Fall']],
+  48: ['Greek', ['Fresh'], ['Summer']],
+  50: ['Spanish', ['Savory'], ['Fall']],
+  51: ['Spanish', ['Tangy'], ['Winter']],
+  52: ['Greek', ['Tangy'], ['Summer']],
+  53: ['Greek', ['Fresh'], ['Year-round']],
   54: ['Greek', ['Creamy'], ['Spring']],
-  55: ['Greek', ['Bright & Tangy'], ['Year-round']],
-  56: ['Mexican', ['Smoky & Spicy'], ['Summer']],
-  57: ['Mexican', ['Smoky & Spicy'], ['Year-round']],
-  58: ['Mexican', ['Bright & Tangy'], ['Summer']],
-  59: ['Mexican', ['Smoky & Spicy'], ['Summer']],
-  60: ['Mexican', ['Smoky & Spicy'], ['Year-round']],
-  61: ['Mexican', ['Sweet & Savory'], ['Fall']],
-  62: ['Japanese', ['Bright & Tangy'], ['Summer']],
-  63: ['Japanese', ['Rich & Umami'], ['Spring']],
-  64: ['Japanese', ['Rich & Umami'], ['Year-round']],
-  65: ['Japanese', ['Rich & Umami'], ['Year-round']],
-  66: ['Japanese', ['Smoky & Spicy'], ['Year-round']],
-  67: ['Japanese', ['Bright & Tangy'], ['Year-round']],
-  69: ['Indian', ['Smoky & Spicy'], ['Summer']],
-  70: ['Indian', ['Bright & Tangy'], ['Year-round']],
-  71: ['Indian', ['Rich & Umami'], ['Fall']],
+  55: ['Greek', ['Tangy'], ['Year-round']],
+  56: ['Mexican', ['Spicy'], ['Summer']],
+  57: ['Mexican', ['Spicy'], ['Year-round']],
+  58: ['Mexican', ['Tangy'], ['Summer']],
+  59: ['Mexican', ['Spicy'], ['Summer']],
+  60: ['Mexican', ['Spicy'], ['Year-round']],
+  61: ['Mexican', ['Savory'], ['Fall']],
+  62: ['Japanese', ['Tangy'], ['Summer']],
+  63: ['Japanese', ['Umami'], ['Spring']],
+  64: ['Japanese', ['Umami'], ['Year-round']],
+  65: ['Japanese', ['Umami'], ['Year-round']],
+  66: ['Japanese', ['Spicy'], ['Year-round']],
+  67: ['Japanese', ['Tangy'], ['Year-round']],
+  69: ['Indian', ['Spicy'], ['Summer']],
+  70: ['Indian', ['Tangy'], ['Year-round']],
+  71: ['Indian', ['Umami'], ['Fall']],
   72: ['Indian', ['Creamy'], ['Summer']],
-  73: ['Indian', ['Bright & Tangy'], ['Summer']],
-  74: ['Lebanese', ['Bright & Tangy'], ['Summer']],
-  76: ['Levantine', ['Sweet & Savory'], ['Fall']],
-  77: ['Middle Eastern', ['Rich & Umami'], ['Fall']],
+  73: ['Indian', ['Tangy'], ['Summer']],
+  74: ['Lebanese', ['Tangy'], ['Summer']],
+  76: ['Levantine', ['Savory'], ['Fall']],
+  77: ['Middle Eastern', ['Umami'], ['Fall']],
   78: ['Middle Eastern', ['Creamy'], ['Year-round']],
-  79: ['Levantine', ['Fresh & Herb'], ['Spring']],
-  80: ['Korean', ['Sweet & Savory'], ['Year-round']],
-  81: ['Korean', ['Smoky & Spicy'], ['Year-round']],
-  82: ['Korean', ['Bright & Tangy'], ['Summer']],
-  83: ['Korean', ['Sweet & Savory'], ['Year-round']],
-  84: ['Korean', ['Smoky & Spicy'], ['Year-round']],
-  85: ['Thai', ['Bright & Tangy'], ['Summer']],
-  86: ['Vietnamese', ['Bright & Tangy'], ['Summer']],
-  87: ['Vietnamese', ['Fresh & Herb'], ['Summer']],
-  88: ['Vietnamese', ['Bright & Tangy'], ['Summer']],
+  79: ['Levantine', ['Fresh'], ['Spring']],
+  80: ['Korean', ['Savory'], ['Year-round']],
+  81: ['Korean', ['Spicy'], ['Year-round']],
+  82: ['Korean', ['Tangy'], ['Summer']],
+  83: ['Korean', ['Savory'], ['Year-round']],
+  84: ['Korean', ['Spicy'], ['Year-round']],
+  85: ['Thai', ['Tangy'], ['Summer']],
+  86: ['Vietnamese', ['Tangy'], ['Summer']],
+  87: ['Vietnamese', ['Fresh'], ['Summer']],
+  88: ['Vietnamese', ['Tangy'], ['Summer']],
 };
 
 function applyRecipeMeta() {
@@ -3168,7 +3152,7 @@ function applyRecipeMeta() {
       r.seasons = m[2].slice();
     } else {
       r.subCuisine = 'Regional';
-      r.flavorTags = ['Fresh & Herb'];
+      r.flavorTags = ['Fresh'];
       r.seasons = ['Year-round'];
     }
   });
@@ -3342,19 +3326,6 @@ function recipesForCardStrip() {
   return raw;
 }
 
-function renderBrowseContextBanner() {
-  const banner = document.getElementById('browseContextBanner');
-  if (!banner) return;
-  if (activeCategory === OVERLAP_NAV_CAT) {
-    banner.hidden = false;
-    banner.textContent =
-      'Smart Picks ranks salads by overlap with your meal plan. Choose Cuisine, Flavor, Season, or any category below to go back to normal browsing.';
-  } else {
-    banner.hidden = true;
-    banner.textContent = '';
-  }
-}
-
 function renderBrowseModeBar() {
   const el = document.getElementById('browseModeBar');
   if (!el) return;
@@ -3385,7 +3356,6 @@ function renderBrowseModeBar() {
       <span class="browse-mode-spacer" aria-hidden="true"></span>
       <button type="button" class="meal-prep-mode-btn${mealPrepMode ? ' active' : ''}" data-meal-prep-toggle="1" aria-pressed="${mealPrepMode ? 'true' : 'false'}" title="Select multiple salads and copy a combined grocery list or recipes">Prep mode</button>
     </div>${smartPicksLockedHint}`;
-  renderBrowseContextBanner();
 }
 
 // ── Render Nav ────────────────────────────────────────────────────────────────
@@ -3399,7 +3369,6 @@ function renderNav() {
     return `<button type="button" class="${active}" data-filter="${escapeAttr(cat)}"
       style="--accent:${accent}">${escapeHtml(cat)}</button>`;
   }).join('');
-  renderBrowseContextBanner();
 }
 
 // ── Render Cards ──────────────────────────────────────────────────────────────
