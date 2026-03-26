@@ -4374,9 +4374,20 @@ function renderSingleDressingBlockHtml(chunk) {
       `<span class="dressing-single-name">${boldCompositeDressingBody(c)}</span></span>`
     );
   }
-  let body =
-    `<span class="dressing-recipe dressing-recipe-below">${boldCompositeDressingBody(inner)}</span>`;
-  if (after) body += `<span class="dressing-tail"> ${boldCompositeDressingBody(after)}</span>`;
+  const innerForDisplay = showAmounts ? keepOnlyQuantifiedDressingTerms(inner) : inner;
+  const afterForDisplay = showAmounts ? keepOnlyQuantifiedDressingTerms(after) : after;
+  let body = '';
+  if (innerForDisplay) {
+    body += `<span class="dressing-recipe dressing-recipe-below">${boldCompositeDressingBody(innerForDisplay)}</span>`;
+  }
+  if (afterForDisplay) body += `<span class="dressing-tail"> ${boldCompositeDressingBody(afterForDisplay)}</span>`;
+  if (!body) {
+    return (
+      '<span class="dressing-heading dressing-heading-single">' +
+      '<span class="dressing-prefix">dressing:</span> ' +
+      `<span class="dressing-single-name">${boldCompositeDressingBody(label)}</span></span>`
+    );
+  }
   return (
     '<span class="dressing-heading dressing-heading-single">' +
     '<span class="dressing-prefix">dressing:</span> ' +
@@ -4395,13 +4406,36 @@ function formatDressingComboPartLine(chunk) {
   const labelDisp = escapeHtml(displayComboSegmentLabel(dressingChunkLabel(c)));
   const inner = c.slice(pIdx + 1, end);
   const after = c.slice(end + 1).trim();
+  const innerForDisplay = showAmounts ? keepOnlyQuantifiedDressingTerms(inner) : inner;
+  const afterForDisplay = showAmounts ? keepOnlyQuantifiedDressingTerms(after) : after;
+  if (!innerForDisplay && !afterForDisplay) return '';
   let html =
     '<span class="dressing-line dressing-line-combo-part">' +
     `<span class="dressing-part-label">${labelDisp}:</span> ` +
-    `<span class="dressing-recipe-inline">${boldCompositeDressingBody(inner)}</span>`;
-  if (after) html += `<span class="dressing-tail"> ${boldCompositeDressingBody(after)}</span>`;
+    `<span class="dressing-recipe-inline">${boldCompositeDressingBody(innerForDisplay)}</span>`;
+  if (afterForDisplay) html += `<span class="dressing-tail"> ${boldCompositeDressingBody(afterForDisplay)}</span>`;
   html += '</span>';
   return html;
+}
+
+/**
+ * Amounts mode cleanup for dressing breakdowns:
+ * keep only plus-separated terms that have an explicit parseable amount.
+ */
+function keepOnlyQuantifiedDressingTerms(body) {
+  const src = String(body || '').trim();
+  if (!src) return '';
+  const chunks = splitPlusAtDepthZero(src);
+  if (chunks.length > 1) {
+    const kept = chunks
+      .map((c) => keepOnlyQuantifiedDressingTerms(c))
+      .map((c) => c.trim())
+      .filter(Boolean);
+    return kept.join(' + ');
+  }
+  const t = src.trim();
+  const { amount } = parseIngredient(t);
+  return amount ? t : '';
 }
 
 function renderDressingBlockHtml(body) {
