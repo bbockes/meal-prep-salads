@@ -1166,8 +1166,8 @@
       color: #333;
     }
     .dressing-heading-single .dressing-single-name {
-      font-weight: 600;
-      color: var(--text);
+      font-weight: 400;
+      color: #333;
     }
     .dressing-stack-single {
       display: block;
@@ -1197,8 +1197,8 @@
       line-height: 1.35;
     }
     .dressing-heading-combo .dressing-combo-names {
-      font-weight: 600;
-      color: var(--text);
+      font-weight: 400;
+      color: #333;
     }
     .dressing-stack {
       display: flex;
@@ -1798,6 +1798,7 @@ const RECIPES = [
       '¼ cup pickled red onions',
       '1 cup cherry tomatoes, halved',
       '½ cup toasted walnuts',
+      'optional: hot honey, for drizzling',
       'Dressing: honey-Dijon vinaigrette (raw honey + Dijon mustard + extra-virgin olive oil + sherry vinegar) // 2 tbsp honey + 1 tbsp Dijon + 2 tbsp olive oil + 1 tbsp vinegar (2 tbsp honey + 1 tbsp Dijon mustard + 2 tbsp olive oil + 1 tbsp sherry vinegar)',
     ],
     steps: [
@@ -1819,6 +1820,7 @@ const RECIPES = [
       '1 cucumber, sliced',
       '¼ cup red onion, thinly sliced',
       '½ cup cooked quinoa',
+      'optional: fresh mint or basil',
       'Dressing: citrus vinaigrette (extra-virgin olive oil + fresh lemon + orange juice + honey) // 2 tbsp olive oil + 1 tbsp lemon + 1 tbsp orange juice + 1 tsp honey (2 tbsp olive oil + 1 tbsp lemon juice + 1 tbsp orange juice + 1 tsp honey)',
     ],
     steps: [
@@ -1836,6 +1838,7 @@ const RECIPES = [
       '2 peaches, sliced (or 1 can, drained)',
       '¼ cup candied pecans',
       '2 oz gouda, cubed',
+      'optional: prosciutto, thinly sliced',
       'Dressing: honey vinaigrette (honey + white wine vinegar + olive oil + Dijon + shallot) // 3 tbsp honey vinaigrette (1½ tbsp olive oil + 1 tbsp white wine vinegar + 1½ tsp honey + ½ tsp Dijon + minced shallot)',
     ],
     steps: [
@@ -1854,6 +1857,7 @@ const RECIPES = [
       '1 cup green beans, microwaved',
       '½ cup frozen corn, thawed',
       '¼ cup crispy fried onions',
+      'optional: avocado, sliced',
       'Dressing: green goddess (parsley + chives + tarragon + mayo + sour cream + anchovy + lemon + garlic) // 3 tbsp green goddess dressing (2 tbsp mayo + 1 tbsp sour cream + minced parsley + chives + tarragon + anchovy + lemon juice + garlic)',
     ],
     steps: [
@@ -1931,6 +1935,7 @@ const RECIPES = [
       '1 cup shredded green cabbage + 1 cup shredded purple cabbage',
       '¼ cup sliced almonds',
       '3 scallions, sliced',
+      'optional: rotisserie chicken, shredded',
       'Dressing: sesame dressing (soy sauce + sesame oil + sugar + rice vinegar) + rice vinegar // 3 tbsp sesame dressing (2 tbsp soy + 1 tbsp sesame oil + 1 tsp sugar + splash rice vinegar) + 1 tsp rice vinegar',
     ],
     steps: [
@@ -1951,6 +1956,7 @@ const RECIPES = [
       '1 garlic clove, minced',
       '1 tsp chili crisp',
       '1 tsp sesame seeds',
+      'optional: cucumber, thinly sliced',
     ],
     steps: [
       'Combine daikon, rice vinegar, sesame oil, honey, garlic, and chili crisp.',
@@ -1971,6 +1977,7 @@ const RECIPES = [
       '1 cup shredded cabbage',
       '¼ cup almonds',
       '½ cup cooked wild rice',
+      'optional: rice vinegar, splash',
       'Dressing: miso + soy sauce + sesame oil + ginger + honey // 1 tbsp miso + 1 tbsp soy + 1 tsp sesame oil + 1 tsp ginger + 1 tsp honey (1 tbsp white miso + 1 tbsp soy sauce + 1 tsp toasted sesame oil + 1 tsp ginger + 1 tsp honey)',
     ],
     steps: [
@@ -2358,6 +2365,7 @@ const RECIPES = [
       '4 oz provolone, diced',
       '5 pepperoncini, sliced',
       '¼ cup red onion, thinly sliced',
+      'optional: salami or pepperoni',
       'Dressing: Italian dressing (red wine vinegar + olive oil + garlic + Italian herbs) + lemon + oregano // 3 tbsp Italian dressing + squeeze of lemon + pinch of dried oregano (3 tbsp oil + vinegar blend + lemon wedge + pinch dried oregano)',
     ],
     steps: [
@@ -2379,6 +2387,7 @@ const RECIPES = [
       '¾ tsp honey',
       '½ tsp Dijon mustard',
       'Salt & pepper to taste',
+      'optional: prosciutto, thinly sliced',
     ],
     steps: [
       'Whisk olive oil, lemon, honey, Dijon, salt & pepper in the bottom of a large bowl.',
@@ -2414,6 +2423,7 @@ const RECIPES = [
       '3 cups romaine, chopped',
       '¼ cup shaved parmesan',
       '½ cup toasted chopped almonds',
+      'optional: anchovies',
       'Dressing: Caesar (mayo + olive oil + lemon + Dijon + garlic + Worcestershire) // Caesar (1 cup mayo + ¼ cup olive oil + 2 tbsp lemon juice + 2 tsp Dijon + 1 grated garlic clove + 1 tsp Worcestershire + salt & pepper)',
     ],
     steps: [
@@ -2433,6 +2443,7 @@ const RECIPES = [
       '1 cup cherry tomatoes, halved',
       '¼ cup jarred pepperoncini or banana peppers',
       '½ cup toasted sunflower seeds',
+      'optional: mayo, spoonful for dressing',
       'Dressing: sub-shop vinaigrette (olive oil + red wine vinegar + dried oregano + garlic powder) // 2 tbsp olive oil + 1 tbsp red wine vinegar + ½ tsp dried oregano (2 tbsp EVOO + red wine vinegar + oregano + pinch garlic)',
     ],
     steps: [
@@ -2454,6 +2465,7 @@ const RECIPES = [
       '½ cup walnuts',
       '½ cup shaved pecorino',
       '1 tbsp fresh thyme',
+      'optional: gorgonzola, crumbled',
       'Dressing: honey-Dijon vinaigrette (extra-virgin olive oil + apple cider vinegar + Dijon mustard + honey) // 3 tbsp olive oil + 2 tbsp apple cider vinegar + 1 tsp Dijon + 1 tsp honey (3 tbsp oil + 2 tbsp vinegar + Dijon + honey)',
     ],
     steps: [
@@ -2639,6 +2651,7 @@ const RECIPES = [
       '¼ cup red onion, sliced',
       '¼ cup feta crumbles',
       '½ cup cooked farro or quinoa',
+      'optional: hummus, on the side',
       'Dressing: Greek-style vinaigrette (olive oil + lemon + dried oregano + garlic) // 2 tbsp olive oil + 1 tbsp lemon + ½ tsp oregano + 1 garlic clove (2 tbsp EVOO + lemon juice + oregano + grated garlic)',
     ],
     steps: [
@@ -2658,6 +2671,7 @@ const RECIPES = [
       '½ cup kalamata olives',
       '4 oz block feta, sliced or crumbled',
       '1 tsp fresh oregano',
+      'optional: grilled chicken or chickpeas',
       'Dressing: horiatiki dressing (olive oil + red wine vinegar + dried oregano + salt) // 2 tbsp olive oil + 1 tbsp red wine vinegar + pinch of dried oregano (2 tbsp EVOO + vinegar + oregano + salt)',
     ],
     steps: [
@@ -3052,6 +3066,7 @@ const RECIPES = [
       '1 avocado, sliced',
       '¼ cup fresh cilantro',
       '1 tsp Tajín seasoning',
+      'optional: rotisserie chicken, shredded',
       'Dressing: spicy mayo (mayo + hot sauce or sriracha + pinch of sugar) + lime juice (lime juice) // 2 tbsp spicy mayo + 1 tbsp lime juice (2 tbsp mayo + sriracha to taste + 1 tbsp lime juice)',
     ],
     steps: [
@@ -5740,10 +5755,12 @@ function copyMealPlanIngredientsConsolidated() {
     flash('No salads in your meal plan yet.');
     return;
   }
+  const recipeNames = [];
   const lines = [];
   for (const id of mealPlanIds) {
     const r = RECIPES.find((x) => x.id === id);
     if (!r) continue;
+    recipeNames.push(r.name);
     const blockLines = withClipboardOptions(
       { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
       () => r.ingredients.map(ingredientLineForClipboard)
@@ -5760,7 +5777,17 @@ function copyMealPlanIngredientsConsolidated() {
       lines.push(...t.split('\n').map((s) => s.trim()).filter(Boolean));
     }
   }
-  const text = consolidateIngredientLinesForCopy(lines, mealPlanUnitMode).trim();
+  const ingredientsBody = consolidateIngredientLinesForCopy(lines, mealPlanUnitMode).trim();
+  let header = '';
+  if (recipeNames.length <= 1) {
+    header = recipeNames[0] || '';
+  } else if (recipeNames.length === 2) {
+    header = `Combined ingredients for ${recipeNames[0]} and ${recipeNames[1]}`;
+  } else {
+    const leadingNames = recipeNames.slice(0, -1).join(', ');
+    header = `Combined ingredients for ${leadingNames}, and ${recipeNames[recipeNames.length - 1]}`;
+  }
+  const text = header ? `${header}\n\n${ingredientsBody}`.trim() : ingredientsBody;
   const btn = document.getElementById('mealPlanCopyIngredientsBtn');
   navigator.clipboard
     .writeText(text)
@@ -5820,7 +5847,8 @@ function copyIngredients(id) {
     }
     const out = [...sortIngredientLinesByAisle(saladLines.filter(Boolean))];
     if (dressingBlocks.length) for (const b of dressingBlocks) out.push(b);
-    return out.join('\n').trimEnd() + '\n';
+    const ingredientsBody = out.join('\n').trimEnd();
+    return `${r.name}\n\n${ingredientsBody}`.trim() + '\n';
   });
   const btn = document.getElementById('copyIngredientsBtn');
   navigator.clipboard
