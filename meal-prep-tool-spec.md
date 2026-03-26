@@ -116,57 +116,106 @@ Only one filter active at a time for now. Combination filters (`/salads/diet/veg
 
 ### 4.2 Updated Structure Needed
 
+Each recipe must support five diet contexts: `vegan`, `vegetarian`, `high-protein`, `keto`, and `paleo`. Rather than automatically omitting ingredients, **every recipe has manually authored diet-specific swaps**. This is intentional — the goal is that every diet version of a recipe actually tastes great, not just that non-compliant ingredients are silently removed.
+
+The dressing and optional protein are the two fields that change per diet. The base ingredients (greens, vegetables) are the same across all versions unless a specific swap is defined.
+
 ```json
 {
-  "id": "chipotle-black-bean",
-  "title": "Chipotle Black Bean",
-  "cuisine": "mexican",
-  "flavor": ["spicy", "smoky"],
-  "season": ["spring", "summer", "fall"],
-  "diet": ["vegan", "vegetarian"],
+  "id": "caesar",
+  "title": "Caesar Salad",
+  "cuisine": "italian",
+  "flavor": ["savory", "creamy"],
+  "season": ["spring", "summer", "fall", "winter"],
+  "diet": ["vegan", "vegetarian", "high-protein", "keto", "paleo"],
   "ingredients": [
-    {
-      "name": "spring mix",
-      "tags": ["base", "vegan", "vegetarian"]
-    },
-    {
-      "name": "black beans, drained",
-      "tags": ["protein", "vegan", "vegetarian", "high-protein"]
-    },
-    {
-      "name": "sweet potato, roasted and cubed",
-      "tags": ["vegan", "vegetarian"]
-    }
+    { "name": "romaine lettuce, chopped" },
+    { "name": "croutons", "omitFor": ["keto", "paleo"] },
+    { "name": "shaved parmesan", "omitFor": ["vegan", "paleo"] }
   ],
-  "optionalProtein": [
-    { "name": "grilled chicken", "diet": ["high-protein"] },
-    { "name": "chickpeas", "diet": ["vegan", "vegetarian", "high-protein"] },
-    { "name": "hard boiled egg", "diet": ["vegetarian", "high-protein"] },
-    { "name": "tofu", "diet": ["vegan", "vegetarian"] }
-  ],
-  "steps": [...],
   "dressing": {
-    "name": "chipotle crema",
-    "recipe": "Greek yogurt + chipotle in adobo + lime + garlic",
-    "veganSwap": "cashew cream + chipotle in adobo + lime + garlic"
-  }
+    "default": {
+      "name": "classic caesar",
+      "recipe": "anchovy paste + parmesan + lemon + garlic + olive oil + egg yolk"
+    },
+    "vegan": {
+      "name": "vegan caesar",
+      "recipe": "white miso + capers + lemon + garlic + olive oil + dijon"
+    },
+    "vegetarian": {
+      "name": "vegetarian caesar",
+      "recipe": "parmesan + lemon + garlic + olive oil + dijon (no anchovy)"
+    },
+    "high-protein": {
+      "name": "high protein caesar",
+      "recipe": "greek yogurt + anchovy paste + lemon + garlic + parmesan"
+    },
+    "keto": {
+      "name": "keto caesar",
+      "recipe": "anchovy paste + parmesan + lemon + garlic + olive oil + egg yolk (same as classic, keto-compliant)"
+    },
+    "paleo": {
+      "name": "paleo caesar",
+      "recipe": "anchovy paste + lemon + garlic + olive oil + egg yolk (no parmesan)"
+    }
+  },
+  "optionalProtein": [
+    { "name": "grilled chicken breast", "diet": ["high-protein", "keto", "paleo"] },
+    { "name": "chickpeas, roasted", "diet": ["vegan", "vegetarian"] },
+    { "name": "hard boiled egg", "diet": ["vegetarian", "high-protein", "keto", "paleo"] },
+    { "name": "tofu, pan-fried", "diet": ["vegan", "vegetarian"] },
+    { "name": "salmon, grilled", "diet": ["high-protein", "keto", "paleo"] },
+    { "name": "shrimp, grilled", "diet": ["high-protein", "keto", "paleo"] }
+  ],
+  "steps": [...]
 }
 ```
 
-### 4.3 Diet Tag Logic
+### 4.3 How Diet Swaps Render in the UI
 
-Recipes get diet tags based on their ingredients:
-- `vegan` — no meat, dairy, eggs, honey
-- `vegetarian` — no meat, but dairy/eggs allowed
-- `high-protein` — contains high-protein ingredients OR has a high-protein optional protein
-- `keto` — low carb, high fat ingredients
-- `paleo` — no grains, legumes, dairy
+**This is the critical behavior.** When a user is on a diet-filtered page (e.g. `/salads/diet/vegan`), the recipe detail view must:
 
-When the active diet filter is `vegan`:
-- Hide any ingredient tagged with `meat | dairy | egg`
-- Show vegan dressing swap if available
-- Show only vegan optional proteins
-- If a recipe has a `veganSwap` for dressing, display that instead
+1. **Dressing** — display the diet-specific dressing version, not the default. Do not show the default dressing at all. Do not say "swap this for that." Just show the correct version as if it is the recipe.
+
+2. **Ingredients with `omitFor`** — if the active diet is listed in an ingredient's `omitFor` array, hide that ingredient entirely. Do not mention it was removed.
+
+3. **Optional protein** — show only the proteins whose `diet` array includes the active diet filter. Display as: *"Add a protein: [chickpeas] [tofu]"* for vegan, *"Add a protein: [grilled chicken] [salmon] [shrimp]"* for high-protein, etc.
+
+4. **No diet filter active** — show default dressing, all ingredients, all optional proteins.
+
+The experience should feel like the recipe was always written for that diet. There should be no UI indication that anything was swapped or hidden. The user on `/salads/diet/vegan` should see a vegan Caesar and assume it was always a vegan Caesar.
+
+### 4.4 Diet Definitions — What Each Diet Means for This Tool
+
+Use these definitions consistently when authoring diet swaps for all 75 recipes:
+
+**`vegan`**
+- No meat, poultry, seafood, dairy, eggs, or honey
+- Dressing swaps: replace anchovy with capers or miso, replace parmesan with nutritional yeast, replace dairy with cashew cream or coconut cream, replace egg yolk with dijon as emulsifier
+- Protein options: chickpeas, lentils, tofu, tempeh, edamame, roasted seeds
+
+**`vegetarian`**
+- No meat, poultry, or seafood. Dairy and eggs are allowed.
+- Dressing swaps: replace anchovy/fish sauce with a small amount of soy sauce or omit entirely
+- Protein options: hard boiled egg, halloumi, paneer, chickpeas, lentils, tofu
+
+**`high-protein`**
+- Emphasize protein-dense ingredients. No restrictions on food groups.
+- Dressing swaps: replace oil-heavy dressings with greek yogurt base where possible to add protein
+- Protein options: grilled chicken, salmon, shrimp, tuna, hard boiled egg, steak strips, edamame
+- Ingredient notes: boost with hemp seeds, parmesan, or legumes where appropriate
+
+**`keto`**
+- No grains, no legumes, low sugar, high fat
+- Omit: croutons, corn, beans, most fruit, high-sugar dressings
+- Dressing swaps: use full-fat olive oil or avocado oil bases, avoid honey or maple syrup, use dijon or anchovy for flavor
+- Protein options: grilled chicken, salmon, shrimp, steak, hard boiled egg, bacon bits
+
+**`paleo`**
+- No grains, no legumes, no dairy, no refined sugar
+- Omit: croutons, corn, beans, parmesan, feta, any cheese, yogurt-based dressings
+- Dressing swaps: olive oil or avocado oil base, lemon, garlic, fresh herbs. No dairy, no soy.
+- Protein options: grilled chicken, salmon, shrimp, steak, hard boiled egg
 
 ### 4.4 Recipe Title Convention
 
