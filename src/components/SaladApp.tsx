@@ -4,9 +4,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
-import { DIET_KEYS, DIET_ACCENTS } from '@/data/diet-config';
+import { DIET_KEYS, DIET_ACCENTS, OPTIONAL_PROTEINS } from '@/data/diet-config';
 import { RECIPES, Recipe } from '@/data/recipes';
-import { getOptionalProteinsForDiet, adaptStepForDiet } from '@/lib/diet-utils';
+import { getOptionalProteinsForDiet, adaptStepForDiet, adaptStepForProteinSwap, getRecommendedProteins } from '@/lib/diet-utils';
 import {
   formatState,
   SCALING_BASE_PORTIONS,
@@ -34,6 +34,7 @@ import {
   getRecipesSortedByPlanOverlap,
   formatAmountForDisplay,
   adaptStepText,
+  recipeStepsForDisplay,
 } from '@/lib/recipe-utils';
 
 const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
@@ -309,9 +310,9 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
           if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
           else saladLines.push(String(rendered || '').trim());
         }
-        if (activeDiet && selectedProteinByRecipe[id]) {
+        if (selectedProteinByRecipe[id]) {
           const pName = selectedProteinByRecipe[id];
-          const pDef = getOptionalProteinsForDiet(activeDiet).find((p) => p.name === pName);
+          const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
           if (pDef) {
             const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
             saladLines.push(line);
@@ -335,16 +336,17 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       const r = RECIPES.find((x) => x.id === id);
       if (!r) return;
       let block = ingredientsBlockForFullRecipeCopy(r, {});
-      if (activeDiet && selectedProteinByRecipe[id]) {
+      if (selectedProteinByRecipe[id]) {
         const pName = selectedProteinByRecipe[id];
-        const pDef = getOptionalProteinsForDiet(activeDiet).find((p) => p.name === pName);
+        const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
         if (pDef) {
           const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
           block += `\n${line}`;
         }
       }
-      const adaptedSteps = r.steps
-        .map((s) => (activeDiet ? adaptStepForDiet(s, r, activeDiet, selectedProteinByRecipe[id] || null) : s))
+      const selProtein = selectedProteinByRecipe[id] || null;
+      const adaptedSteps = recipeStepsForDisplay(r, selProtein)
+        .map((s) => activeDiet ? adaptStepForDiet(s, r, activeDiet, selProtein) : adaptStepForProteinSwap(s, selProtein))
         .map((s, i) => `${i + 1}. ${s}`)
         .join('\n');
       const text = `${r.name}\n\nIngredients:\n${block}\n\nSteps:\n${adaptedSteps}`;
@@ -371,9 +373,9 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
         { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
         () => {
           const ingLines = r.ingredients.map((ing) => ingredientLineForClipboard(ing));
-          if (activeDiet && selectedProteinByRecipe[id]) {
+          if (selectedProteinByRecipe[id]) {
             const pName = selectedProteinByRecipe[id];
-            const pDef = getOptionalProteinsForDiet(activeDiet).find((p) => p.name === pName);
+            const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
             if (pDef) {
               const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
               ingLines.push(line);
@@ -423,16 +425,17 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
         { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
         () => {
           let ingredientsBlock = ingredientsBlockForFullRecipeCopy(r, { mealPlanCopy: true });
-          if (activeDiet && selectedProteinByRecipe[id]) {
+          if (selectedProteinByRecipe[id]) {
             const pName = selectedProteinByRecipe[id];
-            const pDef = getOptionalProteinsForDiet(activeDiet).find((p) => p.name === pName);
+            const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
             if (pDef) {
               const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
               ingredientsBlock += `\n${line}`;
             }
           }
-          const adaptedSteps = r.steps
-            .map((s) => (activeDiet ? adaptStepForDiet(s, r, activeDiet, selectedProteinByRecipe[id] || null) : s))
+          const mealSelProtein = selectedProteinByRecipe[id] || null;
+          const adaptedSteps = recipeStepsForDisplay(r, mealSelProtein)
+            .map((s) => activeDiet ? adaptStepForDiet(s, r, activeDiet, mealSelProtein) : adaptStepForProteinSwap(s, mealSelProtein))
             .map((s, i) => `${i + 1}. ${s}`)
             .join('\n');
           return `${r.name}\n\nIngredients:\n${ingredientsBlock}\n\nSteps:\n${adaptedSteps}`;
@@ -585,7 +588,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
             const sel = r.id === selectedId ? 'selected' : '';
             const plan = inPlan.has(r.id) ? 'in-meal-plan' : '';
             const sub =
-              (browseMode === 'cuisine' || browseMode === 'flavor' || browseMode === 'season' || smartPicksBrowsing) &&
+              (browseMode === 'cuisine' || browseMode === 'flavor' || browseMode === 'season' || browseMode === 'diet' || smartPicksBrowsing) &&
               r.subCuisine ? (
                 <div className="card-subcuisine">{r.subCuisine}</div>
               ) : null;
@@ -708,46 +711,95 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
                     __html: recipe.ingredients.map((ing) => renderIngredient(ing, planHintCtx)).join(''),
                   }}
                 />
-                {activeDiet && (() => {
-                  const proteins = getOptionalProteinsForDiet(activeDiet);
-                  if (!proteins.length) return null;
+                {(() => {
+                  const recs = getRecommendedProteins(recipe);
+                  const recStar = (
+                    <span className="protein-rec-badge" title="Pairs well with this salad">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </span>
+                  );
+                  const sortByRec = (list, recName) =>
+                    [...list].sort((a, b) => (a.name === recName ? -1 : b.name === recName ? 1 : 0));
+
+                  const renderProteinItem = (p, i, recName) => {
+                    const isSelected = selectedProteinByRecipe[recipe.id] === p.name;
+                    const isRec = p.name === recName;
+                    const toggleProtein = () =>
+                      setSelectedProteinByRecipe((prev) =>
+                        prev[recipe.id] === p.name
+                          ? (() => { const next = { ...prev }; delete next[recipe.id]; return next; })()
+                          : { ...prev, [recipe.id]: p.name }
+                      );
+                    return (
+                      <li
+                        key={i}
+                        className={isSelected ? 'protein-selected' : ''}
+                        role="button"
+                        tabIndex={0}
+                        onClick={toggleProtein}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleProtein(); }
+                        }}
+                      >
+                        <span className="bullet" />
+                        <span className="ingredient-body">
+                          {showAmounts && (
+                            <span className="amount">{formatAmountForDisplay(p.amount, p.name)} </span>
+                          )}
+                          {p.name}
+                          {isRec && recStar}
+                        </span>
+                        <span className="protein-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg></span>
+                      </li>
+                    );
+                  };
+
+                  if (activeDiet) {
+                    const proteins = getOptionalProteinsForDiet(activeDiet);
+                    if (!proteins.length) return null;
+                    const dietRecName = proteins.find((p) => p.name === recs.traditional)?.name
+                      || proteins.find((p) => p.name === recs.plant)?.name
+                      || null;
+                    const sorted = dietRecName ? sortByRec(proteins, dietRecName) : proteins;
+                    return (
+                      <div className="optional-protein-section">
+                        <div className="section-heading">
+                          <span>💪</span> Add a protein <span className="optional-protein-label">(optional)</span>
+                        </div>
+                        <ul className="ingredients-list optional-protein-list">
+                          {sorted.map((p, i) => renderProteinItem(p, i, dietRecName))}
+                        </ul>
+                      </div>
+                    );
+                  }
+
+                  const traditional = sortByRec(
+                    OPTIONAL_PROTEINS.filter((p) => p.category === 'traditional'),
+                    recs.traditional
+                  );
+                  const plant = sortByRec(
+                    OPTIONAL_PROTEINS.filter((p) => p.category === 'plant'),
+                    recs.plant
+                  );
                   return (
                     <div className="optional-protein-section">
                       <div className="section-heading">
-                        <span>💪</span> Add Protein <span className="optional-protein-label">(optional)</span>
+                        <span>💪</span> Add a protein <span className="optional-protein-label">(optional)</span>
                       </div>
-                      <ul className="ingredients-list optional-protein-list">
-                        {proteins.map((p, i) => {
-                          const isSelected = selectedProteinByRecipe[recipe.id] === p.name;
-                          const toggleProtein = () =>
-                            setSelectedProteinByRecipe((prev) =>
-                              prev[recipe.id] === p.name
-                                ? (() => { const next = { ...prev }; delete next[recipe.id]; return next; })()
-                                : { ...prev, [recipe.id]: p.name }
-                            );
-                          return (
-                            <li
-                              key={i}
-                              className={isSelected ? 'protein-selected' : ''}
-                              role="button"
-                              tabIndex={0}
-                              onClick={toggleProtein}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleProtein(); }
-                              }}
-                            >
-                              <span className="bullet" />
-                              <span className="ingredient-body">
-                                {showAmounts && (
-                                  <span className="amount">{formatAmountForDisplay(p.amount, p.name)} </span>
-                                )}
-                                {p.name}
-                              </span>
-                              <span className="protein-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg></span>
-                            </li>
-                          );
-                        })}
-                      </ul>
+                      <div className="protein-columns">
+                        <div className="protein-column">
+                          <div className="protein-column-heading">Traditional</div>
+                          <ul className="ingredients-list optional-protein-list">
+                            {traditional.map((p, i) => renderProteinItem(p, i, recs.traditional))}
+                          </ul>
+                        </div>
+                        <div className="protein-column">
+                          <div className="protein-column-heading">Plant-Based</div>
+                          <ul className="ingredients-list optional-protein-list">
+                            {plant.map((p, i) => renderProteinItem(p, i, recs.plant))}
+                          </ul>
+                        </div>
+                      </div>
                     </div>
                   );
                 })()}
@@ -757,7 +809,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
                   <span>📋</span> Steps
                 </div>
                 <ul className="steps-list">
-                  {recipe.steps.map((s, i) => (
+                  {recipeStepsForDisplay(recipe, selectedProteinByRecipe[recipe.id] || null).map((s, i) => (
                     <li key={i}>
                       <span className="step-num">{i + 1}</span>
                       <span className="step-content" dangerouslySetInnerHTML={{ __html: formatStepLineHtml(s, recipe) }} />

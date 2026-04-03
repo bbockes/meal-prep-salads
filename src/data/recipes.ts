@@ -153,8 +153,7 @@ export const RECIPES: Recipe[] = [
     steps: [
       'Roast sweet potatoes + broccoli at 425°F for ~20 min.',
       'Toss greens, cabbage, and carrots in a bowl.',
-      'Add chickpeas.',
-      'Add roasted veggies and almonds.',
+      'Add chickpeas, roasted veggies, and almonds.',
       'Toss with green goddess dressing.',
     ],
   },
@@ -272,7 +271,6 @@ export const RECIPES: Recipe[] = [
       'Add peaches, gouda, and candied pecans.',
       'Toss gently.',
       'Drizzle extra honey vinaigrette.',
-      'Optional: add prosciutto on top.',
     ],
   },
   {
@@ -369,7 +367,6 @@ export const RECIPES: Recipe[] = [
       'Add shredded cabbage and sliced almonds.',
       'Mix and serve immediately for maximum crunch.',
       'Top with scallions.',
-      'Optional: add shredded rotisserie chicken.',
     ],
   },
   {
@@ -695,10 +692,10 @@ export const RECIPES: Recipe[] = [
       'Dressing: gochujang + rice vinegar + sesame oil + honey // 1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey (1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey)',
     ],
     steps: [
-      'Marinate and cook bulgogi beef in a hot pan, 2–3 min per side.',
+      'In a hot pan, sear beef until browned, about 2–3 min per side.',
       'Toss romaine, cabbage, and carrots together.',
       'Dress with gochujang vinaigrette.',
-      'Top with sliced bulgogi beef.',
+      'Spoon what you seared in step 1 over the salad.',
       'Finish with scallions and sesame seeds.',
     ],
   },
@@ -798,7 +795,6 @@ export const RECIPES: Recipe[] = [
       'Combine all salad ingredients in a large bowl.',
       'Drizzle with Italian dressing and toss gently.',
       'Season with salt, pepper, and extra oregano.',
-      'Optional: add salami or pepperoni for a heartier salad.',
       'Serve immediately or chill briefly.',
     ],
   },
@@ -820,7 +816,6 @@ export const RECIPES: Recipe[] = [
       'Add arugula and toss to coat.',
       'Top with parmesan and pine nuts.',
       'Serve immediately.',
-      'Optional: drape thin-sliced prosciutto on top.',
     ],
   },
   {
@@ -857,7 +852,6 @@ export const RECIPES: Recipe[] = [
       'Toss romaine with dressing and half the parmesan.',
       'Top with toasted chopped almonds and remaining parmesan.',
       'Serve immediately.',
-      'Optional: add anchovies for authentic depth.',
     ],
   },
   {
@@ -977,9 +971,8 @@ export const RECIPES: Recipe[] = [
     ],
     steps: [
       'Microwave quinoa per package. Let cool slightly.',
-      'Combine quinoa, arugula, cucumber, feta, olives, onion, and herbs.',
+      'Combine quinoa, arugula, cucumber, feta, olives, onion, tomatoes, chickpeas, and herbs.',
       'Dress and toss.',
-      'Top with roasted chickpeas.',
       'Season with red pepper flakes, salt, and pepper.',
     ],
   },
@@ -1105,7 +1098,6 @@ export const RECIPES: Recipe[] = [
       'Add dressing and mix.',
       'Top with feta — don\'t overmix so it stays in chunks.',
       'Finish with fresh oregano and cracked pepper.',
-      'Optional: add grilled chicken or chickpeas for protein.',
     ],
   },
   {
@@ -1500,7 +1492,6 @@ export const RECIPES: Recipe[] = [
       'Plate and add avocado slices.',
       'Add fresh cilantro on top.',
       'Sprinkle Tajín generously.',
-      'Optional: add shredded rotisserie chicken.',
     ],
   },
 ];

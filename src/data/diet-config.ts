@@ -1,28 +1,25 @@
-export const DIET_KEYS = ['Vegan', 'Vegetarian', 'High-Protein', 'Keto', 'Paleo'] as const;
+export const DIET_KEYS = ['Vegan', 'Vegetarian', 'Paleo', 'Keto'] as const;
 export type DietKey = (typeof DIET_KEYS)[number];
 
 export const DIET_SLUGS: Record<string, string> = {
   'Vegan': 'vegan',
   'Vegetarian': 'vegetarian',
-  'High-Protein': 'high-protein',
-  'Keto': 'keto',
   'Paleo': 'paleo',
+  'Keto': 'keto',
 };
 
 export const DIET_FROM_SLUG: Record<string, string> = {
   'vegan': 'Vegan',
   'vegetarian': 'Vegetarian',
-  'high-protein': 'High-Protein',
-  'keto': 'Keto',
   'paleo': 'Paleo',
+  'keto': 'Keto',
 };
 
 export const DIET_ACCENTS: Record<string, string> = {
   'Vegan': '#2d8650',
   'Vegetarian': '#4a9b6e',
-  'High-Protein': '#c23b3b',
-  'Keto': '#b57d1f',
   'Paleo': '#8b6f47',
+  'Keto': '#b57d1f',
 };
 
 export interface IngredientOmitRule {
@@ -31,28 +28,30 @@ export interface IngredientOmitRule {
   swappable?: boolean;
 }
 
-export const INGREDIENT_OMIT_RULES: IngredientOmitRule[] = [
-  // Meat & poultry — swappable with selected protein in steps
-  { pattern: /\bchicken\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\brotisserie\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bbeef\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bsteak\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bbulgogi\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bturkey\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bbacon\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bprosciutto\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bham\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bsalami\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bserrano\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bpepperoni\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bkaraage\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+const ALL_DIETS = [...DIET_KEYS] as string[];
 
-  // Seafood — swappable with selected protein in steps
-  { pattern: /\bshrimp\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bsalmon\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\btuna\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\bcrab\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
-  { pattern: /\banchov/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+export const INGREDIENT_OMIT_RULES: IngredientOmitRule[] = [
+  // Meat & poultry — swappable with selected protein in steps (all diets)
+  { pattern: /\bchicken\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\brotisserie\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bbeef\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bsteak\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bbulgogi\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bturkey\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bbacon\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bprosciutto\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bham\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bsalami\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bserrano\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bpepperoni\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bkaraage\b/i, diets: ALL_DIETS, swappable: true },
+
+  // Seafood — swappable with selected protein in steps (all diets)
+  { pattern: /\bshrimp\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bsalmon\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\btuna\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\bcrab\b/i, diets: ALL_DIETS, swappable: true },
+  { pattern: /\banchov/i, diets: ALL_DIETS, swappable: true },
 
   // Dairy
   { pattern: /\bparmesan\b/i, diets: ['Vegan', 'Paleo'] },
@@ -185,26 +184,28 @@ export const DRESSING_SUBS: Record<string, DressingSub[]> = {
     { from: /\bbutter\b/gi, to: 'ghee' },
     { from: /\bblue cheese\b/gi, to: '' },
   ],
-  'High-Protein': [],
 };
+
+export type ProteinCategory = 'traditional' | 'plant';
 
 export interface OptionalProtein {
   name: string;
   amount: string;
   diets: string[];
+  category: ProteinCategory;
 }
 
 export const OPTIONAL_PROTEINS: OptionalProtein[] = [
-  { name: 'grilled chicken breast', amount: '6 oz', diets: ['High-Protein', 'Keto', 'Paleo'] },
-  { name: 'grilled salmon', amount: '6 oz', diets: ['High-Protein', 'Keto', 'Paleo'] },
-  { name: 'grilled shrimp', amount: '6 oz', diets: ['High-Protein', 'Keto', 'Paleo'] },
-  { name: 'hard-boiled eggs', amount: '2', diets: ['Vegetarian', 'High-Protein', 'Keto', 'Paleo'] },
-  { name: 'roasted chickpeas', amount: '½ cup', diets: ['Vegan', 'Vegetarian', 'High-Protein'] },
-  { name: 'pan-fried tofu', amount: '6 oz', diets: ['Vegan', 'Vegetarian', 'High-Protein'] },
-  { name: 'tempeh, sliced', amount: '6 oz', diets: ['Vegan', 'Vegetarian'] },
-  { name: 'edamame, shelled', amount: '½ cup', diets: ['Vegan', 'Vegetarian', 'High-Protein'] },
-  { name: 'steak strips', amount: '6 oz', diets: ['High-Protein', 'Keto', 'Paleo'] },
-  { name: 'hemp seeds', amount: '2 tbsp', diets: ['Vegan', 'Vegetarian', 'High-Protein', 'Keto', 'Paleo'] },
+  { name: 'grilled chicken breast', amount: '6 oz', diets: ['Keto', 'Paleo'], category: 'traditional' },
+  { name: 'grilled salmon', amount: '6 oz', diets: ['Keto', 'Paleo'], category: 'traditional' },
+  { name: 'grilled shrimp', amount: '6 oz', diets: ['Keto', 'Paleo'], category: 'traditional' },
+  { name: 'hard-boiled eggs', amount: '2', diets: ['Vegetarian', 'Keto', 'Paleo'], category: 'traditional' },
+  { name: 'steak strips', amount: '6 oz', diets: ['Keto', 'Paleo'], category: 'traditional' },
+  { name: 'roasted chickpeas', amount: '½ cup', diets: ['Vegan', 'Vegetarian'], category: 'plant' },
+  { name: 'pan-fried tofu', amount: '6 oz', diets: ['Vegan', 'Vegetarian'], category: 'plant' },
+  { name: 'tempeh, sliced', amount: '6 oz', diets: ['Vegan', 'Vegetarian'], category: 'plant' },
+  { name: 'edamame, shelled', amount: '½ cup', diets: ['Vegan', 'Vegetarian'], category: 'plant' },
+  { name: 'hemp seeds', amount: '2 tbsp', diets: ['Vegan', 'Vegetarian', 'Keto', 'Paleo'], category: 'plant' },
 ];
 
 export const MIN_VIABLE_INGREDIENTS = 3;

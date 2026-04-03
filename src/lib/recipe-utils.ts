@@ -2,7 +2,17 @@
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
 import { DIET_KEYS, DIET_ACCENTS } from '@/data/diet-config';
 import { Recipe, RECIPES } from '@/data/recipes';
-import { shouldOmitIngredient, isDressingLine, adaptDressingForDiet, getRecipeDiets, adaptStepForDiet, getProteinStepName } from '@/lib/diet-utils';
+import {
+  shouldOmitIngredient,
+  isDressingLine,
+  adaptDressingForDiet,
+  adaptStepForDiet,
+  adaptStepForProteinSwap,
+  isSwappableProteinIngredient,
+  getProteinStepName,
+  SYNTHETIC_SELECTED_PROTEIN_STEP_PREFIX,
+  isSyntheticSelectedProteinStep,
+} from '@/lib/diet-utils';
 
 // Mutable format state - updated by React components before calling formatting functions
 export const formatState = {
@@ -91,7 +101,7 @@ export function getVisibleRecipes(browseMode, activeCategory, mealPrepMode, meal
     return getRecipesSortedByPlanOverlap(mealPlanIds);
   }
   if (browseMode === 'diet') {
-    return RECIPES.filter((r) => getRecipeDiets(r).includes(activeCategory));
+    return RECIPES.slice();
   }
   if (browseMode === 'cuisine') {
     return activeCategory === 'All' ? RECIPES : RECIPES.filter((r) => r.subCuisine === activeCategory);
@@ -107,10 +117,7 @@ export function getVisibleRecipes(browseMode, activeCategory, mealPrepMode, meal
 export function recipesForCardStrip(browseMode, activeCategory, mealPrepMode, mealPlanIds) {
   const raw = getVisibleRecipes(browseMode, activeCategory, mealPrepMode, mealPlanIds);
   if (activeCategory === OVERLAP_NAV_CAT) return raw;
-  if (browseMode === 'cuisine' || browseMode === 'flavor' || browseMode === 'season') {
-    return raw.slice().sort(compareRecipesForCuisineBrowse);
-  }
-  return raw;
+  return raw.slice().sort(compareRecipesForCuisineBrowse);
 }
 
 // ── Sorting helpers ───────────────────────────────────────────────────────────
@@ -1174,6 +1181,9 @@ export function renderIngredient(str, planHintCtx) {
   if (formatState.activeDiet && shouldOmitIngredient(str, formatState.activeDiet)) {
     return '';
   }
+  if (!formatState.activeDiet && isSwappableProteinIngredient(str)) {
+    return '';
+  }
 
   let ingredientStr = str;
   if (formatState.activeDiet && isDressingLine(str)) {
@@ -1419,16 +1429,71 @@ export function buildIngredientPhraseStartPattern(phrase) {
   return new RegExp(`^${parts.map(escapeRegExp).join('\\s+')}\\b`, 'i');
 }
 
+/** "Optional: add salami or…" style steps — redundant now that Add a protein exists */
+export function isOptionalProteinUpsellStep(stepText: string): boolean {
+  const s = String(stepText).trim();
+  if (!/^optional:\s*/i.test(s)) return false;
+  if (/\bgrilled\s+chicken\s+or\s+chickpeas\b/i.test(s)) return true;
+  if (/\b(salami|pepperoni|prosciutto|anchov)/i.test(s)) return true;
+  if (/\brotisserie\b/i.test(s) && /\bchicken\b/i.test(s)) return true;
+  return false;
+}
+
+function findIndexForSyntheticProteinStep(steps: string[]): number {
+  for (let i = 0; i < steps.length; i++) {
+    if (/^optional:\s*finish/i.test(steps[i].trim())) return i;
+  }
+  for (let i = 0; i < steps.length; i++) {
+    if (/^(serve|enjoy|chill|dig\s+in)/i.test(steps[i].trim())) return i;
+  }
+  return -1;
+}
+
+export function buildSyntheticSelectedProteinStep(selectedFullName: string): string {
+  const n = getProteinStepName(selectedFullName);
+  return `${SYNTHETIC_SELECTED_PROTEIN_STEP_PREFIX}Add ${n} to the salad before serving.`;
+}
+
+export function recipeStepsForDisplay(recipe: Recipe, selectedProtein: string | null): string[] {
+  const base = (recipe.steps || []).filter((st) => !isOptionalProteinUpsellStep(st));
+  if (!selectedProtein) return base;
+  const synthetic = buildSyntheticSelectedProteinStep(selectedProtein);
+  const idx = findIndexForSyntheticProteinStep(base);
+  if (idx >= 0) {
+    return [...base.slice(0, idx), synthetic, ...base.slice(idx)];
+  }
+  return [...base, synthetic];
+}
+
 export function adaptStepText(stepText, recipe) {
-  if (!formatState.activeDiet) return stepText;
   const selectedProtein = formatState.selectedProteinByRecipe[recipe.id] || null;
-  return adaptStepForDiet(stepText, recipe, formatState.activeDiet, selectedProtein);
+  if (formatState.activeDiet) {
+    return adaptStepForDiet(stepText, recipe, formatState.activeDiet, selectedProtein);
+  }
+  return adaptStepForProteinSwap(stepText, selectedProtein);
 }
 
 export function formatStepLineHtml(stepText, recipe) {
-  const step = adaptStepText(String(stepText), recipe);
+  const raw = String(stepText);
+  const step = adaptStepText(raw, recipe);
+  const selectedProtein = formatState.selectedProteinByRecipe[recipe.id] || null;
+  if (selectedProtein && isSyntheticSelectedProteinStep(raw)) {
+    const w = getProteinStepName(selectedProtein);
+    if (w) {
+      const re = new RegExp(`(${escapeRegExp(w)})`, 'gi');
+      const parts = step.split(re);
+      let html = '';
+      for (let i = 0; i < parts.length; i++) {
+        if (i % 2 === 1) {
+          html += `<span class="step-ingredient">${escapeHtml(parts[i])}</span>`;
+        } else {
+          html += escapeHtml(parts[i]);
+        }
+      }
+      return html;
+    }
+  }
   const phrases = collectIngredientHighlightPhrases(recipe.ingredients || []);
-  const selectedProtein = formatState.activeDiet ? formatState.selectedProteinByRecipe[recipe.id] : null;
   if (selectedProtein) {
     const words = getProteinStepName(selectedProtein);
     if (words) phrases.push(words);
@@ -1548,6 +1613,9 @@ export function ingredientLineForClipboard(str) {
   if (formatState.activeDiet && shouldOmitIngredient(str, formatState.activeDiet)) {
     return '';
   }
+  if (!formatState.activeDiet && isSwappableProteinIngredient(str)) {
+    return '';
+  }
 
   let s = str;
   if (formatState.activeDiet && isDressingLine(str)) {
@@ -1576,6 +1644,9 @@ export function ingredientLineForClipboard(str) {
 
 export function ingredientLineForClipboardSingleRecipe(str) {
   if (formatState.activeDiet && shouldOmitIngredient(str, formatState.activeDiet)) {
+    return '';
+  }
+  if (!formatState.activeDiet && isSwappableProteinIngredient(str)) {
     return '';
   }
 

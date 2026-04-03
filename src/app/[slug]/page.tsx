@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import SaladApp from '@/components/SaladApp';
 import { DIET_FROM_SLUG } from '@/data/diet-config';
 
@@ -56,6 +56,11 @@ export default async function SlugPage({ params }: PageProps) {
   }
 
   const prefix = slug.replace(/-salads$/, '');
+
+  if (prefix === 'high-protein') {
+    redirect('/keto-salads');
+  }
+
   const match = SLUG_TO_MODE_CATEGORY[prefix];
 
   if (!match) {

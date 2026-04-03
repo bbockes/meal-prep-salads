@@ -1,5 +1,5 @@
 import SaladApp from '@/components/SaladApp';
-import { DIET_FROM_SLUG, DIET_KEYS } from '@/data/diet-config';
+import { DIET_FROM_SLUG } from '@/data/diet-config';
 
 const SLUG_TO_CATEGORY: Record<string, string> = {
   'american': 'American',
@@ -30,6 +30,8 @@ const SLUG_TO_CATEGORY: Record<string, string> = {
   'winter': 'Winter',
   'year-round': 'Year-round',
   ...DIET_FROM_SLUG,
+  // Legacy diet URL (tab removed — land on Keto)
+  'high-protein': 'Keto',
 };
 
 interface PageProps {
