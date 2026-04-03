@@ -1509,5 +1509,30 @@
       color: var(--muted);
     }
     .optional-protein-list li {
-      opacity: 0.75;
+      opacity: 0.72;
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 7px 8px;
+      margin: 0 -8px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .optional-protein-list li:hover {
+      opacity: 1;
+      background: rgba(0,0,0,0.03);
+    }
+    .optional-protein-list li.protein-selected {
+      opacity: 1;
+      background: rgba(45,134,80,0.14);
+    }
+    .optional-protein-list li .protein-check {
+      display: none;
+      margin-left: auto;
+      flex-shrink: 0;
+      align-self: center;
+      color: #2d8650;
+      line-height: 0;
+    }
+    .optional-protein-list li.protein-selected .protein-check {
+      display: flex;
+      align-items: center;
     }

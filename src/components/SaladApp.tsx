@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
 import { DIET_KEYS, DIET_ACCENTS } from '@/data/diet-config';
 import { RECIPES, Recipe } from '@/data/recipes';
-import { getOptionalProteinsForDiet } from '@/lib/diet-utils';
+import { getOptionalProteinsForDiet, adaptStepForDiet } from '@/lib/diet-utils';
 import {
   formatState,
   SCALING_BASE_PORTIONS,
@@ -33,10 +33,15 @@ import {
   ingredientsBlockForFullRecipeCopy,
   getRecipesSortedByPlanOverlap,
   formatAmountForDisplay,
+  adaptStepText,
 } from '@/lib/recipe-utils';
 
 const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
 const MEAL_PREP_MODE_KEY = 'meal-prep-salads:mealPrepMode';
+
+let _persistedShowAmounts = false;
+let _persistedUnitMode: 'us' | 'metric' = 'us';
+let _persistedRecipePortions = 2;
 
 type BrowseMode = 'cuisine' | 'flavor' | 'season' | 'diet';
 
@@ -62,9 +67,9 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
   const [mealPlanShowAmounts, setMealPlanShowAmounts] = useState(false);
   const [mealPlanUnitMode, setMealPlanUnitMode] = useState<'us' | 'metric'>('us');
 
-  const [showAmounts, setShowAmounts] = useState(false);
-  const [unitMode, setUnitMode] = useState<'us' | 'metric'>('us');
-  const [recipePortions, setRecipePortions] = useState(2);
+  const [showAmounts, setShowAmounts] = useState(_persistedShowAmounts);
+  const [unitMode, setUnitMode] = useState<'us' | 'metric'>(_persistedUnitMode);
+  const [recipePortions, setRecipePortions] = useState(_persistedRecipePortions);
 
   const [servingsModalOpen, setServingsModalOpen] = useState(false);
   const [servingsModalTarget, setServingsModalTarget] = useState<'recipe' | 'mealPlan'>('recipe');
@@ -74,6 +79,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
   const flashTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const [smartPicksTipOpen, setSmartPicksTipOpen] = useState(false);
+  const [selectedProteinByRecipe, setSelectedProteinByRecipe] = useState<Record<number, string>>({});
 
   // Load meal plan from localStorage
   useEffect(() => {
@@ -110,6 +116,10 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
     } catch {}
   }, [mealPrepMode, mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode]);
 
+  useEffect(() => { _persistedShowAmounts = showAmounts; }, [showAmounts]);
+  useEffect(() => { _persistedUnitMode = unitMode; }, [unitMode]);
+  useEffect(() => { _persistedRecipePortions = recipePortions; }, [recipePortions]);
+
   const activeDiet = browseMode === 'diet' && activeCategory !== 'All' ? activeCategory : null;
 
   // Sync format state for utility functions
@@ -120,6 +130,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
   formatState.mealPlanShowAmounts = mealPlanShowAmounts;
   formatState.mealPlanUnitMode = mealPlanUnitMode;
   formatState.activeDiet = activeDiet;
+  formatState.selectedProteinByRecipe = selectedProteinByRecipe;
 
   // Sync URL with filter state
   useEffect(() => {
@@ -161,7 +172,6 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       setBrowseMode(mode);
       const defaultCat = mode === 'diet' ? DIET_KEYS[0] : 'All';
       setActiveCategory(defaultCat);
-      setRecipePortions(2);
       const visible = recipesForCardStrip(mode, defaultCat, mealPrepMode, mealPlanIds);
       if (visible.length) setSelectedId(visible[0].id);
       router.push(categoryToUrl(defaultCat), { scroll: false });
@@ -174,7 +184,6 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       setServingsModalOpen(false);
       setSmartPicksTipOpen(false);
       setActiveCategory(cat);
-      setRecipePortions(2);
       const visible = recipesForCardStrip(browseMode, cat, mealPrepMode, mealPlanIds);
       if (visible.length) setSelectedId(visible[0].id);
       router.push(categoryToUrl(cat), { scroll: false });
@@ -184,7 +193,6 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
 
   const handleSelectRecipe = useCallback((id: number) => {
     setServingsModalOpen(false);
-    setRecipePortions(2);
     setSelectedId(id);
   }, []);
 
@@ -301,6 +309,14 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
           if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
           else saladLines.push(String(rendered || '').trim());
         }
+        if (activeDiet && selectedProteinByRecipe[id]) {
+          const pName = selectedProteinByRecipe[id];
+          const pDef = getOptionalProteinsForDiet(activeDiet).find((p) => p.name === pName);
+          if (pDef) {
+            const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
+            saladLines.push(line);
+          }
+        }
         const out = [...sortIngredientLinesByAisle(saladLines.filter(Boolean))];
         if (dressingBlocks.length) for (const b of dressingBlocks) out.push(b);
         const ingredientsBody = out.join('\n').trimEnd();
@@ -311,21 +327,33 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
         .then(() => flash('Ingredients copied!'))
         .catch(() => flash("Couldn't copy — try again or check permissions."));
     },
-    [recipePortions, showAmounts, unitMode, flash]
+    [recipePortions, showAmounts, unitMode, flash, activeDiet, selectedProteinByRecipe]
   );
 
   const handleCopyFullRecipe = useCallback(
     (id: number) => {
       const r = RECIPES.find((x) => x.id === id);
       if (!r) return;
-      const block = ingredientsBlockForFullRecipeCopy(r, {});
-      const text = `${r.name}\n\nIngredients:\n${block}\n\nSteps:\n${r.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
+      let block = ingredientsBlockForFullRecipeCopy(r, {});
+      if (activeDiet && selectedProteinByRecipe[id]) {
+        const pName = selectedProteinByRecipe[id];
+        const pDef = getOptionalProteinsForDiet(activeDiet).find((p) => p.name === pName);
+        if (pDef) {
+          const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
+          block += `\n${line}`;
+        }
+      }
+      const adaptedSteps = r.steps
+        .map((s) => (activeDiet ? adaptStepForDiet(s, r, activeDiet, selectedProteinByRecipe[id] || null) : s))
+        .map((s, i) => `${i + 1}. ${s}`)
+        .join('\n');
+      const text = `${r.name}\n\nIngredients:\n${block}\n\nSteps:\n${adaptedSteps}`;
       navigator.clipboard
         .writeText(text)
         .then(() => flash('Full recipe copied!'))
         .catch(() => flash("Couldn't copy — try again or check permissions."));
     },
-    [flash]
+    [flash, activeDiet, selectedProteinByRecipe, showAmounts]
   );
 
   const handleCopyMealPlanIngredients = useCallback(() => {
@@ -341,7 +369,18 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       recipeNames.push(r.name);
       const blockLines = withClipboardOptions(
         { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
-        () => r.ingredients.map((ing) => ingredientLineForClipboard(ing))
+        () => {
+          const ingLines = r.ingredients.map((ing) => ingredientLineForClipboard(ing));
+          if (activeDiet && selectedProteinByRecipe[id]) {
+            const pName = selectedProteinByRecipe[id];
+            const pDef = getOptionalProteinsForDiet(activeDiet).find((p) => p.name === pName);
+            if (pDef) {
+              const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
+              ingLines.push(line);
+            }
+          }
+          return ingLines;
+        }
       );
       if (!blockLines || !blockLines.length) continue;
       for (const rendered of blockLines) {
@@ -369,7 +408,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       .writeText(text)
       .then(() => flash('Copied ingredients!'))
       .catch(() => flash("Couldn't copy — try again or check permissions."));
-  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash]);
+  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash, activeDiet, selectedProteinByRecipe]);
 
   const handleCopyMealPlanFullRecipes = useCallback(() => {
     if (!mealPlanIds.length) {
@@ -383,8 +422,20 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       const body = withClipboardOptions(
         { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
         () => {
-          const ingredientsBlock = ingredientsBlockForFullRecipeCopy(r, { mealPlanCopy: true });
-          return `${r.name}\n\nIngredients:\n${ingredientsBlock}\n\nSteps:\n${r.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
+          let ingredientsBlock = ingredientsBlockForFullRecipeCopy(r, { mealPlanCopy: true });
+          if (activeDiet && selectedProteinByRecipe[id]) {
+            const pName = selectedProteinByRecipe[id];
+            const pDef = getOptionalProteinsForDiet(activeDiet).find((p) => p.name === pName);
+            if (pDef) {
+              const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
+              ingredientsBlock += `\n${line}`;
+            }
+          }
+          const adaptedSteps = r.steps
+            .map((s) => (activeDiet ? adaptStepForDiet(s, r, activeDiet, selectedProteinByRecipe[id] || null) : s))
+            .map((s, i) => `${i + 1}. ${s}`)
+            .join('\n');
+          return `${r.name}\n\nIngredients:\n${ingredientsBlock}\n\nSteps:\n${adaptedSteps}`;
         }
       );
       parts.push(body);
@@ -394,7 +445,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       .writeText(text)
       .then(() => flash(`Copied ${mealPlanIds.length} full recipes!`))
       .catch(() => flash("Couldn't copy — try again or check permissions."));
-  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash]);
+  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash, activeDiet, selectedProteinByRecipe]);
 
   // ── Keyboard ──
   useEffect(() => {
@@ -666,17 +717,36 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
                         <span>💪</span> Add Protein <span className="optional-protein-label">(optional)</span>
                       </div>
                       <ul className="ingredients-list optional-protein-list">
-                        {proteins.map((p, i) => (
-                          <li key={i}>
-                            <span className="bullet"></span>
-                            <span className="ingredient-body">
-                              {showAmounts && (
-                                <span className="amount">{formatAmountForDisplay(p.amount, p.name)} </span>
-                              )}
-                              {p.name}
-                            </span>
-                          </li>
-                        ))}
+                        {proteins.map((p, i) => {
+                          const isSelected = selectedProteinByRecipe[recipe.id] === p.name;
+                          const toggleProtein = () =>
+                            setSelectedProteinByRecipe((prev) =>
+                              prev[recipe.id] === p.name
+                                ? (() => { const next = { ...prev }; delete next[recipe.id]; return next; })()
+                                : { ...prev, [recipe.id]: p.name }
+                            );
+                          return (
+                            <li
+                              key={i}
+                              className={isSelected ? 'protein-selected' : ''}
+                              role="button"
+                              tabIndex={0}
+                              onClick={toggleProtein}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleProtein(); }
+                              }}
+                            >
+                              <span className="bullet" />
+                              <span className="ingredient-body">
+                                {showAmounts && (
+                                  <span className="amount">{formatAmountForDisplay(p.amount, p.name)} </span>
+                                )}
+                                {p.name}
+                              </span>
+                              <span className="protein-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg></span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   );

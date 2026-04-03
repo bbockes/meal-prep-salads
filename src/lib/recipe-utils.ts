@@ -2,7 +2,7 @@
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
 import { DIET_KEYS, DIET_ACCENTS } from '@/data/diet-config';
 import { Recipe, RECIPES } from '@/data/recipes';
-import { shouldOmitIngredient, isDressingLine, adaptDressingForDiet, getRecipeDiets } from '@/lib/diet-utils';
+import { shouldOmitIngredient, isDressingLine, adaptDressingForDiet, getRecipeDiets, adaptStepForDiet, getProteinStepName } from '@/lib/diet-utils';
 
 // Mutable format state - updated by React components before calling formatting functions
 export const formatState = {
@@ -13,6 +13,7 @@ export const formatState = {
   mealPlanShowAmounts: false,
   mealPlanUnitMode: 'us' as 'us' | 'metric',
   activeDiet: null as string | null,
+  selectedProteinByRecipe: {} as Record<number, string>,
 };
 
 export const SCALING_BASE_PORTIONS = 2;
@@ -1418,9 +1419,20 @@ export function buildIngredientPhraseStartPattern(phrase) {
   return new RegExp(`^${parts.map(escapeRegExp).join('\\s+')}\\b`, 'i');
 }
 
+export function adaptStepText(stepText, recipe) {
+  if (!formatState.activeDiet) return stepText;
+  const selectedProtein = formatState.selectedProteinByRecipe[recipe.id] || null;
+  return adaptStepForDiet(stepText, recipe, formatState.activeDiet, selectedProtein);
+}
+
 export function formatStepLineHtml(stepText, recipe) {
-  const step = String(stepText);
+  const step = adaptStepText(String(stepText), recipe);
   const phrases = collectIngredientHighlightPhrases(recipe.ingredients || []);
+  const selectedProtein = formatState.activeDiet ? formatState.selectedProteinByRecipe[recipe.id] : null;
+  if (selectedProtein) {
+    const words = getProteinStepName(selectedProtein);
+    if (words) phrases.push(words);
+  }
   if (!phrases.length) return escapeHtml(step);
   const patterns = phrases
     .map((p) => buildIngredientPhraseStartPattern(p))

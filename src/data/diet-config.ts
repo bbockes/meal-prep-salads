@@ -28,30 +28,31 @@ export const DIET_ACCENTS: Record<string, string> = {
 export interface IngredientOmitRule {
   pattern: RegExp;
   diets: string[];
+  swappable?: boolean;
 }
 
 export const INGREDIENT_OMIT_RULES: IngredientOmitRule[] = [
-  // Meat & poultry
-  { pattern: /\bchicken\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\brotisserie\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bbeef\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bsteak\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bbulgogi\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bturkey\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bbacon\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bprosciutto\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bham\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bsalami\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bserrano\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bpepperoni\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bkaraage\b/i, diets: ['Vegan', 'Vegetarian'] },
+  // Meat & poultry — swappable with selected protein in steps
+  { pattern: /\bchicken\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\brotisserie\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bbeef\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bsteak\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bbulgogi\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bturkey\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bbacon\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bprosciutto\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bham\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bsalami\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bserrano\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bpepperoni\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bkaraage\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
 
-  // Seafood
-  { pattern: /\bshrimp\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bsalmon\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\btuna\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\bcrab\b/i, diets: ['Vegan', 'Vegetarian'] },
-  { pattern: /\banchov/i, diets: ['Vegan', 'Vegetarian'] },
+  // Seafood — swappable with selected protein in steps
+  { pattern: /\bshrimp\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bsalmon\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\btuna\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\bcrab\b/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
+  { pattern: /\banchov/i, diets: ['Vegan', 'Vegetarian'], swappable: true },
 
   // Dairy
   { pattern: /\bparmesan\b/i, diets: ['Vegan', 'Paleo'] },
