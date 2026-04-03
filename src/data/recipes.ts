@@ -2,6 +2,7 @@ export interface Recipe {
   id: number;
   cuisine: string;
   name: string;
+  imageSlug?: string;
   ingredients: string[];
   steps: string[];
   subCuisine?: string;
@@ -33,7 +34,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 2, cuisine: 'American', name: 'BBQ Chicken Salad',
+    id: 2, cuisine: 'American', name: 'BBQ Ranch Salad', imageSlug: 'bbq-chicken',
     ingredients: [
       '2 cups rotisserie or grilled chicken, shredded',
       '2 cups romaine',
@@ -54,7 +55,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 3, cuisine: 'American', name: 'Buffalo Chicken',
+    id: 3, cuisine: 'American', name: 'Buffalo Crunch', imageSlug: 'buffalo-chicken',
     ingredients: [
       '2 cups rotisserie chicken, shredded',
       '3 tbsp buffalo sauce',
@@ -96,7 +97,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 6, cuisine: 'American', name: 'Chicken Cobb Salad',
+    id: 6, cuisine: 'American', name: 'Classic Cobb Salad', imageSlug: 'chicken-cobb',
     ingredients: [
       '2 cups rotisserie chicken, shredded',
       '2 hard-boiled eggs, halved',
@@ -116,7 +117,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 7, cuisine: 'American', name: 'Chicken Avocado Ranch',
+    id: 7, cuisine: 'American', name: 'Avocado Ranch', imageSlug: 'chicken-avocado-ranch',
     ingredients: [
       '2 cups romaine',
       '1 cup spring mix',
@@ -214,7 +215,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 15, cuisine: 'American', name: 'Steak Honey Crunch',
+    id: 15, cuisine: 'American', name: 'Honey Crunch', imageSlug: 'steak-honey-crunch',
     ingredients: [
       '2 cups romaine',
       '1 cup arugula',
@@ -235,7 +236,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 16, cuisine: 'American', name: 'Citrus Shrimp Avocado',
+    id: 16, cuisine: 'American', name: 'Citrus Avocado', imageSlug: 'citrus-shrimp-avocado',
     ingredients: [
       '2 cups spring mix',
       '1 cup arugula',
@@ -275,7 +276,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 18, cuisine: 'American', name: 'Summer Goddess Chicken',
+    id: 18, cuisine: 'American', name: 'Summer Goddess', imageSlug: 'summer-goddess-chicken',
     ingredients: [
       '2 cups rotisserie chicken, shredded',
       '3 cups butter lettuce, torn',
@@ -434,7 +435,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 27, cuisine: 'Spanish & Mexican', name: 'Salmon Taco Salad',
+    id: 27, cuisine: 'Spanish & Mexican', name: 'Baja Taco Salad', imageSlug: 'salmon-taco',
     ingredients: [
       '2 cups spring mix',
       '1 cup romaine',
@@ -511,7 +512,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 66, cuisine: 'Asian', name: 'Karaage Chicken Salad',
+    id: 66, cuisine: 'Asian', name: 'Karaage Crunch Salad', imageSlug: 'karaage-chicken',
     ingredients: [
       '2 cups karaage or crispy fried chicken thighs',
       '1 cup shredded cabbage + 2 cups romaine',
@@ -550,7 +551,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 69, cuisine: 'Asian', name: 'Tandoori Chicken Salad',
+    id: 69, cuisine: 'Asian', name: 'Tandoori Spice Salad', imageSlug: 'tandoori-chicken',
     ingredients: [
       '2 chicken thighs, marinated in ¼ cup yogurt + 2 tsp tandoori spices',
       '2 cups romaine',
@@ -684,7 +685,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 83, cuisine: 'Asian', name: 'Bulgogi Beef Salad',
+    id: 83, cuisine: 'Asian', name: 'Bulgogi Bowl', imageSlug: 'bulgogi-beef',
     ingredients: [
       '8 oz beef, thinly sliced (marinated in 2 tbsp soy + ½ pear grated + 1 garlic clove + 1 tsp sesame oil)',
       '3 cups romaine + 1 cup shredded cabbage',
@@ -739,7 +740,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 87, cuisine: 'Asian', name: 'Lemongrass Chicken Salad',
+    id: 87, cuisine: 'Asian', name: 'Lemongrass Herb Salad', imageSlug: 'lemongrass-chicken',
     ingredients: [
       '2 chicken thighs, marinated in 1 stalk lemongrass + 1 tbsp fish sauce + 2 garlic cloves',
       '2 cups shredded cabbage + 1 cup romaine, shredded',
@@ -1285,7 +1286,7 @@ export const RECIPES: Recipe[] = [
     ],
   },
   {
-    id: 38, cuisine: 'French', name: 'Chicory & Bacon Egg',
+    id: 38, cuisine: 'French', name: 'Warm Chicory & Egg', imageSlug: 'chicory-bacon-egg',
     ingredients: [
       '3 cups endive or radicchio, torn',
       '4 strips pre-cooked bacon, crumbled',
@@ -1525,7 +1526,7 @@ export const RECIPE_META_BY_ID: Record<number, [string, string[], string[]]> = {
   18: ['American', ['Creamy'], ['Summer']],
   19: ['Japanese', ['Umami'], ['Year-round']],
   20: ['Thai', ['Tangy'], ['Summer']],
-  21: ['Southeast Asian', ['Umami'], ['Year-round']],
+  21: ['Thai', ['Umami'], ['Year-round']],
   22: ['Thai', ['Tangy'], ['Summer']],
   23: ['Japanese', ['Fresh'], ['Year-round']],
   24: ['Japanese', ['Tangy'], ['Spring']],
@@ -1540,16 +1541,16 @@ export const RECIPE_META_BY_ID: Record<number, [string, string[], string[]]> = {
   33: ['Italian', ['Savory'], ['Fall']],
   34: ['Italian', ['Fresh'], ['Summer']],
   35: ['Italian', ['Creamy'], ['Summer']],
-  36: ['Provençal', ['Umami'], ['Summer']],
-  37: ['Lyonnaise', ['Umami'], ['Fall']],
-  38: ['Bistro', ['Umami'], ['Fall']],
-  41: ['Levantine', ['Tangy'], ['Summer']],
-  42: ['Levantine', ['Fresh'], ['Summer']],
+  36: ['French', ['Umami'], ['Summer']],
+  37: ['French', ['Umami'], ['Fall']],
+  38: ['French', ['Umami'], ['Fall']],
+  41: ['Middle Eastern', ['Tangy'], ['Summer']],
+  42: ['Middle Eastern', ['Fresh'], ['Summer']],
   43: ['Greek', ['Fresh'], ['Year-round']],
   44: ['Greek', ['Umami'], ['Fall']],
   45: ['Greek', ['Tangy'], ['Year-round']],
   46: ['Middle Eastern', ['Umami'], ['Year-round']],
-  47: ['North African', ['Spicy'], ['Fall']],
+  47: ['Middle Eastern', ['Spicy'], ['Fall']],
   48: ['Greek', ['Fresh'], ['Summer']],
   50: ['Spanish', ['Savory'], ['Fall']],
   51: ['Spanish', ['Tangy'], ['Winter']],
@@ -1574,11 +1575,11 @@ export const RECIPE_META_BY_ID: Record<number, [string, string[], string[]]> = {
   71: ['Indian', ['Umami'], ['Fall']],
   72: ['Indian', ['Creamy'], ['Summer']],
   73: ['Indian', ['Tangy'], ['Summer']],
-  74: ['Lebanese', ['Tangy'], ['Summer']],
-  76: ['Levantine', ['Savory'], ['Fall']],
+  74: ['Middle Eastern', ['Tangy'], ['Summer']],
+  76: ['Middle Eastern', ['Savory'], ['Fall']],
   77: ['Middle Eastern', ['Umami'], ['Fall']],
   78: ['Middle Eastern', ['Creamy'], ['Year-round']],
-  79: ['Levantine', ['Fresh'], ['Spring']],
+  79: ['Middle Eastern', ['Fresh'], ['Spring']],
   80: ['Korean', ['Savory'], ['Year-round']],
   81: ['Korean', ['Spicy'], ['Year-round']],
   82: ['Korean', ['Tangy'], ['Summer']],

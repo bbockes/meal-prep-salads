@@ -4,7 +4,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
+import { DIET_KEYS, DIET_ACCENTS } from '@/data/diet-config';
 import { RECIPES, Recipe } from '@/data/recipes';
+import { getOptionalProteinsForDiet } from '@/lib/diet-utils';
 import {
   formatState,
   SCALING_BASE_PORTIONS,
@@ -30,22 +32,27 @@ import {
   consolidateIngredientLinesForCopy,
   ingredientsBlockForFullRecipeCopy,
   getRecipesSortedByPlanOverlap,
+  formatAmountForDisplay,
 } from '@/lib/recipe-utils';
 
 const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
 const MEAL_PREP_MODE_KEY = 'meal-prep-salads:mealPrepMode';
 
+type BrowseMode = 'cuisine' | 'flavor' | 'season' | 'diet';
+
 interface SaladAppProps {
-  initialBrowseMode: 'cuisine' | 'flavor' | 'season';
+  initialBrowseMode: BrowseMode;
   initialCategory: string;
 }
 
 export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAppProps) {
   const router = useRouter();
-  const [browseMode, setBrowseMode] = useState(initialBrowseMode);
-  const [activeCategory, setActiveCategory] = useState(initialCategory);
+  const resolvedInitialCategory =
+    initialBrowseMode === 'diet' && initialCategory === 'All' ? DIET_KEYS[0] : initialCategory;
+  const [browseMode, setBrowseMode] = useState<BrowseMode>(initialBrowseMode);
+  const [activeCategory, setActiveCategory] = useState(resolvedInitialCategory);
   const [selectedId, setSelectedId] = useState(() => {
-    const visible = recipesForCardStrip(initialBrowseMode, initialCategory, false, []);
+    const visible = recipesForCardStrip(initialBrowseMode, resolvedInitialCategory, false, []);
     return visible.length ? visible[0].id : RECIPES[0].id;
   });
 
@@ -103,6 +110,8 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
     } catch {}
   }, [mealPrepMode, mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode]);
 
+  const activeDiet = browseMode === 'diet' && activeCategory !== 'All' ? activeCategory : null;
+
   // Sync format state for utility functions
   formatState.showAmounts = showAmounts;
   formatState.unitMode = unitMode;
@@ -110,28 +119,32 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
   formatState.mealPlanPortions = mealPlanPortions;
   formatState.mealPlanShowAmounts = mealPlanShowAmounts;
   formatState.mealPlanUnitMode = mealPlanUnitMode;
+  formatState.activeDiet = activeDiet;
 
   // Sync URL with filter state
   useEffect(() => {
+    const cat = initialBrowseMode === 'diet' && initialCategory === 'All' ? DIET_KEYS[0] : initialCategory;
     setBrowseMode(initialBrowseMode);
-    setActiveCategory(initialCategory);
-    const visible = recipesForCardStrip(initialBrowseMode, initialCategory, mealPrepMode, mealPlanIds);
+    setActiveCategory(cat);
+    const visible = recipesForCardStrip(initialBrowseMode, cat, mealPrepMode, mealPlanIds);
     if (visible.length) setSelectedId(visible[0].id);
   }, [initialBrowseMode, initialCategory]);
 
+  const categoryToUrl = useCallback((category: string) => {
+    if (category === 'All' || category === OVERLAP_NAV_CAT) return '/salads';
+    const slug = category
+      .toLowerCase()
+      .replace(/\s+&\s+/g, '-')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+    return `/${slug}-salads`;
+  }, []);
+
   const navigateToFilter = useCallback(
-    (mode: string, category: string) => {
-      if (category === 'All' || category === OVERLAP_NAV_CAT) {
-        router.push('/salads', { scroll: false });
-      } else {
-        const slug = category
-          .toLowerCase()
-          .replace(/\s+&\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '');
-        router.push(`/salads/${mode}/${slug}`, { scroll: false });
-      }
+    (_mode: string, category: string) => {
+      router.push(categoryToUrl(category), { scroll: false });
     },
-    [router]
+    [router, categoryToUrl]
   );
 
   const flash = useCallback((msg: string) => {
@@ -142,17 +155,18 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
 
   // ── Browse mode / category selection ──
   const handleSelectBrowseMode = useCallback(
-    (mode: 'cuisine' | 'flavor' | 'season') => {
+    (mode: BrowseMode) => {
       if (mode === browseMode && activeCategory !== OVERLAP_NAV_CAT) return;
       setServingsModalOpen(false);
       setBrowseMode(mode);
-      setActiveCategory('All');
+      const defaultCat = mode === 'diet' ? DIET_KEYS[0] : 'All';
+      setActiveCategory(defaultCat);
       setRecipePortions(2);
-      const visible = recipesForCardStrip(mode, 'All', mealPrepMode, mealPlanIds);
+      const visible = recipesForCardStrip(mode, defaultCat, mealPrepMode, mealPlanIds);
       if (visible.length) setSelectedId(visible[0].id);
-      router.push('/salads', { scroll: false });
+      router.push(categoryToUrl(defaultCat), { scroll: false });
     },
-    [browseMode, activeCategory, mealPrepMode, mealPlanIds, router]
+    [browseMode, activeCategory, mealPrepMode, mealPlanIds, router, categoryToUrl]
   );
 
   const handleSelectCategory = useCallback(
@@ -163,17 +177,9 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       setRecipePortions(2);
       const visible = recipesForCardStrip(browseMode, cat, mealPrepMode, mealPlanIds);
       if (visible.length) setSelectedId(visible[0].id);
-      if (cat === 'All' || cat === OVERLAP_NAV_CAT) {
-        router.push('/salads', { scroll: false });
-      } else {
-        const slug = cat
-          .toLowerCase()
-          .replace(/\s+&\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '');
-        router.push(`/salads/${browseMode}/${slug}`, { scroll: false });
-      }
+      router.push(categoryToUrl(cat), { scroll: false });
     },
-    [browseMode, mealPrepMode, mealPlanIds, router]
+    [browseMode, mealPrepMode, mealPlanIds, router, categoryToUrl]
   );
 
   const handleSelectRecipe = useCallback((id: number) => {
@@ -440,7 +446,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       <div className="browse-mode" id="browseModeBar">
         <span className="browse-mode-label">Browse by</span>
         <div className="browse-mode-toggle" role="group" aria-label="Browse recipes by">
-          {(['cuisine', 'flavor', 'season'] as const).map((mode) => (
+          {(['cuisine', 'flavor', 'season', 'diet'] as const).map((mode) => (
             <button
               key={mode}
               type="button"
@@ -524,7 +530,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       <div className="card-strip-wrapper">
         <div className="card-strip" id="cardStrip">
           {visible.map((r) => {
-            const accent = ACCENT[r.cuisine];
+            const accent = ACCENT[r.subCuisine];
             const sel = r.id === selectedId ? 'selected' : '';
             const plan = inPlan.has(r.id) ? 'in-meal-plan' : '';
             const sub =
@@ -533,7 +539,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
                 <div className="card-subcuisine">{r.subCuisine}</div>
               ) : null;
             const onPlan = inPlan.has(r.id);
-            const cardSlug = recipeCardImageSlug(r.name);
+            const cardSlug = recipeCardImageSlug(r.name, r.imageSlug);
             return (
               <div
                 key={r.id}
@@ -587,7 +593,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
       {/* ── Recipe Detail ── */}
       <div id="recipeDetail">
         {recipe ? (
-          <div className="recipe-detail" style={{ '--detail-accent': ACCENT[recipe.cuisine] } as React.CSSProperties}>
+          <div className="recipe-detail" style={{ '--detail-accent': ACCENT[recipe.subCuisine] } as React.CSSProperties}>
             <div className="detail-header">
               <div>
                 <div className="detail-meta" dangerouslySetInnerHTML={{ __html: detailMetaBadgesHtml(recipe, browseMode) }} />
@@ -651,6 +657,30 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
                     __html: recipe.ingredients.map((ing) => renderIngredient(ing, planHintCtx)).join(''),
                   }}
                 />
+                {activeDiet && (() => {
+                  const proteins = getOptionalProteinsForDiet(activeDiet);
+                  if (!proteins.length) return null;
+                  return (
+                    <div className="optional-protein-section">
+                      <div className="section-heading">
+                        <span>💪</span> Add Protein <span className="optional-protein-label">(optional)</span>
+                      </div>
+                      <ul className="ingredients-list optional-protein-list">
+                        {proteins.map((p, i) => (
+                          <li key={i}>
+                            <span className="bullet"></span>
+                            <span className="ingredient-body">
+                              {showAmounts && (
+                                <span className="amount">{formatAmountForDisplay(p.amount, p.name)} </span>
+                              )}
+                              {p.name}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
               </div>
               <div>
                 <div className="section-heading">
@@ -791,7 +821,7 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
             role="dialog"
             aria-modal="true"
             aria-labelledby="servingsModalTitle"
-            style={{ '--detail-accent': servingsModalTarget === 'recipe' && recipe ? ACCENT[recipe.cuisine] : '#4a5568' } as React.CSSProperties}
+            style={{ '--detail-accent': servingsModalTarget === 'recipe' && recipe ? ACCENT[recipe.subCuisine] : '#4a5568' } as React.CSSProperties}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="servings-modal-top">
@@ -811,15 +841,15 @@ export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAp
                 <input
                   type="range"
                   className="servings-slider"
-                  min="2"
-                  max="30"
-                  step="1"
-                  value={portionsDraft ?? 2}
+                  min={SCALING_BASE_PORTIONS}
+                  max="20"
+                  step={SCALING_BASE_PORTIONS}
+                  value={portionsDraft ?? SCALING_BASE_PORTIONS}
                   onChange={(e) => setPortionsDraft(Number(e.target.value))}
                 />
               </div>
               <div className="servings-scale-pill">
-                × <strong>{portionsDraft != null ? Math.round((portionsDraft / SCALING_BASE_PORTIONS) * 10) / 10 : 1}</strong>
+                × <strong>{portionsDraft != null ? Math.round(portionsDraft / SCALING_BASE_PORTIONS) : 1}</strong>
               </div>
             </div>
             <div className="servings-modal-actions">

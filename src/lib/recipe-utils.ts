@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
+import { DIET_KEYS, DIET_ACCENTS } from '@/data/diet-config';
 import { Recipe, RECIPES } from '@/data/recipes';
+import { shouldOmitIngredient, isDressingLine, adaptDressingForDiet, getRecipeDiets } from '@/lib/diet-utils';
 
 // Mutable format state - updated by React components before calling formatting functions
 export const formatState = {
@@ -10,6 +12,7 @@ export const formatState = {
   mealPlanPortions: 2,
   mealPlanShowAmounts: false,
   mealPlanUnitMode: 'us' as 'us' | 'metric',
+  activeDiet: null as string | null,
 };
 
 export const SCALING_BASE_PORTIONS = 2;
@@ -30,7 +33,8 @@ export function escapeAttr(s) {
     .replace(/"/g, '&quot;');
 }
 
-export function recipeCardImageSlug(name) {
+export function recipeCardImageSlug(name, imageSlug) {
+  if (imageSlug) return imageSlug;
   const base = String(name).replace(/\s+Salad$/i, '').trim();
   return base
     .toLowerCase()
@@ -50,16 +54,7 @@ export function isDistinctSubCuisine(r) {
 }
 
 export function detailMetaBadgesHtml(r, browseMode) {
-  const isSpanishMexican = r.cuisine === 'Spanish & Mexican';
-  if (isSpanishMexican && isDistinctSubCuisine(r)) {
-    return `<span class="cuisine-badge">${escapeHtml(r.subCuisine)}</span>`;
-  }
-  const main = `<span class="cuisine-badge">${escapeHtml(r.cuisine)}</span>`;
-  const sub =
-    !isSpanishMexican && browseMode === 'cuisine' && isDistinctSubCuisine(r)
-      ? `<span class="subcuisine-badge">${escapeHtml(r.subCuisine)}</span>`
-      : '';
-  return main + sub;
+  return `<span class="cuisine-badge">${escapeHtml(r.subCuisine || r.cuisine)}</span>`;
 }
 
 // ── Navigation helpers ────────────────────────────────────────────────────────
@@ -67,12 +62,14 @@ export function detailMetaBadgesHtml(r, browseMode) {
 export function getNavTabs(browseMode) {
   if (browseMode === 'cuisine') return ['All', ...Object.keys(ACCENT)];
   if (browseMode === 'flavor') return ['All', ...FLAVOR_KEYS];
+  if (browseMode === 'diet') return [...DIET_KEYS];
   return ['All', ...SEASON_KEYS];
 }
 
 export function accentForNavCat(cat, browseMode) {
   if (browseMode === 'cuisine') return ACCENT[cat] || '#4a5568';
   if (browseMode === 'flavor') return FLAVOR_ACCENTS[cat] || '#4a5568';
+  if (browseMode === 'diet') return DIET_ACCENTS[cat] || '#4a5568';
   return SEASON_ACCENTS[cat] || '#4a5568';
 }
 
@@ -92,8 +89,11 @@ export function getVisibleRecipes(browseMode, activeCategory, mealPrepMode, meal
     }
     return getRecipesSortedByPlanOverlap(mealPlanIds);
   }
+  if (browseMode === 'diet') {
+    return RECIPES.filter((r) => getRecipeDiets(r).includes(activeCategory));
+  }
   if (browseMode === 'cuisine') {
-    return activeCategory === 'All' ? RECIPES : RECIPES.filter((r) => r.cuisine === activeCategory);
+    return activeCategory === 'All' ? RECIPES : RECIPES.filter((r) => r.subCuisine === activeCategory);
   }
   if (browseMode === 'flavor') {
     if (activeCategory === 'All') return RECIPES;
@@ -116,33 +116,14 @@ export function recipesForCardStrip(browseMode, activeCategory, mealPrepMode, me
 
 export const CUISINE_SORT_ORDER = Object.keys(ACCENT);
 
-export function cuisineSortIndex(cuisine) {
-  const i = CUISINE_SORT_ORDER.indexOf(cuisine);
+export function cuisineSortIndex(subCuisine) {
+  const i = CUISINE_SORT_ORDER.indexOf(subCuisine);
   return i === -1 ? 999 : i;
 }
 
-export function spanishMexicanSubcuisineRank(sub) {
-  const t = String(sub || '')
-    .trim()
-    .toLowerCase();
-  if (t === 'spanish') return 0;
-  if (t === 'spanish & mexican') return 1;
-  if (t === 'mexican') return 2;
-  return 3;
-}
-
 export function compareRecipesForCuisineBrowse(a, b) {
-  const byCuisine = cuisineSortIndex(a.cuisine) - cuisineSortIndex(b.cuisine);
-  if (byCuisine !== 0) return byCuisine;
-  const subA = a.subCuisine || '';
-  const subB = b.subCuisine || '';
-  let bySub;
-  if (a.cuisine === 'Spanish & Mexican' && b.cuisine === 'Spanish & Mexican') {
-    bySub = spanishMexicanSubcuisineRank(subA) - spanishMexicanSubcuisineRank(subB);
-  } else {
-    bySub = subA.localeCompare(subB, undefined, { sensitivity: 'base' });
-  }
-  if (bySub !== 0) return bySub;
+  const byIdx = cuisineSortIndex(a.subCuisine) - cuisineSortIndex(b.subCuisine);
+  if (byIdx !== 0) return byIdx;
   return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 }
 
@@ -1189,24 +1170,33 @@ export function planOverlapHintHtml(str, ctx) {
 // ── Ingredient rendering (HTML) ───────────────────────────────────────────────
 
 export function renderIngredient(str, planHintCtx) {
-  const planHint = planOverlapHintHtml(str, planHintCtx);
+  if (formatState.activeDiet && shouldOmitIngredient(str, formatState.activeDiet)) {
+    return '';
+  }
 
-  const dressingMatch = str.match(/^Dressing:\s*(.*)$/i);
+  let ingredientStr = str;
+  if (formatState.activeDiet && isDressingLine(str)) {
+    ingredientStr = adaptDressingForDiet(str, formatState.activeDiet);
+  }
+
+  const planHint = planOverlapHintHtml(ingredientStr, planHintCtx);
+
+  const dressingMatch = ingredientStr.match(/^Dressing:\s*(.*)$/i);
   if (dressingMatch) {
-    const body = pickDressingBodyFromLine(str);
+    const body = pickDressingBodyFromLine(ingredientStr);
     let inner;
     if (!body.trim()) {
-      inner = escapeHtml(str);
+      inner = escapeHtml(ingredientStr);
       return `<li class="ingredient-dressing"><span class="bullet"></span><span class="ingredient-body">${inner}</span></li>`;
     }
     inner = renderDressingBlockHtml(body);
     return `<li class="ingredient-dressing"><span class="bullet"></span><span class="ingredient-body dressing-ingredient-body">${inner}</span></li>`;
   }
 
-  const { amount, rest } = parseIngredient(str);
+  const { amount, rest } = parseIngredient(ingredientStr);
   let inner;
   if (!amount) {
-    inner = escapeHtml(str);
+    inner = escapeHtml(ingredientStr);
   } else if (formatState.showAmounts) {
     const disp = formatAmountForDisplay(amount, rest);
     inner = `<span class="amount">${escapeHtml(disp)}</span> ${escapeHtml(rest)}`;
@@ -1543,31 +1533,49 @@ export function plainDressingForClipboard(body) {
 }
 
 export function ingredientLineForClipboard(str) {
-  const dressingClipboardMatch = str.match(/^Dressing:\s*(.*)$/i);
+  if (formatState.activeDiet && shouldOmitIngredient(str, formatState.activeDiet)) {
+    return '';
+  }
+
+  let s = str;
+  if (formatState.activeDiet && isDressingLine(str)) {
+    s = adaptDressingForDiet(str, formatState.activeDiet);
+  }
+
+  const dressingClipboardMatch = s.match(/^Dressing:\s*(.*)$/i);
   if (dressingClipboardMatch) {
-    const body = pickDressingBodyFromLine(str);
-    if (!body.trim()) return str;
+    const body = pickDressingBodyFromLine(s);
+    if (!body.trim()) return s;
     return plainDressingForClipboard(body);
   }
 
   if (!formatState.showAmounts) {
-    const { amount, rest } = parseIngredient(str);
-    if (!amount) return str;
+    const { amount, rest } = parseIngredient(s);
+    if (!amount) return s;
     return rest;
   }
 
-  const { amount, rest } = parseIngredient(str);
+  const { amount, rest } = parseIngredient(s);
   if (amount && rest) {
     return `${formatAmountForDisplay(amount, rest)} ${rest}`;
   }
-  return str;
+  return s;
 }
 
 export function ingredientLineForClipboardSingleRecipe(str) {
-  const dressingClipboardMatch = str.match(/^Dressing:\s*(.*)$/i);
-  if (!dressingClipboardMatch) return ingredientLineForClipboard(str);
-  const body = pickDressingBodyFromLine(str);
-  if (!body.trim()) return str;
+  if (formatState.activeDiet && shouldOmitIngredient(str, formatState.activeDiet)) {
+    return '';
+  }
+
+  let s = str;
+  if (formatState.activeDiet && isDressingLine(str)) {
+    s = adaptDressingForDiet(str, formatState.activeDiet);
+  }
+
+  const dressingClipboardMatch = s.match(/^Dressing:\s*(.*)$/i);
+  if (!dressingClipboardMatch) return ingredientLineForClipboard(s);
+  const body = pickDressingBodyFromLine(s);
+  if (!body.trim()) return s;
   return plainDressingForClipboard(body);
 }
 
