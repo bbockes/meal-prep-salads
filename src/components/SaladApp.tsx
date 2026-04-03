@@ -1,0 +1,863 @@
+// @ts-nocheck
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
+import { RECIPES, Recipe } from '@/data/recipes';
+import {
+  formatState,
+  SCALING_BASE_PORTIONS,
+  escapeHtml,
+  escapeAttr,
+  recipeCardImageSlug,
+  isDistinctSubCuisine,
+  detailMetaBadgesHtml,
+  accentForNavCat,
+  getNavTabs,
+  getVisibleRecipes,
+  recipesForCardStrip,
+  renderIngredient,
+  formatStepLineHtml,
+  OVERLAP_NAV_CAT,
+  OVERLAP_TAB_TIP_COPY,
+  planOverlapContextForIngredientHints,
+  ingredientLineForClipboard,
+  ingredientLineForClipboardSingleRecipe,
+  withClipboardOptions,
+  sortIngredientLinesByAisle,
+  dedupeIngredientLinesByKey,
+  consolidateIngredientLinesForCopy,
+  ingredientsBlockForFullRecipeCopy,
+  getRecipesSortedByPlanOverlap,
+} from '@/lib/recipe-utils';
+
+const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
+const MEAL_PREP_MODE_KEY = 'meal-prep-salads:mealPrepMode';
+
+interface SaladAppProps {
+  initialBrowseMode: 'cuisine' | 'flavor' | 'season';
+  initialCategory: string;
+}
+
+export default function SaladApp({ initialBrowseMode, initialCategory }: SaladAppProps) {
+  const router = useRouter();
+  const [browseMode, setBrowseMode] = useState(initialBrowseMode);
+  const [activeCategory, setActiveCategory] = useState(initialCategory);
+  const [selectedId, setSelectedId] = useState(() => {
+    const visible = recipesForCardStrip(initialBrowseMode, initialCategory, false, []);
+    return visible.length ? visible[0].id : RECIPES[0].id;
+  });
+
+  const [mealPrepMode, setMealPrepMode] = useState(false);
+  const [mealPlanIds, setMealPlanIds] = useState<number[]>([]);
+  const [mealPlanPortions, setMealPlanPortions] = useState(2);
+  const [mealPlanShowAmounts, setMealPlanShowAmounts] = useState(false);
+  const [mealPlanUnitMode, setMealPlanUnitMode] = useState<'us' | 'metric'>('us');
+
+  const [showAmounts, setShowAmounts] = useState(false);
+  const [unitMode, setUnitMode] = useState<'us' | 'metric'>('us');
+  const [recipePortions, setRecipePortions] = useState(2);
+
+  const [servingsModalOpen, setServingsModalOpen] = useState(false);
+  const [servingsModalTarget, setServingsModalTarget] = useState<'recipe' | 'mealPlan'>('recipe');
+  const [portionsDraft, setPortionsDraft] = useState<number | null>(null);
+
+  const [flashMsg, setFlashMsg] = useState<string | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const [smartPicksTipOpen, setSmartPicksTipOpen] = useState(false);
+
+  // Load meal plan from localStorage
+  useEffect(() => {
+    try {
+      const mode = localStorage.getItem(MEAL_PREP_MODE_KEY);
+      if (mode === '1') setMealPrepMode(true);
+    } catch {}
+    try {
+      const raw = localStorage.getItem(MEAL_PLAN_STORAGE_KEY);
+      if (!raw) return;
+      const o = JSON.parse(raw);
+      const valid = new Set(RECIPES.map((r) => r.id));
+      if (Array.isArray(o.ids)) setMealPlanIds(o.ids.filter((id: number) => valid.has(id)));
+      if (typeof o.portions === 'number' && o.portions >= 2 && o.portions <= 30)
+        setMealPlanPortions(Math.round(o.portions));
+      if (typeof o.showAmounts === 'boolean') setMealPlanShowAmounts(o.showAmounts);
+      if (o.unitMode === 'metric' || o.unitMode === 'us') setMealPlanUnitMode(o.unitMode);
+    } catch {}
+  }, []);
+
+  // Save meal plan to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(MEAL_PREP_MODE_KEY, mealPrepMode ? '1' : '0');
+      localStorage.setItem(
+        MEAL_PLAN_STORAGE_KEY,
+        JSON.stringify({
+          ids: mealPlanIds,
+          portions: mealPlanPortions,
+          showAmounts: mealPlanShowAmounts,
+          unitMode: mealPlanUnitMode,
+        })
+      );
+    } catch {}
+  }, [mealPrepMode, mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode]);
+
+  // Sync format state for utility functions
+  formatState.showAmounts = showAmounts;
+  formatState.unitMode = unitMode;
+  formatState.recipePortions = recipePortions;
+  formatState.mealPlanPortions = mealPlanPortions;
+  formatState.mealPlanShowAmounts = mealPlanShowAmounts;
+  formatState.mealPlanUnitMode = mealPlanUnitMode;
+
+  // Sync URL with filter state
+  useEffect(() => {
+    setBrowseMode(initialBrowseMode);
+    setActiveCategory(initialCategory);
+    const visible = recipesForCardStrip(initialBrowseMode, initialCategory, mealPrepMode, mealPlanIds);
+    if (visible.length) setSelectedId(visible[0].id);
+  }, [initialBrowseMode, initialCategory]);
+
+  const navigateToFilter = useCallback(
+    (mode: string, category: string) => {
+      if (category === 'All' || category === OVERLAP_NAV_CAT) {
+        router.push('/salads', { scroll: false });
+      } else {
+        const slug = category
+          .toLowerCase()
+          .replace(/\s+&\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+        router.push(`/salads/${mode}/${slug}`, { scroll: false });
+      }
+    },
+    [router]
+  );
+
+  const flash = useCallback((msg: string) => {
+    setFlashMsg(msg);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlashMsg(null), 2200);
+  }, []);
+
+  // ── Browse mode / category selection ──
+  const handleSelectBrowseMode = useCallback(
+    (mode: 'cuisine' | 'flavor' | 'season') => {
+      if (mode === browseMode && activeCategory !== OVERLAP_NAV_CAT) return;
+      setServingsModalOpen(false);
+      setBrowseMode(mode);
+      setActiveCategory('All');
+      setRecipePortions(2);
+      const visible = recipesForCardStrip(mode, 'All', mealPrepMode, mealPlanIds);
+      if (visible.length) setSelectedId(visible[0].id);
+      router.push('/salads', { scroll: false });
+    },
+    [browseMode, activeCategory, mealPrepMode, mealPlanIds, router]
+  );
+
+  const handleSelectCategory = useCallback(
+    (cat: string) => {
+      setServingsModalOpen(false);
+      setSmartPicksTipOpen(false);
+      setActiveCategory(cat);
+      setRecipePortions(2);
+      const visible = recipesForCardStrip(browseMode, cat, mealPrepMode, mealPlanIds);
+      if (visible.length) setSelectedId(visible[0].id);
+      if (cat === 'All' || cat === OVERLAP_NAV_CAT) {
+        router.push('/salads', { scroll: false });
+      } else {
+        const slug = cat
+          .toLowerCase()
+          .replace(/\s+&\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+        router.push(`/salads/${browseMode}/${slug}`, { scroll: false });
+      }
+    },
+    [browseMode, mealPrepMode, mealPlanIds, router]
+  );
+
+  const handleSelectRecipe = useCallback((id: number) => {
+    setServingsModalOpen(false);
+    setRecipePortions(2);
+    setSelectedId(id);
+  }, []);
+
+  // ── Meal prep mode ──
+  const handleToggleMealPrepMode = useCallback(() => {
+    setMealPrepMode((prev) => {
+      const next = !prev;
+      if (!next && activeCategory === OVERLAP_NAV_CAT) {
+        setActiveCategory('All');
+      }
+      return next;
+    });
+  }, [activeCategory]);
+
+  const handleToggleMealPlanRecipe = useCallback(
+    (id: number) => {
+      setMealPlanIds((prev) => {
+        const idx = prev.indexOf(id);
+        const next = idx >= 0 ? prev.filter((x) => x !== id) : [...prev, id];
+        if (next.length === 0 && activeCategory === OVERLAP_NAV_CAT) {
+          setActiveCategory('All');
+        }
+        return next;
+      });
+    },
+    [activeCategory]
+  );
+
+  const handleRemoveFromMealPlan = useCallback(
+    (id: number) => {
+      setMealPlanIds((prev) => {
+        const next = prev.filter((x) => x !== id);
+        if (next.length === 0 && activeCategory === OVERLAP_NAV_CAT) {
+          setActiveCategory('All');
+        }
+        if (servingsModalOpen && servingsModalTarget === 'mealPlan') {
+          setServingsModalOpen(false);
+        }
+        return next;
+      });
+    },
+    [activeCategory, servingsModalOpen, servingsModalTarget]
+  );
+
+  const handleClearMealPlan = useCallback(() => {
+    setMealPlanIds([]);
+    if (activeCategory === OVERLAP_NAV_CAT) setActiveCategory('All');
+    if (servingsModalOpen && servingsModalTarget === 'mealPlan') {
+      setServingsModalOpen(false);
+    }
+  }, [activeCategory, servingsModalOpen, servingsModalTarget]);
+
+  // ── Amounts / units toggles ──
+  const handleToggleAmounts = useCallback(() => {
+    setShowAmounts((prev) => {
+      if (prev) setServingsModalOpen(false);
+      return !prev;
+    });
+  }, []);
+
+  const handleToggleUnits = useCallback(() => {
+    setUnitMode((prev) => (prev === 'us' ? 'metric' : 'us'));
+  }, []);
+
+  const handleToggleMealPlanAmounts = useCallback(() => {
+    setMealPlanShowAmounts((prev) => {
+      if (prev && servingsModalOpen && servingsModalTarget === 'mealPlan') {
+        setServingsModalOpen(false);
+      }
+      return !prev;
+    });
+  }, [servingsModalOpen, servingsModalTarget]);
+
+  const handleToggleMealPlanUnits = useCallback(() => {
+    setMealPlanUnitMode((prev) => (prev === 'us' ? 'metric' : 'us'));
+  }, []);
+
+  // ── Servings modal ──
+  const openServingsModal = useCallback(
+    (target: 'recipe' | 'mealPlan') => {
+      setServingsModalTarget(target);
+      setPortionsDraft(target === 'recipe' ? recipePortions : mealPlanPortions);
+      setServingsModalOpen(true);
+    },
+    [recipePortions, mealPlanPortions]
+  );
+
+  const closeServingsModal = useCallback(() => {
+    setServingsModalOpen(false);
+    setPortionsDraft(null);
+  }, []);
+
+  const applyServingsModal = useCallback(() => {
+    if (portionsDraft == null) return;
+    if (servingsModalTarget === 'recipe') {
+      setRecipePortions(portionsDraft);
+    } else {
+      setMealPlanPortions(portionsDraft);
+    }
+    setServingsModalOpen(false);
+    setPortionsDraft(null);
+  }, [portionsDraft, servingsModalTarget]);
+
+  // ── Copy functions ──
+  const handleCopyIngredients = useCallback(
+    (id: number) => {
+      const r = RECIPES.find((x) => x.id === id);
+      if (!r) return;
+      const text = withClipboardOptions({ recipePortions, showAmounts, unitMode }, () => {
+        const saladLines: string[] = [];
+        const dressingBlocks: string[] = [];
+        for (const ing of r.ingredients) {
+          const rendered = ingredientLineForClipboardSingleRecipe(ing);
+          if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
+          else saladLines.push(String(rendered || '').trim());
+        }
+        const out = [...sortIngredientLinesByAisle(saladLines.filter(Boolean))];
+        if (dressingBlocks.length) for (const b of dressingBlocks) out.push(b);
+        const ingredientsBody = out.join('\n').trimEnd();
+        return `${r.name}\n\n${ingredientsBody}`.trim() + '\n';
+      });
+      navigator.clipboard
+        .writeText(text)
+        .then(() => flash('Ingredients copied!'))
+        .catch(() => flash("Couldn't copy — try again or check permissions."));
+    },
+    [recipePortions, showAmounts, unitMode, flash]
+  );
+
+  const handleCopyFullRecipe = useCallback(
+    (id: number) => {
+      const r = RECIPES.find((x) => x.id === id);
+      if (!r) return;
+      const block = ingredientsBlockForFullRecipeCopy(r, {});
+      const text = `${r.name}\n\nIngredients:\n${block}\n\nSteps:\n${r.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
+      navigator.clipboard
+        .writeText(text)
+        .then(() => flash('Full recipe copied!'))
+        .catch(() => flash("Couldn't copy — try again or check permissions."));
+    },
+    [flash]
+  );
+
+  const handleCopyMealPlanIngredients = useCallback(() => {
+    if (!mealPlanIds.length) {
+      flash('No salads in your meal plan yet.');
+      return;
+    }
+    const recipeNames: string[] = [];
+    const lines: string[] = [];
+    for (const id of mealPlanIds) {
+      const r = RECIPES.find((x) => x.id === id);
+      if (!r) continue;
+      recipeNames.push(r.name);
+      const blockLines = withClipboardOptions(
+        { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
+        () => r.ingredients.map((ing) => ingredientLineForClipboard(ing))
+      );
+      if (!blockLines || !blockLines.length) continue;
+      for (const rendered of blockLines) {
+        const t = String(rendered || '').trim();
+        if (!t) continue;
+        if (/^dressing:\s*/i.test(t)) {
+          lines.push(t);
+          continue;
+        }
+        lines.push(...t.split('\n').map((s) => s.trim()).filter(Boolean));
+      }
+    }
+    const ingredientsBody = consolidateIngredientLinesForCopy(lines, mealPlanUnitMode).trim();
+    let header = '';
+    if (recipeNames.length <= 1) {
+      header = recipeNames[0] || '';
+    } else if (recipeNames.length === 2) {
+      header = `Combined ingredients for ${recipeNames[0]} and ${recipeNames[1]}`;
+    } else {
+      const leadingNames = recipeNames.slice(0, -1).join(', ');
+      header = `Combined ingredients for ${leadingNames}, and ${recipeNames[recipeNames.length - 1]}`;
+    }
+    const text = header ? `${header}\n\n${ingredientsBody}`.trim() : ingredientsBody;
+    navigator.clipboard
+      .writeText(text)
+      .then(() => flash('Copied ingredients!'))
+      .catch(() => flash("Couldn't copy — try again or check permissions."));
+  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash]);
+
+  const handleCopyMealPlanFullRecipes = useCallback(() => {
+    if (!mealPlanIds.length) {
+      flash('No salads in your meal plan yet.');
+      return;
+    }
+    const parts: string[] = [];
+    for (const id of mealPlanIds) {
+      const r = RECIPES.find((x) => x.id === id);
+      if (!r) continue;
+      const body = withClipboardOptions(
+        { recipePortions: mealPlanPortions, showAmounts: mealPlanShowAmounts, unitMode: mealPlanUnitMode },
+        () => {
+          const ingredientsBlock = ingredientsBlockForFullRecipeCopy(r, { mealPlanCopy: true });
+          return `${r.name}\n\nIngredients:\n${ingredientsBlock}\n\nSteps:\n${r.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
+        }
+      );
+      parts.push(body);
+    }
+    const text = parts.join('\n\n────────────────────────\n\n');
+    navigator.clipboard
+      .writeText(text)
+      .then(() => flash(`Copied ${mealPlanIds.length} full recipes!`))
+      .catch(() => flash("Couldn't copy — try again or check permissions."));
+  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash]);
+
+  // ── Keyboard ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSmartPicksTipOpen(false);
+        if (servingsModalOpen) closeServingsModal();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [servingsModalOpen, closeServingsModal]);
+
+  // Close smart picks tip on outside click
+  useEffect(() => {
+    if (!smartPicksTipOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.browse-smart-picks-tip-wrap')) {
+        setSmartPicksTipOpen(false);
+      }
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [smartPicksTipOpen]);
+
+  // ── Computed values ──
+  const smartPicksBrowsing = activeCategory === OVERLAP_NAV_CAT;
+  const visible = recipesForCardStrip(browseMode, activeCategory, mealPrepMode, mealPlanIds);
+  const navTabs = getNavTabs(browseMode);
+  const recipe = RECIPES.find((x) => x.id === selectedId);
+  const inPlan = new Set(mealPlanIds);
+  const planHintCtx = planOverlapContextForIngredientHints(mealPlanIds, mealPrepMode, activeCategory, selectedId);
+
+  const smartPicksReady = mealPlanIds.length > 0;
+
+  return (
+    <>
+      {/* ── Header ── */}
+      <header>
+        <h1 className="site-title">
+          <span className="site-title-super">Simple</span>
+          <span className="site-title-simple">Healthy</span>
+          <span className="site-title-core">Meal Prep</span>
+        </h1>
+      </header>
+
+      {/* ── Browse Mode Bar ── */}
+      <div className="browse-mode" id="browseModeBar">
+        <span className="browse-mode-label">Browse by</span>
+        <div className="browse-mode-toggle" role="group" aria-label="Browse recipes by">
+          {(['cuisine', 'flavor', 'season'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={browseMode === mode && !smartPicksBrowsing ? 'active' : ''}
+              onClick={() => handleSelectBrowseMode(mode)}
+            >
+              {mode.charAt(0).toUpperCase() + mode.slice(1)}
+            </button>
+          ))}
+        </div>
+        <div className="browse-mode-tail">
+          {mealPrepMode && (
+            <span className="browse-smart-picks-cluster">
+              <button
+                type="button"
+                className={`browse-smart-picks-btn${smartPicksBrowsing ? ' active' : ''}`}
+                aria-pressed={smartPicksBrowsing ? 'true' : 'false'}
+                disabled={!smartPicksReady}
+                aria-disabled={!smartPicksReady}
+                title={smartPicksReady ? '' : 'Add at least one salad to your meal plan to use Smart Picks.'}
+                onClick={() => smartPicksReady && handleSelectCategory(OVERLAP_NAV_CAT)}
+              >
+                Smart Picks
+              </button>
+              <span className={`browse-smart-picks-tip-wrap${smartPicksTipOpen ? ' is-open' : ''}`}>
+                <button
+                  type="button"
+                  className="browse-smart-picks-tip-btn"
+                  aria-label="About Smart Picks"
+                  aria-expanded={smartPicksTipOpen ? 'true' : 'false'}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSmartPicksTipOpen((prev) => !prev);
+                  }}
+                >
+                  i
+                </button>
+                <span className="browse-smart-picks-tip-bubble" role="tooltip">
+                  {OVERLAP_TAB_TIP_COPY}
+                </span>
+              </span>
+            </span>
+          )}
+          <span className="browse-mode-spacer" aria-hidden="true" />
+          <button
+            type="button"
+            className={`meal-prep-mode-btn${mealPrepMode ? ' active' : ''}`}
+            aria-pressed={mealPrepMode ? 'true' : 'false'}
+            title="Select multiple salads and copy a combined grocery list or recipes"
+            onClick={handleToggleMealPrepMode}
+          >
+            Prep mode
+          </button>
+        </div>
+        {mealPrepMode && !smartPicksReady && (
+          <p className="browse-smart-picks-hint">
+            Add at least one salad to your meal plan to use Smart Picks.
+          </p>
+        )}
+      </div>
+
+      {/* ── Nav ── */}
+      <nav className={smartPicksBrowsing ? 'nav--smart-picks' : ''}>
+        {navTabs.map((cat) => {
+          const accent = accentForNavCat(cat, browseMode);
+          return (
+            <button
+              key={cat}
+              type="button"
+              className={cat === activeCategory ? 'active' : ''}
+              style={{ '--accent': accent } as React.CSSProperties}
+              onClick={() => handleSelectCategory(cat)}
+            >
+              {cat}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* ── Card Strip ── */}
+      <div className="card-strip-wrapper">
+        <div className="card-strip" id="cardStrip">
+          {visible.map((r) => {
+            const accent = ACCENT[r.cuisine];
+            const sel = r.id === selectedId ? 'selected' : '';
+            const plan = inPlan.has(r.id) ? 'in-meal-plan' : '';
+            const sub =
+              (browseMode === 'cuisine' || browseMode === 'flavor' || browseMode === 'season' || smartPicksBrowsing) &&
+              r.subCuisine ? (
+                <div className="card-subcuisine">{r.subCuisine}</div>
+              ) : null;
+            const onPlan = inPlan.has(r.id);
+            const cardSlug = recipeCardImageSlug(r.name);
+            return (
+              <div
+                key={r.id}
+                className={`recipe-card ${sel} ${plan}`}
+                style={
+                  {
+                    '--card-accent': accent,
+                    '--card-image': `url('/images/${cardSlug}.png')`,
+                  } as React.CSSProperties
+                }
+                role="button"
+                tabIndex={0}
+                aria-label={`View ${r.name}`}
+                onClick={() => handleSelectRecipe(r.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectRecipe(r.id);
+                  }
+                }}
+              >
+                {mealPrepMode && (
+                  <button
+                    type="button"
+                    className={`meal-plan-card-ctl ${onPlan ? 'meal-plan-card-ctl-on' : 'meal-plan-card-ctl-add'}`}
+                    aria-pressed={onPlan ? 'true' : 'false'}
+                    aria-label={onPlan ? `Remove ${r.name} from meal plan` : `Add ${r.name} to meal plan`}
+                    title={onPlan ? 'Remove from plan' : 'Add to plan'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleMealPlanRecipe(r.id);
+                    }}
+                  >
+                    {onPlan ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                    )}
+                  </button>
+                )}
+                <div className="card-label-wrap">
+                  <div className="card-label">{r.name}</div>
+                  {sub}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Recipe Detail ── */}
+      <div id="recipeDetail">
+        {recipe ? (
+          <div className="recipe-detail" style={{ '--detail-accent': ACCENT[recipe.cuisine] } as React.CSSProperties}>
+            <div className="detail-header">
+              <div>
+                <div className="detail-meta" dangerouslySetInnerHTML={{ __html: detailMetaBadgesHtml(recipe, browseMode) }} />
+                <h2 className="detail-title">{recipe.name}</h2>
+              </div>
+              <div className="copy-actions">
+                <button
+                  type="button"
+                  id="unitsToggleBtn"
+                  className="copy-btn"
+                  hidden={!showAmounts}
+                  aria-pressed={unitMode === 'metric' ? 'true' : 'false'}
+                  aria-label="Switch between imperial and metric units"
+                  onClick={handleToggleUnits}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
+                  <span className="units-toggle-label">{unitMode === 'metric' ? 'Metric' : 'Imperial'}</span>
+                </button>
+                <button
+                  type="button"
+                  id="amountToggleBtn"
+                  className={`copy-btn toggle-btn ${showAmounts ? 'active' : ''}`}
+                  onClick={handleToggleAmounts}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4" /><rect x="9" y="3" width="6" height="5" rx="1" /></svg>
+                  <span className="toggle-label">{showAmounts ? 'Hide amounts' : 'Show amounts'}</span>
+                </button>
+                <button type="button" id="copyIngredientsBtn" className="copy-btn" onClick={() => handleCopyIngredients(recipe.id)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+                  Copy ingredients
+                </button>
+                <button type="button" id="copyFullRecipeBtn" className="copy-btn" onClick={() => handleCopyFullRecipe(recipe.id)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+                  Copy full recipe
+                </button>
+              </div>
+            </div>
+            <div className="detail-body">
+              <div>
+                <div className="section-heading ingredients-heading-row">
+                  <div className="section-heading-label">
+                    <span>🛒</span> Ingredients
+                  </div>
+                  <button
+                    type="button"
+                    className="servings-chip"
+                    id="servingsOpenBtn"
+                    hidden={!showAmounts}
+                    onClick={() => openServingsModal('recipe')}
+                    aria-label="Recipe portions"
+                    title="Scale by portions"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>
+                    <span id="servingsChipNum">{recipePortions}</span>
+                  </button>
+                </div>
+                <ul
+                  id="ingredientsList"
+                  className="ingredients-list"
+                  dangerouslySetInnerHTML={{
+                    __html: recipe.ingredients.map((ing) => renderIngredient(ing, planHintCtx)).join(''),
+                  }}
+                />
+              </div>
+              <div>
+                <div className="section-heading">
+                  <span>📋</span> Steps
+                </div>
+                <ul className="steps-list">
+                  {recipe.steps.map((s, i) => (
+                    <li key={i}>
+                      <span className="step-num">{i + 1}</span>
+                      <span className="step-content" dangerouslySetInnerHTML={{ __html: formatStepLineHtml(s, recipe) }} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="empty-state">Select a recipe above to view its details.</div>
+        )}
+      </div>
+
+      {/* ── Meal Plan Panel ── */}
+      {(mealPrepMode || mealPlanIds.length > 0) && (
+        <section className="meal-plan-panel" style={{ '--detail-accent': '#4a5568' } as React.CSSProperties} aria-labelledby="mealPlanPanelHeading">
+          <div className="meal-plan-panel-header">
+            <div>
+              <h2 id="mealPlanPanelHeading" className="meal-plan-panel-title">This week&apos;s meal plan</h2>
+            </div>
+            <div className="copy-actions">
+              <button
+                type="button"
+                className="servings-chip"
+                id="mealPlanServingsOpenBtn"
+                hidden={!mealPlanShowAmounts}
+                onClick={() => openServingsModal('mealPlan')}
+                aria-label="Meal plan portions"
+                title="Scale each salad in the plan by portions"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>
+                <span>{servingsModalOpen && servingsModalTarget === 'mealPlan' && portionsDraft != null ? portionsDraft : mealPlanPortions}</span>
+              </button>
+              <button
+                type="button"
+                id="mealPlanUnitsToggleBtn"
+                className="copy-btn"
+                hidden={!mealPlanShowAmounts}
+                aria-pressed={mealPlanUnitMode === 'metric' ? 'true' : 'false'}
+                aria-label="Switch between imperial and metric units for meal plan copy"
+                onClick={handleToggleMealPlanUnits}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
+                <span className="units-toggle-label">{mealPlanUnitMode === 'metric' ? 'Metric' : 'Imperial'}</span>
+              </button>
+              <button
+                type="button"
+                id="mealPlanAmountToggleBtn"
+                className={`copy-btn toggle-btn ${mealPlanShowAmounts ? 'active' : ''}`}
+                onClick={handleToggleMealPlanAmounts}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4" /><rect x="9" y="3" width="6" height="5" rx="1" /></svg>
+                <span className="toggle-label">{mealPlanShowAmounts ? 'Hide amounts' : 'Show amounts'}</span>
+              </button>
+              <button
+                type="button"
+                id="mealPlanCopyIngredientsBtn"
+                className="copy-btn"
+                onClick={handleCopyMealPlanIngredients}
+                disabled={mealPlanIds.length === 0}
+                aria-label="Copy all ingredients for salads in this plan"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+                Copy all ingredients
+              </button>
+              <button
+                type="button"
+                id="mealPlanCopyFullRecipeBtn"
+                className="copy-btn"
+                onClick={handleCopyMealPlanFullRecipes}
+                disabled={mealPlanIds.length === 0}
+                aria-label="Copy all full recipes in this plan"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+                Copy all recipes
+              </button>
+            </div>
+          </div>
+          {mealPlanIds.length === 0 ? (
+            mealPrepMode ? (
+              <p className="meal-plan-empty">
+                Tap <strong>+</strong> on a card to add recipes to your meal plan (or the checkmark to remove).
+              </p>
+            ) : (
+              <p className="meal-plan-empty">
+                Turn on <strong>Prep mode</strong> in the bar above to add recipes to your meal plan.
+              </p>
+            )
+          ) : null}
+          <div className="meal-plan-chips">
+            {mealPlanIds.map((id) => {
+              const r = RECIPES.find((x) => x.id === id);
+              if (!r) return null;
+              return (
+                <div key={id} className="meal-plan-chip">
+                  <span>{r.name}</span>
+                  <button
+                    type="button"
+                    className="meal-plan-chip-remove"
+                    onClick={() => handleRemoveFromMealPlan(id)}
+                    aria-label={`Remove ${r.name} from meal plan`}
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="meal-plan-footer">
+            <button
+              type="button"
+              id="mealPlanClearBtn"
+              className="copy-btn"
+              onClick={handleClearMealPlan}
+              disabled={mealPlanIds.length === 0}
+              aria-label="Clear meal plan"
+            >
+              Clear plan
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* ── Servings Modal ── */}
+      {servingsModalOpen && (
+        <div className="servings-modal">
+          <div className="servings-modal-backdrop" onClick={closeServingsModal} aria-hidden="true" />
+          <div
+            className="servings-modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="servingsModalTitle"
+            style={{ '--detail-accent': servingsModalTarget === 'recipe' && recipe ? ACCENT[recipe.cuisine] : '#4a5568' } as React.CSSProperties}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="servings-modal-top">
+              <div id="servingsModalTitle" className="servings-modal-title">
+                <span className="servings-modal-title-num">{portionsDraft ?? 2}</span>
+                <span className="servings-modal-title-label">Portions</span>
+              </div>
+              <button type="button" className="servings-modal-close" onClick={closeServingsModal} aria-label="Close">
+                ×
+              </button>
+            </div>
+            <p className="servings-modal-hint">
+              Each portion is sized as one filling meal—scale up if you&apos;re meal prepping or feeding more people.
+            </p>
+            <div className="servings-slider-row">
+              <div className="servings-slider-wrap">
+                <input
+                  type="range"
+                  className="servings-slider"
+                  min="2"
+                  max="30"
+                  step="1"
+                  value={portionsDraft ?? 2}
+                  onChange={(e) => setPortionsDraft(Number(e.target.value))}
+                />
+              </div>
+              <div className="servings-scale-pill">
+                × <strong>{portionsDraft != null ? Math.round((portionsDraft / SCALING_BASE_PORTIONS) * 10) / 10 : 1}</strong>
+              </div>
+            </div>
+            <div className="servings-modal-actions">
+              <button type="button" className="servings-btn-cancel" onClick={closeServingsModal}>
+                Cancel
+              </button>
+              <button type="button" className="servings-btn-apply" onClick={applyServingsModal}>
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Flash Message ── */}
+      {flashMsg && (
+        <div
+          style={{
+            position: 'fixed',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            bottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
+            maxWidth: 'calc(100vw - 32px)',
+            background: '#1a1a18',
+            color: '#fff',
+            padding: '9px 18px',
+            borderRadius: '8px',
+            fontSize: '0.82rem',
+            fontWeight: '500',
+            zIndex: 1000,
+            pointerEvents: 'none',
+            textAlign: 'center',
+            boxSizing: 'border-box',
+          }}
+        >
+          {flashMsg}
+        </div>
+      )}
+    </>
+  );
+}
