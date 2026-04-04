@@ -24,6 +24,9 @@
 
       /* Recipe cards: neutral under photos; cuisine color only when selected (border) */
       --recipe-card-fallback-bg: #2e2e2b;
+      /* Browse-by segment (Cuisine / Flavor / …): active must read clearly vs page + white group */
+      --browse-toggle-active-bg: #2a2926;
+      --browse-toggle-active-fg: #faf9f6;
 
       /* Recipe detail + meal plan reading text */
       --prose-font-size: 0.95rem;
@@ -72,7 +75,7 @@
     .recipe-card:focus-visible {
       outline: 3px solid #fff;
       outline-offset: 2px;
-      z-index: 1;
+      z-index: 3;
     }
 
     .copy-btn.copy-btn--success:not(#unitsToggleBtn):not(#mealPlanUnitsToggleBtn) {
@@ -199,23 +202,30 @@
       background: none;
       font-family: 'DM Sans', sans-serif;
       font-size: 0.84rem;
-      font-weight: 500;
+      font-weight: 600;
       padding: 8px 14px;
       cursor: pointer;
       color: var(--muted);
-      transition: background 0.15s, color 0.15s;
+      transition: background-color 0.22s ease, color 0.22s ease;
       -webkit-tap-highlight-color: transparent;
     }
     .browse-mode-toggle button + button {
       border-left: 1px solid var(--border);
     }
     .browse-mode-toggle button.active {
-      background: var(--bg);
-      color: var(--text);
-      font-weight: 600;
+      background: var(--browse-toggle-active-bg);
+      color: var(--browse-toggle-active-fg);
     }
     .browse-mode-toggle button:hover:not(.active) {
       color: var(--text);
+    }
+    .browse-mode-toggle button.active:hover {
+      background: #1f1e1c;
+      color: var(--browse-toggle-active-fg);
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .browse-mode-toggle button.active:focus-visible {
+      outline-color: var(--browse-toggle-active-fg);
     }
     .browse-mode-spacer {
       flex: 1 1 auto;
@@ -439,6 +449,19 @@
       padding: 16px 48px 0;
       overflow: visible;
       position: relative;
+      isolation: isolate;
+    }
+    /* Bottom veil on the wrapper (not on .card-strip) so it stays full-width while cards scroll — no half-strip artifacts. */
+    .card-strip-wrapper::before {
+      content: '';
+      position: absolute;
+      left: 48px;
+      right: 48px;
+      bottom: 0;
+      height: 26px;
+      pointer-events: none;
+      z-index: 4;
+      background: linear-gradient(to bottom, transparent 0%, var(--bg) 68%, var(--bg) 100%);
     }
     .card-strip-wrapper::after {
       content: '';
@@ -456,14 +479,33 @@
       display: flex;
       gap: 14px;
       overflow-x: auto;
+      /* No vertical scroll/track gutter — avoids a thin “line” under the row */
+      overflow-y: hidden;
       scroll-snap-type: x mandatory;
       scroll-padding-inline: 16px;
       -webkit-overflow-scrolling: touch;
-      /* Vertical room for box-shadow rings (≤6px), hover lift (-3px), borders — overflow-x still clips-y */
-      padding: 18px 16px 12px 16px;
+      /* Vertical room for selected ring/shadow, hover lift — overflow-x still clips-y */
+      padding: 24px 16px 18px 16px;
+      -ms-overflow-style: none;
       scrollbar-width: none;
+      scrollbar-color: transparent transparent;
+      position: relative;
+      z-index: 1;
     }
-    .card-strip::-webkit-scrollbar { display: none; }
+    .card-strip::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+    .card-strip::-webkit-scrollbar:horizontal {
+      height: 0;
+    }
+    .card-strip::-webkit-scrollbar-thumb,
+    .card-strip::-webkit-scrollbar-track {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
 
     .recipe-card {
       flex: 0 0 220px;
@@ -497,9 +539,25 @@
       transform: translateY(-3px);
     }
     .recipe-card.selected {
-      border-width: 4px;
-      border-color: var(--card-accent);
-      box-shadow: none;
+      z-index: 2;
+      transform: translateY(-5px) scale(1.03);
+      border-width: 3px;
+      border-color: rgba(255, 255, 255, 0.98);
+      box-shadow:
+        0 0 0 3px var(--card-accent),
+        0 14px 36px rgba(0, 0, 0, 0.42),
+        0 6px 16px rgba(0, 0, 0, 0.28);
+    }
+    .recipe-card.selected:hover {
+      transform: translateY(-6px) scale(1.035);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .recipe-card.selected {
+        transform: none;
+      }
+      .recipe-card.selected:hover {
+        transform: none;
+      }
     }
     /* Meal plan: white frame + black ring only when not selected; selected uses cuisine accent border. */
     .recipe-card.in-meal-plan:not(.selected) {
@@ -515,6 +573,23 @@
     .recipe-card.in-meal-plan .card-subcuisine {
       font-weight: 700;
     }
+    .card-smart-picks-matches {
+      position: absolute;
+      bottom: 8px;
+      left: 10px;
+      z-index: 2;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.98);
+      text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.95),
+        0 0 12px rgba(0, 0, 0, 0.65);
+      pointer-events: none;
+    }
+
     .meal-plan-card-ctl {
       position: absolute;
       bottom: 9px;
@@ -934,6 +1009,10 @@
         padding-left: 18px;
         padding-right: 18px;
       }
+      .card-strip-wrapper::before {
+        left: 18px;
+        right: 18px;
+      }
       .card-strip-wrapper::after {
         right: 18px;
       }
@@ -1050,6 +1129,10 @@
       .card-strip-wrapper {
         padding-left: 14px;
         padding-right: 14px;
+      }
+      .card-strip-wrapper::before {
+        left: 14px;
+        right: 14px;
       }
       .card-strip-wrapper::after {
         right: 14px;

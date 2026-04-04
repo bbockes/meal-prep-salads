@@ -5,13 +5,15 @@ import { Recipe, RECIPES } from '@/data/recipes';
 import {
   shouldOmitIngredient,
   isDressingLine,
+  isOptionalLine,
   adaptDressingForDiet,
   adaptStepForDiet,
   adaptStepForProteinSwap,
-  isSwappableProteinIngredient,
+  shouldHideIngredientForDefaultProteinPicker,
   getProteinStepName,
   SYNTHETIC_SELECTED_PROTEIN_STEP_PREFIX,
   isSyntheticSelectedProteinStep,
+  getRecipeDiets,
 } from '@/lib/diet-utils';
 
 // Mutable format state - updated by React components before calling formatting functions
@@ -88,20 +90,14 @@ export function accentForNavCat(cat, browseMode) {
 
 export const OVERLAP_NAV_CAT = 'Smart Picks';
 export const OVERLAP_TAB_TIP_COPY =
-  'Smart Picks shows up to seven salads not already in your meal plan, ranked by how many ingredients they share with recipes in your plan. Dressings are skipped to keep suggestions useful.';
-export const OVERLAP_TOP_N = 7;
+  'Smart Picks ranks salads not in your plan by shared ingredients (dressings skipped) within your current Cuisine, Flavor, Season, or Diet tab. The diet tab only lists recipes that stay viable on that diet.';
 
 // ── Visible recipes ───────────────────────────────────────────────────────────
 
-export function getVisibleRecipes(browseMode, activeCategory, mealPrepMode, mealPlanIds) {
-  if (activeCategory === OVERLAP_NAV_CAT) {
-    if (!mealPrepMode || mealPlanIds.length === 0) {
-      return RECIPES.slice().sort(compareRecipesForCuisineBrowse);
-    }
-    return getRecipesSortedByPlanOverlap(mealPlanIds);
-  }
+export function getVisibleRecipes(browseMode, activeCategory) {
   if (browseMode === 'diet') {
-    return RECIPES.slice();
+    if (!activeCategory || activeCategory === 'All') return RECIPES.slice();
+    return RECIPES.filter((r) => getRecipeDiets(r).includes(activeCategory));
   }
   if (browseMode === 'cuisine') {
     return activeCategory === 'All' ? RECIPES : RECIPES.filter((r) => r.subCuisine === activeCategory);
@@ -114,9 +110,32 @@ export function getVisibleRecipes(browseMode, activeCategory, mealPrepMode, meal
   return RECIPES.filter((r) => r.seasons.includes(activeCategory));
 }
 
-export function recipesForCardStrip(browseMode, activeCategory, mealPrepMode, mealPlanIds) {
-  const raw = getVisibleRecipes(browseMode, activeCategory, mealPrepMode, mealPlanIds);
-  if (activeCategory === OVERLAP_NAV_CAT) return raw;
+/** Sort by ingredient overlap with the meal plan (highest first); ties use cuisine browse order. */
+export function sortRecipesByPlanOverlap(recipes, mealPlanIds) {
+  const planKeys = mealPlanOverlapIngredientKeys(mealPlanIds);
+  return recipes
+    .map((r) => ({ r, s: overlapMatchCount(planKeys, r) }))
+    .sort((a, b) => {
+      if (b.s !== a.s) return b.s - a.s;
+      return compareRecipesForCuisineBrowse(a.r, b.r);
+    })
+    .map((x) => x.r);
+}
+
+export function recipesForCardStrip(
+  browseMode,
+  activeCategory,
+  mealPrepMode,
+  mealPlanIds,
+  smartPicksEnabled = false
+) {
+  const raw = getVisibleRecipes(browseMode, activeCategory);
+  const smartOn = smartPicksEnabled && mealPrepMode && mealPlanIds.length > 0;
+  if (smartOn) {
+    const inPlan = new Set(mealPlanIds);
+    const filtered = raw.filter((r) => !inPlan.has(r.id));
+    return sortRecipesByPlanOverlap(filtered, mealPlanIds);
+  }
   return raw.slice().sort(compareRecipesForCuisineBrowse);
 }
 
@@ -1175,13 +1194,50 @@ export function planOverlapHintHtml(str, ctx) {
   return ` <span class="ingredient-plan-overlap-hint" aria-label="${escapeAttr(ariaLabel)}">${visibleInner}</span>`;
 }
 
+/**
+ * When Smart Picks overlap hints are active, move ingredient lines that match the plan
+ * (and ties broken by more plan recipes sharing that key) above the rest; dressing block stays last.
+ */
+export function sortIngredientsForPlanOverlapDisplay(ingredients, planHintCtx, activeDiet) {
+  if (!planHintCtx || !ingredients?.length) return ingredients;
+  const firstDressIdx = ingredients.findIndex((ing) => isDressingLine(ing));
+  const end = firstDressIdx === -1 ? ingredients.length : firstDressIdx;
+  const head = ingredients.slice(0, end);
+  const tail = ingredients.slice(end);
+
+  function lineRank(ing) {
+    if (activeDiet && shouldOmitIngredient(ing, activeDiet)) return { tier: 2, recipeCount: 0 };
+    if (isOptionalLine(ing)) return { tier: 2, recipeCount: 0 };
+    const { amount, rest } = parseIngredient(ing);
+    const restStr = rest != null && String(rest).trim() ? rest : ing;
+    if (!String(restStr).trim()) return { tier: 1, recipeCount: 0 };
+    const { key } = canonicalizeIngredientRest(restStr);
+    const k = String(key || '')
+      .toLowerCase()
+      .trim();
+    if (!k || OVERLAP_GENERIC_KEYS.has(k)) return { tier: 1, recipeCount: 0 };
+    if (!planHintCtx.planKeys.has(k)) return { tier: 1, recipeCount: 0 };
+    const idToName = planHintCtx.keyToRecipeNames.get(k);
+    const recipeCount = idToName && idToName.size > 0 ? idToName.size : 0;
+    return { tier: 0, recipeCount };
+  }
+
+  const decorated = head.map((ing, origIdx) => ({ ing, origIdx, ...lineRank(ing) }));
+  decorated.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    if (b.recipeCount !== a.recipeCount) return b.recipeCount - a.recipeCount;
+    return a.origIdx - b.origIdx;
+  });
+  return [...decorated.map((x) => x.ing), ...tail];
+}
+
 // ── Ingredient rendering (HTML) ───────────────────────────────────────────────
 
 export function renderIngredient(str, planHintCtx) {
   if (formatState.activeDiet && shouldOmitIngredient(str, formatState.activeDiet)) {
     return '';
   }
-  if (!formatState.activeDiet && isSwappableProteinIngredient(str)) {
+  if (!formatState.activeDiet && shouldHideIngredientForDefaultProteinPicker(str)) {
     return '';
   }
 
@@ -1449,6 +1505,33 @@ function findIndexForSyntheticProteinStep(steps: string[]): number {
   return -1;
 }
 
+/** Same adaptation as `adaptStepText` for a single step (for step-list logic; uses `formatState.activeDiet`). */
+function adaptBaseStepForProteinListing(
+  stepText: string,
+  recipe: Recipe,
+  selectedProtein: string
+): string {
+  if (formatState.activeDiet) {
+    return adaptStepForDiet(stepText, recipe, formatState.activeDiet, selectedProtein);
+  }
+  return adaptStepForProteinSwap(stepText, selectedProtein);
+}
+
+/** True when swappable placeholders were already replaced so the protein name appears in an earlier step. */
+function adaptedStepsAlreadyMentionSelectedProtein(
+  steps: string[],
+  recipe: Recipe,
+  selectedProtein: string
+): boolean {
+  const name = getProteinStepName(selectedProtein);
+  if (!name) return false;
+  const re = new RegExp(`\\b${escapeRegExp(name)}\\b`, 'i');
+  for (const st of steps) {
+    if (re.test(adaptBaseStepForProteinListing(st, recipe, selectedProtein))) return true;
+  }
+  return false;
+}
+
 export function buildSyntheticSelectedProteinStep(selectedFullName: string): string {
   const n = getProteinStepName(selectedFullName);
   return `${SYNTHETIC_SELECTED_PROTEIN_STEP_PREFIX}Add ${n} to the salad before serving.`;
@@ -1457,6 +1540,9 @@ export function buildSyntheticSelectedProteinStep(selectedFullName: string): str
 export function recipeStepsForDisplay(recipe: Recipe, selectedProtein: string | null): string[] {
   const base = (recipe.steps || []).filter((st) => !isOptionalProteinUpsellStep(st));
   if (!selectedProtein) return base;
+  if (adaptedStepsAlreadyMentionSelectedProtein(base, recipe, selectedProtein)) {
+    return base;
+  }
   const synthetic = buildSyntheticSelectedProteinStep(selectedProtein);
   const idx = findIndexForSyntheticProteinStep(base);
   if (idx >= 0) {
@@ -1613,7 +1699,7 @@ export function ingredientLineForClipboard(str) {
   if (formatState.activeDiet && shouldOmitIngredient(str, formatState.activeDiet)) {
     return '';
   }
-  if (!formatState.activeDiet && isSwappableProteinIngredient(str)) {
+  if (!formatState.activeDiet && shouldHideIngredientForDefaultProteinPicker(str)) {
     return '';
   }
 
@@ -1646,7 +1732,7 @@ export function ingredientLineForClipboardSingleRecipe(str) {
   if (formatState.activeDiet && shouldOmitIngredient(str, formatState.activeDiet)) {
     return '';
   }
-  if (!formatState.activeDiet && isSwappableProteinIngredient(str)) {
+  if (!formatState.activeDiet && shouldHideIngredientForDefaultProteinPicker(str)) {
     return '';
   }
 
@@ -1792,17 +1878,11 @@ export function overlapMatchCount(planKeys, r) {
   return n;
 }
 
+/** All non-plan recipes, globally ranked by plan overlap (legacy helper; prefer `recipesForCardStrip` + Smart Picks). */
 export function getRecipesSortedByPlanOverlap(mealPlanIds) {
-  const planKeys = mealPlanOverlapIngredientKeys(mealPlanIds);
   const inPlan = new Set(mealPlanIds);
   const candidates = RECIPES.filter((r) => !inPlan.has(r.id));
-  const ranked = candidates
-    .map((r) => ({ r, s: overlapMatchCount(planKeys, r) }))
-    .sort((a, b) => {
-      if (b.s !== a.s) return b.s - a.s;
-      return a.r.name.localeCompare(b.r.name, undefined, { sensitivity: 'base' });
-    });
-  return ranked.slice(0, OVERLAP_TOP_N).map((x) => x.r);
+  return sortRecipesByPlanOverlap(candidates, mealPlanIds);
 }
 
 export function mealPlanOverlapIngredientKeys(mealPlanIds) {
@@ -1826,8 +1906,8 @@ export function mealPlanOverlapIngredientKeysExcludingRecipe(mealPlanIds, exclud
   return keys;
 }
 
-export function planOverlapContextForIngredientHints(mealPlanIds, mealPrepMode, activeCategory, selectedId) {
-  if (activeCategory !== OVERLAP_NAV_CAT || !mealPrepMode || mealPlanIds.length === 0) return null;
+export function planOverlapContextForIngredientHints(mealPlanIds, mealPrepMode, smartPicksEnabled, selectedId) {
+  if (!smartPicksEnabled || !mealPrepMode || mealPlanIds.length === 0) return null;
   const excludeRecipeId = selectedId;
   const planKeys = mealPlanOverlapIngredientKeysExcludingRecipe(mealPlanIds, excludeRecipeId);
   const keyToRecipeNames = new Map();

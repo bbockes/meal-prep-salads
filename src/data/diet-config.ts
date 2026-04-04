@@ -38,12 +38,14 @@ export const INGREDIENT_OMIT_RULES: IngredientOmitRule[] = [
   { pattern: /\bsteak\b/i, diets: ALL_DIETS, swappable: true },
   { pattern: /\bbulgogi\b/i, diets: ALL_DIETS, swappable: true },
   { pattern: /\bturkey\b/i, diets: ALL_DIETS, swappable: true },
-  { pattern: /\bbacon\b/i, diets: ALL_DIETS, swappable: true },
-  { pattern: /\bprosciutto\b/i, diets: ALL_DIETS, swappable: true },
-  { pattern: /\bham\b/i, diets: ALL_DIETS, swappable: true },
-  { pattern: /\bsalami\b/i, diets: ALL_DIETS, swappable: true },
-  { pattern: /\bserrano\b/i, diets: ALL_DIETS, swappable: true },
-  { pattern: /\bpepperoni\b/i, diets: ALL_DIETS, swappable: true },
+  // Charcuterie / deli meats: part of many base recipes (e.g. grinder, Cobb bacon).
+  // Not swappable for the protein picker — still omitted per diet via rules above.
+  { pattern: /\bbacon\b/i, diets: ALL_DIETS },
+  { pattern: /\bprosciutto\b/i, diets: ALL_DIETS },
+  { pattern: /\bham\b/i, diets: ALL_DIETS },
+  { pattern: /\bsalami\b/i, diets: ALL_DIETS },
+  { pattern: /\bserrano\b/i, diets: ALL_DIETS },
+  { pattern: /\bpepperoni\b/i, diets: ALL_DIETS },
   { pattern: /\bkaraage\b/i, diets: ALL_DIETS, swappable: true },
 
   // Seafood — swappable with selected protein in steps (all diets)
@@ -209,3 +211,14 @@ export const OPTIONAL_PROTEINS: OptionalProtein[] = [
 ];
 
 export const MIN_VIABLE_INGREDIENTS = 3;
+
+/** `optional:` meat lines only — still hidden with no diet selected (protein picker covers the upsell). */
+export const OPTIONAL_LINE_PROTEIN_UPSELL_PATTERNS: RegExp[] = [
+  /\bbacon\b/i,
+  /\bprosciutto\b/i,
+  /\bham\b/i,
+  /\bsalami\b/i,
+  /\bserrano\b/i,
+  /\bpepperoni\b/i,
+  /\banchov/i,
+];

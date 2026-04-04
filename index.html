@@ -527,6 +527,22 @@
     .recipe-card.in-meal-plan .card-subcuisine {
       font-weight: 700;
     }
+    .card-smart-picks-matches {
+      position: absolute;
+      bottom: 8px;
+      left: 10px;
+      z-index: 2;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.98);
+      text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.95),
+        0 0 12px rgba(0, 0, 0, 0.65);
+      pointer-events: none;
+    }
     .meal-plan-card-ctl {
       position: absolute;
       bottom: 9px;
@@ -3192,6 +3208,7 @@ const MEAL_PREP_MODE_KEY = 'meal-prep-salads:mealPrepMode';
 let mealPrepMode = false;
 /** @type {number[]} */
 let mealPlanIds = [];
+let smartPicksEnabled = false;
 let mealPlanPortions = 2;
 let mealPlanShowAmounts = false;
 /** @type {'us'|'metric'} */
@@ -3212,6 +3229,7 @@ function loadMealPlanState() {
     }
     if (typeof o.showAmounts === 'boolean') mealPlanShowAmounts = o.showAmounts;
     if (o.unitMode === 'metric' || o.unitMode === 'us') mealPlanUnitMode = o.unitMode;
+    if (o.smartPicks === true) smartPicksEnabled = true;
   } catch (e) { /* ignore */ }
 }
 
@@ -3225,6 +3243,7 @@ function saveMealPlanState() {
         portions: mealPlanPortions,
         showAmounts: mealPlanShowAmounts,
         unitMode: mealPlanUnitMode,
+        smartPicks: smartPicksEnabled,
       })
     );
   } catch (e) { /* ignore */ }
@@ -3293,16 +3312,9 @@ function accentForNavCat(cat) {
 /** Meal-plan overlap suggestions (Browse row control, not a cuisine/flavor/season filter). */
 const OVERLAP_NAV_CAT = 'Smart Picks';
 const OVERLAP_TAB_TIP_COPY =
-  'Smart Picks shows up to seven salads not already in your meal plan, ranked by how many ingredients they share with recipes in your plan. Dressings are skipped to keep suggestions useful.';
-const OVERLAP_TOP_N = 7;
+  'Smart Picks ranks salads not in your plan by shared ingredients (dressings skipped) within your current tab.';
 
 function getVisibleRecipes() {
-  if (activeCategory === OVERLAP_NAV_CAT) {
-    if (!mealPrepMode || mealPlanIds.length === 0) {
-      return RECIPES.slice().sort(compareRecipesForCuisineBrowse);
-    }
-    return getRecipesSortedByPlanOverlap();
-  }
   if (browseMode === 'cuisine') {
     return activeCategory === 'All' ? RECIPES : RECIPES.filter((r) => r.cuisine === activeCategory);
   }
@@ -3347,10 +3359,26 @@ function compareRecipesForCuisineBrowse(a, b) {
   return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 }
 
+function sortRecipesByPlanOverlap(recipes) {
+  const planKeys = mealPlanOverlapIngredientKeys();
+  return recipes
+    .map((r) => ({ r, s: overlapMatchCount(planKeys, r) }))
+    .sort((a, b) => {
+      if (b.s !== a.s) return b.s - a.s;
+      return compareRecipesForCuisineBrowse(a.r, b.r);
+    })
+    .map((x) => x.r);
+}
+
 // Filtered list in strip order: cuisine, then sub-cuisine (incl. Spanish/Mexican grouping), then name.
 function recipesForCardStrip() {
   const raw = getVisibleRecipes();
-  if (activeCategory === OVERLAP_NAV_CAT) return raw;
+  const smartOn = smartPicksEnabled && mealPrepMode && mealPlanIds.length > 0;
+  if (smartOn) {
+    const inPlan = new Set(mealPlanIds);
+    const filtered = raw.filter((r) => !inPlan.has(r.id));
+    return sortRecipesByPlanOverlap(filtered);
+  }
   if (browseMode === 'cuisine' || browseMode === 'flavor' || browseMode === 'season') {
     return raw.slice().sort(compareRecipesForCuisineBrowse);
   }
@@ -3360,7 +3388,6 @@ function recipesForCardStrip() {
 function renderBrowseModeBar() {
   const el = document.getElementById('browseModeBar');
   if (!el) return;
-  const smartPicksBrowsing = activeCategory === OVERLAP_NAV_CAT;
   const smartPicksReady = mealPlanIds.length > 0;
   const smartPicksLockedHint =
     mealPrepMode && !smartPicksReady
@@ -3368,7 +3395,7 @@ function renderBrowseModeBar() {
       : '';
   const smartPicksHtml = mealPrepMode
     ? `<span class="browse-smart-picks-cluster">
-      <button type="button" class="browse-smart-picks-btn${activeCategory === OVERLAP_NAV_CAT ? ' active' : ''}" data-smart-picks="1" aria-pressed="${activeCategory === OVERLAP_NAV_CAT ? 'true' : 'false'}"${smartPicksReady ? '' : ' disabled aria-disabled="true"'} title="${smartPicksReady ? '' : escapeAttr('Add at least one salad to your meal plan to use Smart Picks.')}">${escapeHtml(OVERLAP_NAV_CAT)}</button>
+      <button type="button" class="browse-smart-picks-btn${smartPicksEnabled ? ' active' : ''}" data-smart-picks="1" aria-pressed="${smartPicksEnabled ? 'true' : 'false'}"${smartPicksReady ? '' : ' disabled aria-disabled="true"'} title="${smartPicksReady ? '' : escapeAttr('Add at least one salad to your meal plan to use Smart Picks.')}">${escapeHtml(OVERLAP_NAV_CAT)}</button>
       <span class="browse-smart-picks-tip-wrap">
         <button type="button" class="browse-smart-picks-tip-btn" aria-label="About Smart Picks" aria-expanded="false" aria-describedby="browseSmartPicksTipBubble">i</button>
         <span id="browseSmartPicksTipBubble" class="browse-smart-picks-tip-bubble" role="tooltip">${escapeHtml(OVERLAP_TAB_TIP_COPY)}</span>
@@ -3378,9 +3405,9 @@ function renderBrowseModeBar() {
   el.innerHTML = `
     <span class="browse-mode-label">Browse by</span>
     <div class="browse-mode-toggle" role="group" aria-label="Browse recipes by">
-      <button type="button" class="${browseMode === 'cuisine' && !smartPicksBrowsing ? 'active' : ''}" data-browse="cuisine">Cuisine</button>
-      <button type="button" class="${browseMode === 'flavor' && !smartPicksBrowsing ? 'active' : ''}" data-browse="flavor">Flavor</button>
-      <button type="button" class="${browseMode === 'season' && !smartPicksBrowsing ? 'active' : ''}" data-browse="season">Season</button>
+      <button type="button" class="${browseMode === 'cuisine' ? 'active' : ''}" data-browse="cuisine">Cuisine</button>
+      <button type="button" class="${browseMode === 'flavor' ? 'active' : ''}" data-browse="flavor">Flavor</button>
+      <button type="button" class="${browseMode === 'season' ? 'active' : ''}" data-browse="season">Season</button>
     </div>
     <div class="browse-mode-tail">
       ${smartPicksHtml}
@@ -3392,7 +3419,7 @@ function renderBrowseModeBar() {
 // ── Render Nav ────────────────────────────────────────────────────────────────
 function renderNav() {
   const nav = document.getElementById('nav');
-  nav.classList.toggle('nav--smart-picks', activeCategory === OVERLAP_NAV_CAT);
+  nav.classList.toggle('nav--smart-picks', smartPicksEnabled && mealPrepMode);
   const cats = getNavTabs();
   nav.innerHTML = cats.map((cat) => {
     const accent = accentForNavCat(cat);
@@ -3412,7 +3439,7 @@ function renderCards() {
     const sel = r.id === selectedId ? 'selected' : '';
     const plan = inPlan.has(r.id) ? 'in-meal-plan' : '';
     const sub =
-      (browseMode === 'cuisine' || browseMode === 'flavor' || browseMode === 'season' || activeCategory === OVERLAP_NAV_CAT) && r.subCuisine
+      (browseMode === 'cuisine' || browseMode === 'flavor' || browseMode === 'season') && r.subCuisine
         ? `<div class="card-subcuisine">${escapeHtml(r.subCuisine)}</div>`
         : '';
     const onPlan = inPlan.has(r.id);
@@ -3430,6 +3457,12 @@ function renderCards() {
       </button>`
       : '';
     const cardSlug = recipeCardImageSlug(r.name);
+    const smartStrip = smartPicksEnabled && mealPrepMode && mealPlanIds.length > 0;
+    const stripPk = smartStrip ? mealPlanOverlapIngredientKeys() : null;
+    const overlapN = smartStrip && stripPk ? overlapMatchCount(stripPk, r) : 0;
+    const overlapBadge = smartStrip
+      ? `<span class="card-smart-picks-matches" title="Ingredients overlapping your meal plan">${overlapN} shared</span>`
+      : '';
     return `
       <div class="recipe-card ${sel} ${plan}" style="--card-accent:${accent};--card-image:url('images/${escapeAttr(cardSlug)}.png')"
            role="button"
@@ -3437,6 +3470,7 @@ function renderCards() {
            aria-label="${escapeAttr(`View ${r.name}`)}"
            onclick="selectRecipe(${r.id})"
            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRecipe(${r.id});}">
+        ${overlapBadge}
         ${planCtl}
         <div class="card-label-wrap">
           <div class="card-label">${escapeHtml(r.name)}</div>${sub}
@@ -4774,7 +4808,9 @@ function refreshScaledIngredientsList() {
   const listEl = document.getElementById('ingredientsList');
   if (!r || !listEl || !showAmounts) return;
   const hintCtx = planOverlapContextForIngredientHints();
-  listEl.innerHTML = r.ingredients.map((i) => renderIngredient(i, hintCtx)).join('');
+  listEl.innerHTML = sortIngredientsForPlanOverlapDisplay(r.ingredients, hintCtx)
+    .map((i) => renderIngredient(i, hintCtx))
+    .join('');
 }
 
 let servingsModalReturnFocus = null;
@@ -4942,7 +4978,9 @@ function toggleUnits() {
     return;
   }
   const hintCtx = planOverlapContextForIngredientHints();
-  listEl.innerHTML = r.ingredients.map((i) => renderIngredient(i, hintCtx)).join('');
+  listEl.innerHTML = sortIngredientsForPlanOverlapDisplay(r.ingredients, hintCtx)
+    .map((i) => renderIngredient(i, hintCtx))
+    .join('');
   const label = btn.querySelector('.units-toggle-label');
   if (label) label.textContent = unitMode === 'metric' ? 'Metric' : 'Imperial';
   btn.setAttribute('aria-pressed', unitMode === 'metric' ? 'true' : 'false');
@@ -5083,7 +5121,9 @@ function renderDetail() {
             </button>
           </div>
           <ul id="ingredientsList" class="ingredients-list">
-            ${r.ingredients.map(i => renderIngredient(i, planHintCtx)).join('')}
+            ${sortIngredientsForPlanOverlapDisplay(r.ingredients, planHintCtx)
+              .map((i) => renderIngredient(i, planHintCtx))
+              .join('')}
           </ul>
         </div>
         <div>
@@ -5111,7 +5151,9 @@ function toggleAmounts() {
   }
 
   const hintCtx = planOverlapContextForIngredientHints();
-  listEl.innerHTML = r.ingredients.map((i) => renderIngredient(i, hintCtx)).join('');
+  listEl.innerHTML = sortIngredientsForPlanOverlapDisplay(r.ingredients, hintCtx)
+    .map((i) => renderIngredient(i, hintCtx))
+    .join('');
   btn.classList.toggle('active', showAmounts);
   const label = btn.querySelector('.toggle-label');
   if (label) label.textContent = showAmounts ? 'Hide amounts' : 'Show amounts';
@@ -5144,7 +5186,7 @@ function selectCategory(cat) {
 
 function selectBrowseMode(mode) {
   if (mode !== 'cuisine' && mode !== 'flavor' && mode !== 'season') return;
-  if (mode === browseMode && activeCategory !== OVERLAP_NAV_CAT) return;
+  if (mode === browseMode) return;
   closeServingsModal();
   browseMode = mode;
   activeCategory = 'All';
@@ -5307,7 +5349,7 @@ function withClipboardOptions(opts, fn) {
 
 function toggleMealPrepMode() {
   mealPrepMode = !mealPrepMode;
-  if (!mealPrepMode && activeCategory === OVERLAP_NAV_CAT) activeCategory = 'All';
+  if (!mealPrepMode || mealPlanIds.length === 0) smartPicksEnabled = false;
   saveMealPlanState();
   renderBrowseModeBar();
   renderNav();
@@ -5320,30 +5362,41 @@ function toggleMealPlanRecipe(id) {
   if (idx >= 0) mealPlanIds = mealPlanIds.filter((x) => x !== id);
   else mealPlanIds = [...mealPlanIds, id];
   saveMealPlanState();
-  if (mealPlanIds.length === 0 && activeCategory === OVERLAP_NAV_CAT) activeCategory = 'All';
+  if (mealPlanIds.length === 0) smartPicksEnabled = false;
   renderBrowseModeBar();
   renderNav();
+  const visible = recipesForCardStrip();
+  if (smartPicksEnabled && mealPrepMode && mealPlanIds.length > 0 && visible.length && !visible.some((r) => r.id === selectedId)) {
+    selectedId = visible[0].id;
+  }
   renderCards();
+  renderDetail();
   renderMealPlanPanel();
 }
 
 function removeFromMealPlan(id) {
   mealPlanIds = mealPlanIds.filter((x) => x !== id);
   saveMealPlanState();
-  if (mealPlanIds.length === 0 && activeCategory === OVERLAP_NAV_CAT) activeCategory = 'All';
+  if (mealPlanIds.length === 0) smartPicksEnabled = false;
   renderBrowseModeBar();
   renderNav();
+  const visible = recipesForCardStrip();
+  if (smartPicksEnabled && mealPrepMode && mealPlanIds.length > 0 && visible.length && !visible.some((r) => r.id === selectedId)) {
+    selectedId = visible[0].id;
+  }
   renderCards();
+  renderDetail();
   renderMealPlanPanel();
 }
 
 function clearMealPlan() {
   mealPlanIds = [];
+  smartPicksEnabled = false;
   saveMealPlanState();
-  if (activeCategory === OVERLAP_NAV_CAT) activeCategory = 'All';
   renderBrowseModeBar();
   renderNav();
   renderCards();
+  renderDetail();
   renderMealPlanPanel();
 }
 
@@ -5485,7 +5538,7 @@ function mealPlanOverlapIngredientKeysExcludingRecipe(excludeRecipeId) {
 }
 
 function planOverlapContextForIngredientHints() {
-  if (activeCategory !== OVERLAP_NAV_CAT || !mealPrepMode || mealPlanIds.length === 0) return null;
+  if (!smartPicksEnabled || !mealPrepMode || mealPlanIds.length === 0) return null;
   const excludeRecipeId = selectedId;
   const planKeys = mealPlanOverlapIngredientKeysExcludingRecipe(excludeRecipeId);
   const keyToRecipeNames = new Map();
@@ -5501,25 +5554,52 @@ function planOverlapContextForIngredientHints() {
   return { planKeys, keyToRecipeNames };
 }
 
+function isIngDressingLine(ing) {
+  return /^Dressing:\s/i.test(ing);
+}
+
+function isIngOptionalLine(ing) {
+  return /^optional:/i.test(ing);
+}
+
+function sortIngredientsForPlanOverlapDisplay(ingredients, planHintCtx) {
+  if (!planHintCtx || !ingredients || !ingredients.length) return ingredients;
+  const firstDressIdx = ingredients.findIndex((ing) => isIngDressingLine(ing));
+  const end = firstDressIdx === -1 ? ingredients.length : firstDressIdx;
+  const head = ingredients.slice(0, end);
+  const tail = ingredients.slice(end);
+
+  function lineRank(ing) {
+    if (isIngOptionalLine(ing)) return { tier: 2, recipeCount: 0 };
+    const { amount, rest } = parseIngredient(ing);
+    const restStr = rest != null && String(rest).trim() ? rest : ing;
+    if (!String(restStr).trim()) return { tier: 1, recipeCount: 0 };
+    const { key } = canonicalizeIngredientRest(restStr);
+    const k = String(key || '')
+      .toLowerCase()
+      .trim();
+    if (!k || OVERLAP_GENERIC_KEYS.has(k)) return { tier: 1, recipeCount: 0 };
+    if (!planHintCtx.planKeys.has(k)) return { tier: 1, recipeCount: 0 };
+    const idToName = planHintCtx.keyToRecipeNames.get(k);
+    const recipeCount = idToName && idToName.size > 0 ? idToName.size : 0;
+    return { tier: 0, recipeCount };
+  }
+
+  const decorated = head.map((ing, origIdx) => ({ ing, origIdx, ...lineRank(ing) }));
+  decorated.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    if (b.recipeCount !== a.recipeCount) return b.recipeCount - a.recipeCount;
+    return a.origIdx - b.origIdx;
+  });
+  return [...decorated.map((x) => x.ing), ...tail];
+}
+
 function overlapMatchCount(planKeys, r) {
   let n = 0;
   for (const k of recipeOverlapIngredientKeys(r)) {
     if (planKeys.has(k)) n++;
   }
   return n;
-}
-
-function getRecipesSortedByPlanOverlap() {
-  const planKeys = mealPlanOverlapIngredientKeys();
-  const inPlan = new Set(mealPlanIds);
-  const candidates = RECIPES.filter((r) => !inPlan.has(r.id));
-  const ranked = candidates
-    .map((r) => ({ r, s: overlapMatchCount(planKeys, r) }))
-    .sort((a, b) => {
-      if (b.s !== a.s) return b.s - a.s;
-      return a.r.name.localeCompare(b.r.name, undefined, { sensitivity: 'base' });
-    });
-  return ranked.slice(0, OVERLAP_TOP_N).map((x) => x.r);
 }
 
 function quantityToBase(value, unit) {
@@ -5977,7 +6057,14 @@ document.getElementById('browseModeBar').addEventListener('click', (e) => {
   const smartPicksBtn = e.target.closest('button[data-smart-picks]');
   if (smartPicksBtn) {
     if (smartPicksBtn.disabled) return;
-    selectCategory(OVERLAP_NAV_CAT);
+    closeSmartPicksTips();
+    smartPicksEnabled = !smartPicksEnabled;
+    const visible = recipesForCardStrip();
+    if (visible.length && !visible.some((r) => r.id === selectedId)) selectedId = visible[0].id;
+    renderBrowseModeBar();
+    renderNav();
+    renderCards();
+    renderDetail();
     return;
   }
   if (e.target.closest('button[data-meal-prep-toggle]')) {

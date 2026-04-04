@@ -4,6 +4,8 @@ import {
   OPTIONAL_PROTEINS,
   MIN_VIABLE_INGREDIENTS,
   DIET_KEYS,
+  OPTIONAL_LINE_PROTEIN_UPSELL_PATTERNS,
+  type IngredientOmitRule,
   type OptionalProtein,
 } from '@/data/diet-config';
 import type { Recipe } from '@/data/recipes';
@@ -34,6 +36,16 @@ export function isSwappableProteinIngredient(text: string): boolean {
     }
   }
   return false;
+}
+
+/** With no diet filter: hide primary placeholder proteins + optional meat upsells, not base charcuterie. */
+export function shouldHideIngredientForDefaultProteinPicker(text: string): boolean {
+  if (isDressingLine(text)) return false;
+  if (isOptionalLine(text)) {
+    if (isSwappableProteinIngredient(text)) return true;
+    return OPTIONAL_LINE_PROTEIN_UPSELL_PATTERNS.some((re) => re.test(text));
+  }
+  return isSwappableProteinIngredient(text);
 }
 
 export function adaptDressingForDiet(dressingLine: string, diet: string): string {
@@ -226,6 +238,31 @@ function cleanupStepPunctuation(s: string): string {
   return t.trim();
 }
 
+function escapeRegExp(s: string): string {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Replace swappable protein tokens with the selected name, unless that name already
+ * appears in the step — then omit those tokens (avoids "eggs, eggs" when eggs are both
+ * optional pick and base ingredient).
+ */
+function applySwappableProteinReplacement(
+  s: string,
+  rule: IngredientOmitRule,
+  replacement: string
+): string {
+  const global = new RegExp(rule.pattern.source, 'gi');
+  if (!replacement) {
+    return s.replace(global, '');
+  }
+  const alreadyNamed = new RegExp(`\\b${escapeRegExp(replacement)}\\b`, 'i').test(s);
+  if (alreadyNamed) {
+    return s.replace(global, '');
+  }
+  return s.replace(global, replacement);
+}
+
 export function adaptStepForDiet(
   stepText: string,
   recipe: Recipe,
@@ -246,7 +283,7 @@ export function adaptStepForDiet(
   for (const rule of matching) {
     const global = new RegExp(rule.pattern.source, 'gi');
     if (rule.swappable && !didSwap) {
-      s = s.replace(global, replacement);
+      s = applySwappableProteinReplacement(s, rule, replacement);
       didSwap = true;
     } else {
       s = s.replace(global, '');
@@ -274,7 +311,7 @@ export function adaptStepForProteinSwap(
   for (const rule of matching) {
     const global = new RegExp(rule.pattern.source, 'gi');
     if (!didSwap) {
-      s = s.replace(global, replacement);
+      s = applySwappableProteinReplacement(s, rule, replacement);
       didSwap = true;
     } else {
       s = s.replace(global, '');

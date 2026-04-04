@@ -34,17 +34,38 @@ const SLUG_TO_CATEGORY: Record<string, string> = {
   'high-protein': 'Keto',
 };
 
-interface PageProps {
-  params: Promise<{ filter?: string[] }>;
+function parsePinnedRecipeId(sp: { r?: string | string[] } | undefined): number | null {
+  if (!sp) return null;
+  const raw = sp.r;
+  const s = Array.isArray(raw) ? raw[0] : raw;
+  if (s == null || s === '') return null;
+  const n = parseInt(String(s), 10);
+  return Number.isFinite(n) ? n : null;
 }
 
-export default async function SaladsPage({ params }: PageProps) {
+interface PageProps {
+  params: Promise<{ filter?: string[] }>;
+  searchParams?: Promise<{ r?: string | string[] }>;
+}
+
+export default async function SaladsPage({ params, searchParams }: PageProps) {
   const { filter } = await params;
+  const sp = searchParams ? await searchParams : undefined;
+  const initialPinnedRecipeId = parsePinnedRecipeId(sp);
 
   let browseMode: 'cuisine' | 'flavor' | 'season' | 'diet' = 'cuisine';
   let activeCategory = 'All';
 
-  if (filter && filter.length === 2) {
+  if (filter && filter.length === 1) {
+    const seg = filter[0];
+    if (seg === 'flavor') {
+      browseMode = 'flavor';
+      activeCategory = 'All';
+    } else if (seg === 'season') {
+      browseMode = 'season';
+      activeCategory = 'All';
+    }
+  } else if (filter && filter.length === 2) {
     const [filterType, filterValue] = filter;
     if (filterType === 'cuisine' || filterType === 'flavor' || filterType === 'season' || filterType === 'diet') {
       browseMode = filterType;
@@ -52,5 +73,11 @@ export default async function SaladsPage({ params }: PageProps) {
     }
   }
 
-  return <SaladApp initialBrowseMode={browseMode} initialCategory={activeCategory} />;
+  return (
+    <SaladApp
+      initialBrowseMode={browseMode}
+      initialCategory={activeCategory}
+      initialPinnedRecipeId={initialPinnedRecipeId}
+    />
+  );
 }

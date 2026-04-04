@@ -44,12 +44,24 @@ const SLUG_TO_MODE_CATEGORY: Record<string, { mode: BrowseMode; category: string
   ),
 };
 
-interface PageProps {
-  params: Promise<{ slug: string }>;
+function parsePinnedRecipeId(sp: { r?: string | string[] } | undefined): number | null {
+  if (!sp) return null;
+  const raw = sp.r;
+  const s = Array.isArray(raw) ? raw[0] : raw;
+  if (s == null || s === '') return null;
+  const n = parseInt(String(s), 10);
+  return Number.isFinite(n) ? n : null;
 }
 
-export default async function SlugPage({ params }: PageProps) {
+interface PageProps {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ r?: string | string[] }>;
+}
+
+export default async function SlugPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const sp = searchParams ? await searchParams : undefined;
+  const initialPinnedRecipeId = parsePinnedRecipeId(sp);
 
   if (!slug.endsWith('-salads')) {
     notFound();
@@ -67,5 +79,11 @@ export default async function SlugPage({ params }: PageProps) {
     notFound();
   }
 
-  return <SaladApp initialBrowseMode={match.mode} initialCategory={match.category} />;
+  return (
+    <SaladApp
+      initialBrowseMode={match.mode}
+      initialCategory={match.category}
+      initialPinnedRecipeId={initialPinnedRecipeId}
+    />
+  );
 }
