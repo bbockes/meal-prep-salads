@@ -353,14 +353,14 @@
       top: calc(100% + 10px);
       bottom: auto;
       transform: translateX(-50%);
-      width: min(300px, calc(100vw - 48px));
-      padding: 11px 14px;
+      width: min(420px, calc(100vw - 40px));
+      padding: 14px 18px;
       background: var(--text);
       color: #faf9f6;
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.78rem;
+      font-size: 0.82rem;
       font-weight: 400;
-      line-height: 1.45;
+      line-height: 1.5;
       letter-spacing: 0.01em;
       border-radius: 10px;
       box-shadow: 0 8px 28px rgba(26, 26, 24, 0.18);
@@ -446,21 +446,23 @@
 
     /* ── Card Strip ── */
     .card-strip-wrapper {
-      padding: 16px 48px 0;
+      padding: 16px 48px 5px;
       overflow: visible;
       position: relative;
       isolation: isolate;
     }
-    /* Bottom veil on the wrapper (not on .card-strip) so it stays full-width while cards scroll — no half-strip artifacts. */
+    /* Bottom fade into page bg below the cards. Keep height ≤ strip bottom padding: overlay scrollbars
+       don't reserve layout height, so a taller veil was painting on top of the card images (lighter band). */
     .card-strip-wrapper::before {
       content: '';
       position: absolute;
       left: 48px;
       right: 48px;
       bottom: 0;
-      height: 26px;
+      height: 16px;
       pointer-events: none;
-      z-index: 4;
+      /* Behind .card-strip (z-index 1) so the bottom fade never covers the horizontal scrollbar. */
+      z-index: 0;
       background: linear-gradient(to bottom, transparent 0%, var(--bg) 68%, var(--bg) 100%);
     }
     .card-strip-wrapper::after {
@@ -479,32 +481,35 @@
       display: flex;
       gap: 14px;
       overflow-x: auto;
-      /* No vertical scroll/track gutter — avoids a thin “line” under the row */
-      overflow-y: hidden;
+      /* clip: no vertical scroll chaining; unlike hidden, does not clip the horizontal scrollbar in WebKit/Chromium. */
+      overflow-y: clip;
+      /* Stop horizontal overscroll from triggering browser back/forward (trackpad edge). */
+      overscroll-behavior-x: contain;
+      overscroll-behavior-y: auto;
       scroll-snap-type: x mandatory;
       scroll-padding-inline: 16px;
       -webkit-overflow-scrolling: touch;
-      /* Vertical room for selected ring/shadow, hover lift — overflow-x still clips-y */
-      padding: 24px 16px 18px 16px;
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-      scrollbar-color: transparent transparent;
+      /* Modest top padding: room for selected shadow without a large gap under the nav tabs. */
+      padding: 26px 16px 20px 16px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--muted) var(--surface);
+      -ms-overflow-style: auto;
       position: relative;
       z-index: 1;
     }
     .card-strip::-webkit-scrollbar {
-      width: 0;
-      height: 0;
-      display: none;
+      height: 10px;
     }
-    .card-strip::-webkit-scrollbar:horizontal {
-      height: 0;
-    }
-    .card-strip::-webkit-scrollbar-thumb,
     .card-strip::-webkit-scrollbar-track {
-      background: transparent;
-      border: none;
-      box-shadow: none;
+      background: var(--surface);
+      border-radius: 5px;
+    }
+    .card-strip::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--muted) 75%, var(--border));
+      border-radius: 5px;
+    }
+    .card-strip::-webkit-scrollbar-thumb:hover {
+      background: color-mix(in srgb, var(--text) 35%, var(--muted));
     }
 
     .recipe-card {
@@ -540,16 +545,13 @@
     }
     .recipe-card.selected {
       z-index: 2;
-      transform: translateY(-5px) scale(1.03);
+      transform: translateY(-3px) scale(1.03);
       border-width: 3px;
       border-color: rgba(255, 255, 255, 0.98);
-      box-shadow:
-        0 0 0 3px var(--card-accent),
-        0 14px 36px rgba(0, 0, 0, 0.42),
-        0 6px 16px rgba(0, 0, 0, 0.28);
+      box-shadow: 0 0 0 3px var(--card-accent);
     }
     .recipe-card.selected:hover {
-      transform: translateY(-6px) scale(1.035);
+      transform: translateY(-4px) scale(1.035);
     }
     @media (prefers-reduced-motion: reduce) {
       .recipe-card.selected {
@@ -713,7 +715,7 @@
 
     /* ── Recipe Detail ── */
     .recipe-detail {
-      margin: 14px 48px 32px;
+      margin: 7px 48px 32px;
       background: var(--surface);
       border-radius: 18px;
       border: 1.5px solid var(--border);
@@ -1017,7 +1019,7 @@
         right: 18px;
       }
       .recipe-detail {
-        margin: 12px 18px 28px;
+        margin: 6px 18px 28px;
         padding: 26px 20px;
       }
       .empty-state {
@@ -1111,7 +1113,7 @@
         --prose-font-size: 1rem;
       }
       .recipe-detail {
-        margin: 10px 14px 24px;
+        margin: 5px 14px 24px;
         padding: 22px 16px;
       }
       .detail-title {

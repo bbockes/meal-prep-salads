@@ -90,7 +90,7 @@ export function accentForNavCat(cat, browseMode) {
 
 export const OVERLAP_NAV_CAT = 'Smart Picks';
 export const OVERLAP_TAB_TIP_COPY =
-  'Smart Picks ranks salads not in your plan by shared ingredients (dressings skipped) within your current Cuisine, Flavor, Season, or Diet tab. The diet tab only lists recipes that stay viable on that diet.';
+  "Smart Picks ranks recipes not already in your meal plan by how many ingredients they share with recipes in your plan (excluding dressings and sauces).\u00A0Use it to find recipes that overlap with what you've already chosen—so you can minimize waste and use ingredients efficiently.";
 
 // ── Visible recipes ───────────────────────────────────────────────────────────
 

@@ -355,14 +355,14 @@
       top: calc(100% + 10px);
       bottom: auto;
       transform: translateX(-50%);
-      width: min(300px, calc(100vw - 48px));
-      padding: 11px 14px;
+      width: min(420px, calc(100vw - 40px));
+      padding: 14px 18px;
       background: var(--text);
       color: #faf9f6;
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.78rem;
+      font-size: 0.82rem;
       font-weight: 400;
-      line-height: 1.45;
+      line-height: 1.5;
       letter-spacing: 0.01em;
       border-radius: 10px;
       box-shadow: 0 8px 28px rgba(26, 26, 24, 0.18);
@@ -448,7 +448,7 @@
 
     /* ── Card Strip ── */
     .card-strip-wrapper {
-      padding: 16px 48px 0;
+      padding: 16px 48px 5px;
       overflow: visible;
       position: relative;
     }
@@ -468,14 +468,31 @@
       display: flex;
       gap: 14px;
       overflow-x: auto;
+      overflow-y: clip;
+      overscroll-behavior-x: contain;
+      overscroll-behavior-y: auto;
       scroll-snap-type: x mandatory;
       scroll-padding-inline: 16px;
       -webkit-overflow-scrolling: touch;
-      /* Vertical room for box-shadow rings (≤6px), hover lift (-3px), borders — overflow-x still clips-y */
-      padding: 18px 16px 12px 16px;
-      scrollbar-width: none;
+      padding: 26px 16px 20px 16px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--muted) var(--surface);
+      -ms-overflow-style: auto;
     }
-    .card-strip::-webkit-scrollbar { display: none; }
+    .card-strip::-webkit-scrollbar {
+      height: 10px;
+    }
+    .card-strip::-webkit-scrollbar-track {
+      background: var(--surface);
+      border-radius: 5px;
+    }
+    .card-strip::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--muted) 75%, var(--border));
+      border-radius: 5px;
+    }
+    .card-strip::-webkit-scrollbar-thumb:hover {
+      background: color-mix(in srgb, var(--text) 35%, var(--muted));
+    }
 
     .recipe-card {
       flex: 0 0 220px;
@@ -666,7 +683,7 @@
 
     /* ── Recipe Detail ── */
     .recipe-detail {
-      margin: 14px 48px 32px;
+      margin: 7px 48px 32px;
       background: var(--surface);
       border-radius: 18px;
       border: 1.5px solid var(--border);
@@ -966,7 +983,7 @@
         right: 18px;
       }
       .recipe-detail {
-        margin: 12px 18px 28px;
+        margin: 6px 18px 28px;
         padding: 26px 20px;
       }
       .empty-state {
@@ -1060,7 +1077,7 @@
         --prose-font-size: 1rem;
       }
       .recipe-detail {
-        margin: 10px 14px 24px;
+        margin: 5px 14px 24px;
         padding: 22px 16px;
       }
       .detail-title {
@@ -3312,7 +3329,7 @@ function accentForNavCat(cat) {
 /** Meal-plan overlap suggestions (Browse row control, not a cuisine/flavor/season filter). */
 const OVERLAP_NAV_CAT = 'Smart Picks';
 const OVERLAP_TAB_TIP_COPY =
-  'Smart Picks ranks salads not in your plan by shared ingredients (dressings skipped) within your current tab.';
+  "Smart Picks ranks recipes not already in your meal plan by how many ingredients they share with recipes in your plan (excluding dressings and sauces).\u00A0Use it to find recipes that overlap with what you've already chosen—so you can minimize waste and use ingredients efficiently.";
 
 function getVisibleRecipes() {
   if (browseMode === 'cuisine') {
