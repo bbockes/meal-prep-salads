@@ -4,6 +4,8 @@
 
     html {
       font-size: 107%;
+      overflow-x: hidden;
+      max-width: 100%;
     }
 
     :root {
@@ -38,6 +40,9 @@
       color: var(--text);
       min-height: 100vh;
       min-height: 100dvh;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
       padding-left: env(safe-area-inset-left, 0px);
       padding-right: env(safe-area-inset-right, 0px);
       padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -141,6 +146,25 @@
       display: flex;
       gap: 0;
       border-bottom: 1.5px solid var(--border);
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
+    }
+    nav::-webkit-scrollbar {
+      height: 8px;
+    }
+    nav::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    nav::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--muted) 55%, transparent);
+      border-radius: 4px;
     }
     nav button {
       background: none;
@@ -154,13 +178,15 @@
       position: relative;
       transition: color 0.2s;
       letter-spacing: 0.01em;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     nav button::after {
       content: '';
       position: absolute;
       bottom: -1.5px;
       left: 0; right: 0;
-      height: 2.5px;
+      height: 4px;
       background: var(--accent, var(--all));
       transform: scaleX(0);
       transition: transform 0.2s ease;
@@ -446,7 +472,7 @@
 
     /* ── Card Strip ── */
     .card-strip-wrapper {
-      padding: 16px 48px 5px;
+      padding: 13px 48px 5px;
       overflow: visible;
       position: relative;
       isolation: isolate;
@@ -468,7 +494,7 @@
     .card-strip-wrapper::after {
       content: '';
       position: absolute;
-      top: 16px;
+      top: 13px;
       bottom: 6px;
       right: 48px;
       width: max(20px, env(safe-area-inset-right, 0px));
@@ -489,8 +515,8 @@
       scroll-snap-type: x mandatory;
       scroll-padding-inline: 16px;
       -webkit-overflow-scrolling: touch;
-      /* Modest top padding: room for selected shadow without a large gap under the nav tabs. */
-      padding: 26px 16px 20px 16px;
+      /* Room for selected shadow; modest gap under nav tabs. */
+      padding: 21px 16px 20px 16px;
       scrollbar-width: thin;
       scrollbar-color: var(--muted) var(--surface);
       -ms-overflow-style: auto;
@@ -522,7 +548,8 @@
       position: relative;
       cursor: pointer;
       transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      border: 2.5px solid transparent;
+      /* Same width as .selected (3px) so the label’s line breaks don’t change on click */
+      border: 3px solid transparent;
       background-color: var(--recipe-card-fallback-bg);
       /* Image + dimming layer share border-box so cover fills the full card (no padding-box side stripes).
          Gradient is the top paint layer — no ::before (avoids a lighter "frame" in the border band). */
@@ -546,7 +573,6 @@
     .recipe-card.selected {
       z-index: 2;
       transform: translateY(-3px) scale(1.03);
-      border-width: 3px;
       border-color: rgba(255, 255, 255, 0.98);
       box-shadow: 0 0 0 3px var(--card-accent);
     }
@@ -563,7 +589,6 @@
     }
     /* Meal plan: white frame + black ring only when not selected; selected uses cuisine accent border. */
     .recipe-card.in-meal-plan:not(.selected) {
-      border-width: 3px;
       border-color: rgba(255, 255, 255, 0.98);
       box-shadow: 0 0 0 3px #1a1a18;
     }
