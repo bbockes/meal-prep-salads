@@ -6,7 +6,13 @@ import { useRouter } from 'next/navigation';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
 import { DIET_KEYS, DIET_ACCENTS, OPTIONAL_PROTEINS } from '@/data/diet-config';
 import { RECIPES, Recipe } from '@/data/recipes';
-import { getOptionalProteinsForDiet, adaptStepForDiet, adaptStepForProteinSwap, getRecommendedProteins } from '@/lib/diet-utils';
+import {
+  getOptionalProteinsForDiet,
+  adaptStepForDiet,
+  adaptStepForProteinSwap,
+  getRecommendedProteins,
+  isDressingLine,
+} from '@/lib/diet-utils';
 import {
   formatState,
   SCALING_BASE_PORTIONS,
@@ -19,6 +25,7 @@ import {
   getNavTabs,
   recipesForCardStrip,
   renderIngredient,
+  renderDressingDiySectionHtml,
   formatStepLineHtml,
   OVERLAP_TAB_TIP_COPY,
   planOverlapContextForIngredientHints,
@@ -809,6 +816,17 @@ export default function SaladApp({
                     __html: displayIngredients.map((ing) => renderIngredient(ing, planHintCtx)).join(''),
                   }}
                 />
+                {displayIngredients.map((ing, i) => {
+                  if (!isDressingLine(ing)) return null;
+                  const html = renderDressingDiySectionHtml(ing);
+                  if (!html) return null;
+                  return (
+                    <div
+                      key={`dressing-diy-${recipe.id}-${i}`}
+                      dangerouslySetInnerHTML={{ __html: html }}
+                    />
+                  );
+                })}
                 {(() => {
                   const recs = getRecommendedProteins(recipe);
                   const recStar = (

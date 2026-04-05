@@ -1582,6 +1582,39 @@
       filter: brightness(1.08);
     }
 
+    /* ── DIY dressing (optional), below main ingredients list ── */
+    .dressing-diy-section {
+      margin-top: 16px;
+      padding-top: 8px;
+    }
+    .dressing-diy-heading .dressing-diy-optional-label {
+      font-weight: 400;
+      font-size: 0.8em;
+      color: var(--muted);
+    }
+    .dressing-diy-body {
+      margin-top: 10px;
+      font-size: 0.93rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .dressing-diy-body .amount {
+      font-weight: 700;
+      color: var(--detail-accent);
+    }
+    .dressing-diy-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .dressing-diy-body .dressing-part-label {
+      color: var(--muted);
+    }
+    .dressing-diy-body .dressing-recipe-inline,
+    .dressing-diy-body .dressing-tail {
+      color: var(--muted);
+    }
+
     /* ── Optional Protein Section (diet mode) ── */
     .optional-protein-section {
       margin-top: 18px;

@@ -1162,6 +1162,119 @@ export function renderDressingBlockHtml(body) {
   );
 }
 
+/** First segment before `//` on a `Dressing:` line (conceptual / shopper wording). */
+export function dressingConceptualSegment(fullDressingLine) {
+  const parts = dressingVariantBodies(fullDressingLine);
+  return (parts[0] || '').trim();
+}
+
+/** Short name(s) for headings — e.g. "Ranch", "Caesar + Buffalo". */
+export function dressingDiyHeadingTitle(fullDressingLine) {
+  const body = dressingConceptualSegment(fullDressingLine);
+  if (!body) return 'Dressing';
+  let trimmed = body;
+  if (/^or\s+/i.test(trimmed)) trimmed = trimmed.replace(/^or\s+/i, '');
+  const chunks = splitPlusAtDepthZero(trimmed);
+  if (chunks.length <= 1) {
+    return displayComboSegmentLabel(dressingChunkLabel(trimmed));
+  }
+  return chunks
+    .map((ch, i) => {
+      let c = ch.trim();
+      if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+      return displayComboSegmentLabel(dressingChunkLabel(c));
+    })
+    .join(' + ');
+}
+
+/** Plain text for the main ingredients list (same weight as other lines). */
+export function dressingShopperLineText(fullDressingLine) {
+  const title = dressingDiyHeadingTitle(fullDressingLine);
+  let line;
+  if (!title) line = 'dressing';
+  else if (/\b(dressing|vinaigrette)\b/i.test(title)) line = title;
+  else line = `${title} dressing`;
+  return line.toLowerCase();
+}
+
+export function dressingHasDiyBreakdown(fullDressingLine) {
+  const parts = dressingVariantBodies(fullDressingLine);
+  if (parts.length >= 2) return true;
+  const conceptual = dressingConceptualSegment(fullDressingLine);
+  if (!conceptual) return false;
+  let trimmed = conceptual;
+  if (/^or\s+/i.test(trimmed)) trimmed = trimmed.replace(/^or\s+/i, '');
+  const chunks = splitPlusAtDepthZero(trimmed);
+  for (let i = 0; i < chunks.length; i++) {
+    let c = chunks[i].trim();
+    if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+    if (findFirstBalancedParenRegion(c)) return true;
+  }
+  return false;
+}
+
+/** HTML body only (no wrapper) for the optional DIY block. */
+export function renderDressingDiyBodyHtml(fullDressingLine) {
+  const parts = dressingVariantBodies(fullDressingLine);
+  const conceptual = dressingConceptualSegment(fullDressingLine);
+  const amountPart = parts.length >= 2 ? parts[parts.length - 1].trim() : '';
+
+  if (formatState.showAmounts && amountPart) {
+    const t = relocateTrailingDressingParen(amountPart).trim();
+    return t ? boldCompositeDressingBody(t) : '';
+  }
+
+  let trimmed = conceptual;
+  if (!trimmed) return '';
+  if (/^or\s+/i.test(trimmed)) trimmed = trimmed.replace(/^or\s+/i, '');
+  if (formatState.showAmounts) trimmed = relocateTrailingDressingParen(trimmed);
+  trimmed = trimmed.trim();
+  if (!trimmed) return '';
+
+  const chunks = splitPlusAtDepthZero(trimmed);
+  if (chunks.length <= 1) {
+    const region = findFirstBalancedParenRegion(trimmed);
+    if (!region) return '';
+    const { pIdx, end } = region;
+    const inner = trimmed.slice(pIdx + 1, end);
+    const after = trimmed.slice(end + 1).trim();
+    const innerForDisplay = formatState.showAmounts ? keepOnlyQuantifiedDressingTerms(inner) : inner;
+    const afterForDisplay = formatState.showAmounts ? keepOnlyQuantifiedDressingTerms(after) : after;
+    let out = '';
+    if (innerForDisplay) out += boldCompositeDressingBody(innerForDisplay);
+    if (afterForDisplay) out += (out ? ' ' : '') + boldCompositeDressingBody(afterForDisplay);
+    return out;
+  }
+
+  const partLines = chunks
+    .map((ch, i) => {
+      let c = ch.trim();
+      if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+      if (!findFirstBalancedParenRegion(c)) {
+        return boldCompositeDressingBody(c);
+      }
+      return formatDressingComboPartLine(c);
+    })
+    .filter(Boolean)
+    .join('');
+  return partLines ? `<div class="dressing-diy-stack">${partLines}</div>` : '';
+}
+
+export function renderDressingDiySectionHtml(fullDressingLine) {
+  if (!dressingHasDiyBreakdown(fullDressingLine)) return '';
+  const bodyHtml = renderDressingDiyBodyHtml(fullDressingLine);
+  if (!String(bodyHtml || '').trim()) return '';
+  const title = dressingDiyHeadingTitle(fullDressingLine);
+  return (
+    `<div class="dressing-diy-section">` +
+    `<div class="section-heading dressing-diy-heading">` +
+    `<span>🥄</span> DIY ${escapeHtml(title)} <span class="dressing-diy-optional-label">(optional)</span>` +
+    `</div>` +
+    `<div class="dressing-diy-body">${bodyHtml}</div>` +
+    `</div>`
+  );
+}
+
 // ── Plan overlap hint (HTML) ──────────────────────────────────────────────────
 
 export function planOverlapHintHtml(str, ctx) {
@@ -1250,14 +1363,11 @@ export function renderIngredient(str, planHintCtx) {
 
   const dressingMatch = ingredientStr.match(/^Dressing:\s*(.*)$/i);
   if (dressingMatch) {
-    const body = pickDressingBodyFromLine(ingredientStr);
-    let inner;
-    if (!body.trim()) {
-      inner = escapeHtml(ingredientStr);
-      return `<li class="ingredient-dressing"><span class="bullet"></span><span class="ingredient-body">${inner}</span></li>`;
-    }
-    inner = renderDressingBlockHtml(body);
-    return `<li class="ingredient-dressing"><span class="bullet"></span><span class="ingredient-body dressing-ingredient-body">${inner}</span></li>`;
+    const rest = (dressingMatch[1] || '').trim();
+    const shopper = dressingShopperLineText(ingredientStr);
+    const inner =
+      !rest || !shopper.trim() ? escapeHtml(ingredientStr) : `${escapeHtml(shopper)}`;
+    return `<li><span class="bullet"></span><span class="ingredient-body">${inner}${planHint}</span></li>`;
   }
 
   const { amount, rest } = parseIngredient(ingredientStr);
