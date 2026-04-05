@@ -1,37 +1,60 @@
 import {
   INGREDIENT_OMIT_RULES,
-  DRESSING_SUBS,
   OPTIONAL_PROTEINS,
   MIN_VIABLE_INGREDIENTS,
   DIET_KEYS,
   OPTIONAL_LINE_PROTEIN_UPSELL_PATTERNS,
+  applyDressingSubs,
+  type DietKey,
   type IngredientOmitRule,
   type OptionalProtein,
 } from '@/data/diet-config';
-import type { Recipe } from '@/data/recipes';
+import type { Recipe, RecipeIngredient } from '@/data/ingredient-types';
 
-export function isDressingLine(text: string): boolean {
-  return /^Dressing:\s/i.test(text);
+export function ingredientLine(ing: string | RecipeIngredient): string {
+  return typeof ing === 'string' ? ing : ing.line;
+}
+
+export function isDressingLine(text: string | RecipeIngredient): boolean {
+  return /^Dressing:\s/i.test(ingredientLine(text));
+}
+
+/** Resolved line for display/copy (dressing swaps from structured data or global subs). */
+export function resolveIngredientDisplayLine(ing: string | RecipeIngredient, diet: string | null): string {
+  const base = ingredientLine(ing);
+  if (!diet) return base;
+  if (isDressingLine(base)) {
+    if (typeof ing === 'object' && ing.dressingByDiet?.[diet as DietKey]) {
+      return ing.dressingByDiet[diet as DietKey]!;
+    }
+    return applyDressingSubs(base, diet);
+  }
+  return base;
 }
 
 export function isOptionalLine(text: string): boolean {
   return /^optional:/i.test(text);
 }
 
-export function shouldOmitIngredient(text: string, diet: string): boolean {
-  if (isDressingLine(text)) return false;
+export function shouldOmitIngredient(text: string | RecipeIngredient, diet: string): boolean {
+  const line = ingredientLine(text);
+  if (isDressingLine(line)) return false;
+  if (typeof text === 'object' && Array.isArray(text.omitFor)) {
+    return text.omitFor.includes(diet as DietKey);
+  }
   for (const rule of INGREDIENT_OMIT_RULES) {
-    if (rule.diets.includes(diet) && rule.pattern.test(text)) {
+    if (rule.diets.includes(diet) && rule.pattern.test(line)) {
       return true;
     }
   }
   return false;
 }
 
-export function isSwappableProteinIngredient(text: string): boolean {
-  if (isDressingLine(text)) return false;
+export function isSwappableProteinIngredient(text: string | RecipeIngredient): boolean {
+  const line = ingredientLine(text);
+  if (isDressingLine(line)) return false;
   for (const rule of INGREDIENT_OMIT_RULES) {
-    if (rule.swappable && rule.pattern.test(text)) {
+    if (rule.swappable && rule.pattern.test(line)) {
       return true;
     }
   }
@@ -39,31 +62,18 @@ export function isSwappableProteinIngredient(text: string): boolean {
 }
 
 /** With no diet filter: hide primary placeholder proteins + optional meat upsells, not base charcuterie. */
-export function shouldHideIngredientForDefaultProteinPicker(text: string): boolean {
-  if (isDressingLine(text)) return false;
-  if (isOptionalLine(text)) {
+export function shouldHideIngredientForDefaultProteinPicker(text: string | RecipeIngredient): boolean {
+  const line = ingredientLine(text);
+  if (isDressingLine(line)) return false;
+  if (isOptionalLine(line)) {
     if (isSwappableProteinIngredient(text)) return true;
-    return OPTIONAL_LINE_PROTEIN_UPSELL_PATTERNS.some((re) => re.test(text));
+    return OPTIONAL_LINE_PROTEIN_UPSELL_PATTERNS.some((re) => re.test(line));
   }
   return isSwappableProteinIngredient(text);
 }
 
 export function adaptDressingForDiet(dressingLine: string, diet: string): string {
-  const subs = DRESSING_SUBS[diet];
-  if (!subs || subs.length === 0) return dressingLine;
-
-  let result = dressingLine;
-  for (const { from, to } of subs) {
-    result = result.replace(from, to);
-  }
-
-  result = result.replace(/\+\s*\+/g, '+');
-  result = result.replace(/\(\s*\+/g, '(');
-  result = result.replace(/\+\s*\)/g, ')');
-  result = result.replace(/\s{2,}/g, ' ');
-  result = result.replace(/\+\s*$/g, '').trim();
-
-  return result;
+  return applyDressingSubs(dressingLine, diet);
 }
 
 const _recipeDietCache = new Map<number, string[]>();
@@ -75,7 +85,7 @@ export function getRecipeDiets(recipe: Recipe): string[] {
   const diets = (DIET_KEYS as readonly string[]).filter((diet) => {
     const coreIngredients = recipe.ingredients.filter((ing) => {
       if (isDressingLine(ing)) return false;
-      if (isOptionalLine(ing)) return false;
+      if (isOptionalLine(ingredientLine(ing))) return false;
       return true;
     });
     const remaining = coreIngredients.filter((ing) => !shouldOmitIngredient(ing, diet));
@@ -86,8 +96,9 @@ export function getRecipeDiets(recipe: Recipe): string[] {
   return diets;
 }
 
-export function getOptionalProteinsForDiet(diet: string): OptionalProtein[] {
-  return OPTIONAL_PROTEINS.filter((p) => p.diets.includes(diet));
+export function getOptionalProteinsForDiet(diet: string, recipe?: Recipe | null): OptionalProtein[] {
+  const pool = recipe?.optionalProteins ?? OPTIONAL_PROTEINS;
+  return pool.filter((p) => p.diets.includes(diet));
 }
 
 const ORIGINAL_PROTEIN_TO_RECOMMENDED: [RegExp, string][] = [
@@ -146,8 +157,9 @@ export function getRecommendedProteins(recipe: Recipe): { traditional: string; p
 
   for (const ing of recipe.ingredients) {
     if (isDressingLine(ing)) continue;
+    const line = ingredientLine(ing);
     for (const [pattern, recProtein] of ORIGINAL_PROTEIN_TO_RECOMMENDED) {
-      if (pattern.test(ing)) {
+      if (pattern.test(line)) {
         traditionalRec = recProtein;
         break;
       }

@@ -1597,6 +1597,7 @@
       font-size: 0.93rem;
       line-height: 1.45;
       color: var(--muted);
+      text-transform: lowercase;
     }
     .dressing-diy-body .amount {
       font-weight: 700;

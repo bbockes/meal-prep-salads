@@ -1,16 +1,12 @@
-export interface Recipe {
-  id: number;
-  cuisine: string;
-  name: string;
-  imageSlug?: string;
-  ingredients: string[];
-  steps: string[];
-  subCuisine?: string;
-  flavorTags?: string[];
-  seasons?: string[];
-}
+import type { Recipe } from '@/data/ingredient-types';
+import { structureRecipeIngredients } from '@/data/recipe-ingredient-build';
 
-export const RECIPES: Recipe[] = [
+export type { Recipe, RecipeIngredient } from '@/data/ingredient-types';
+
+/** Authoring shape before structured ingredients are applied */
+type RecipeSeed = Omit<Recipe, 'ingredients'> & { ingredients: string[] };
+
+const RECIPE_SEED: RecipeSeed[] = [
   // ── AMERICAN ─────────────────────────────────────────────────────────────
   {
     id: 1, cuisine: 'American', name: 'Guacamole Greens',
@@ -1495,6 +1491,11 @@ export const RECIPES: Recipe[] = [
     ],
   },
 ];
+
+export const RECIPES: Recipe[] = RECIPE_SEED.map((r) => ({
+  ...r,
+  ingredients: structureRecipeIngredients(r.ingredients),
+}));
 
 export const RECIPE_META_BY_ID: Record<number, [string, string[], string[]]> = {
   1: ['American', ['Fresh'], ['Summer']],

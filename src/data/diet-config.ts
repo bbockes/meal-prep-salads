@@ -188,6 +188,25 @@ export const DRESSING_SUBS: Record<string, DressingSub[]> = {
   ],
 };
 
+/** Apply diet-specific dressing substitutions (shared by runtime + structured-ingredient build). */
+export function applyDressingSubs(dressingLine: string, diet: string): string {
+  const subs = DRESSING_SUBS[diet];
+  if (!subs || subs.length === 0) return dressingLine;
+
+  let result = dressingLine;
+  for (const { from, to } of subs) {
+    result = result.replace(from, to);
+  }
+
+  result = result.replace(/\+\s*\+/g, '+');
+  result = result.replace(/\(\s*\+/g, '(');
+  result = result.replace(/\+\s*\)/g, ')');
+  result = result.replace(/\s{2,}/g, ' ');
+  result = result.replace(/\+\s*$/g, '').trim();
+
+  return result;
+}
+
 export type ProteinCategory = 'traditional' | 'plant';
 
 export interface OptionalProtein {

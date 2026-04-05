@@ -402,7 +402,7 @@ export default function SaladApp({
         }
         if (selectedProteinByRecipe[id]) {
           const pName = selectedProteinByRecipe[id];
-          const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
+          const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet, r) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
           if (pDef) {
             const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
             saladLines.push(line);
@@ -428,7 +428,7 @@ export default function SaladApp({
       let block = ingredientsBlockForFullRecipeCopy(r, {});
       if (selectedProteinByRecipe[id]) {
         const pName = selectedProteinByRecipe[id];
-        const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
+        const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet, r) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
         if (pDef) {
           const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
           block += `\n${line}`;
@@ -465,7 +465,7 @@ export default function SaladApp({
           const ingLines = r.ingredients.map((ing) => ingredientLineForClipboard(ing));
           if (selectedProteinByRecipe[id]) {
             const pName = selectedProteinByRecipe[id];
-            const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
+            const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet, r) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
             if (pDef) {
               const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
               ingLines.push(line);
@@ -517,7 +517,7 @@ export default function SaladApp({
           let ingredientsBlock = ingredientsBlockForFullRecipeCopy(r, { mealPlanCopy: true });
           if (selectedProteinByRecipe[id]) {
             const pName = selectedProteinByRecipe[id];
-            const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
+            const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet, r) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
             if (pDef) {
               const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
               ingredientsBlock += `\n${line}`;
@@ -871,7 +871,7 @@ export default function SaladApp({
                   };
 
                   if (activeDiet) {
-                    const proteins = getOptionalProteinsForDiet(activeDiet);
+                    const proteins = getOptionalProteinsForDiet(activeDiet, recipe);
                     if (!proteins.length) return null;
                     const dietRecName = proteins.find((p) => p.name === recs.traditional)?.name
                       || proteins.find((p) => p.name === recs.plant)?.name

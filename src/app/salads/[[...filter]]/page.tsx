@@ -30,7 +30,7 @@ const SLUG_TO_CATEGORY: Record<string, string> = {
   'winter': 'Winter',
   'year-round': 'Year-round',
   ...DIET_FROM_SLUG,
-  // Legacy diet URL (tab removed — land on Keto)
+  // Legacy URL: treat like Keto (no High-Protein tab)
   'high-protein': 'Keto',
 };
 

@@ -14,6 +14,8 @@ import {
   SYNTHETIC_SELECTED_PROTEIN_STEP_PREFIX,
   isSyntheticSelectedProteinStep,
   getRecipeDiets,
+  ingredientLine,
+  resolveIngredientDisplayLine,
 } from '@/lib/diet-utils';
 
 // Mutable format state - updated by React components before calling formatting functions
@@ -798,7 +800,8 @@ export function parseIngredient(str) {
 export const DRESSING_VARIANT_SPLIT = /\s+\/\/\s+/;
 
 export function dressingVariantBodies(fullDressingLine) {
-  const m = fullDressingLine.match(/^Dressing:\s*(.*)$/i);
+  const line = ingredientLine(fullDressingLine);
+  const m = line.match(/^Dressing:\s*(.*)$/i);
   if (!m) return [];
   return m[1]
     .split(DRESSING_VARIANT_SPLIT)
@@ -815,16 +818,22 @@ export function pickDressingBodyFromLine(fullDressingLine) {
 export function orderIngredientsDressingLast(ingredients) {
   const dressing = [];
   const other = [];
-  for (const line of ingredients) {
-    let out = line;
-    if (!/^Dressing:\s*/i.test(out)) {
-      const { amount, rest } = parseIngredient(out);
+  for (const ing of ingredients) {
+    const line = ingredientLine(ing);
+    let outLine = line;
+    let outIng = ing;
+    if (!/^Dressing:\s*/i.test(outLine)) {
+      const { amount, rest } = parseIngredient(outLine);
       if (amount && /\b(dressing|vinaigrette)\b/i.test(rest)) {
-        out = 'Dressing: ' + out;
+        outLine = 'Dressing: ' + outLine;
+        outIng = typeof ing === 'object' ? { ...ing, line: outLine } : outLine;
       }
     }
-    if (/^Dressing:\s*/i.test(out)) dressing.push(out);
-    else other.push(out);
+    if (/^Dressing:\s*/i.test(outLine)) {
+      dressing.push(outIng);
+    } else {
+      other.push(outIng);
+    }
   }
   return other.concat(dressing);
 }
@@ -1215,8 +1224,11 @@ export function dressingHasDiyBreakdown(fullDressingLine) {
 
 /** HTML body only (no wrapper) for the optional DIY block. */
 export function renderDressingDiyBodyHtml(fullDressingLine) {
-  const parts = dressingVariantBodies(fullDressingLine);
-  const conceptual = dressingConceptualSegment(fullDressingLine);
+  // Use the same diet-adapted dressing string as the main list so DIY never shows dairy/meat/etc.
+  // that the active diet already swaps in the full `Dressing:` line.
+  const adaptedLine = resolveIngredientDisplayLine(fullDressingLine, formatState.activeDiet || null);
+  const parts = dressingVariantBodies(adaptedLine);
+  const conceptual = dressingConceptualSegment(adaptedLine);
   const amountPart = parts.length >= 2 ? parts[parts.length - 1].trim() : '';
 
   if (formatState.showAmounts && amountPart) {
@@ -1264,7 +1276,8 @@ export function renderDressingDiySectionHtml(fullDressingLine) {
   if (!dressingHasDiyBreakdown(fullDressingLine)) return '';
   const bodyHtml = renderDressingDiyBodyHtml(fullDressingLine);
   if (!String(bodyHtml || '').trim()) return '';
-  const title = dressingDiyHeadingTitle(fullDressingLine);
+  const adaptedLine = resolveIngredientDisplayLine(fullDressingLine, formatState.activeDiet || null);
+  const title = dressingDiyHeadingTitle(adaptedLine);
   return (
     `<div class="dressing-diy-section">` +
     `<div class="section-heading dressing-diy-heading">` +
@@ -1279,9 +1292,10 @@ export function renderDressingDiySectionHtml(fullDressingLine) {
 
 export function planOverlapHintHtml(str, ctx) {
   if (!ctx) return '';
-  if (/^dressing:\s*/i.test(str)) return '';
-  const { amount, rest } = parseIngredient(str);
-  const restStr = rest != null && String(rest).trim() ? rest : str;
+  const line = ingredientLine(str);
+  if (/^dressing:\s*/i.test(line)) return '';
+  const { amount, rest } = parseIngredient(line);
+  const restStr = rest != null && String(rest).trim() ? rest : line;
   if (!String(restStr).trim()) return '';
   const { key } = canonicalizeIngredientRest(restStr);
   const k = String(key || '')
@@ -1320,9 +1334,9 @@ export function sortIngredientsForPlanOverlapDisplay(ingredients, planHintCtx, a
 
   function lineRank(ing) {
     if (activeDiet && shouldOmitIngredient(ing, activeDiet)) return { tier: 2, recipeCount: 0 };
-    if (isOptionalLine(ing)) return { tier: 2, recipeCount: 0 };
-    const { amount, rest } = parseIngredient(ing);
-    const restStr = rest != null && String(rest).trim() ? rest : ing;
+    if (isOptionalLine(ingredientLine(ing))) return { tier: 2, recipeCount: 0 };
+    const { amount, rest } = parseIngredient(ingredientLine(ing));
+    const restStr = rest != null && String(rest).trim() ? rest : ingredientLine(ing);
     if (!String(restStr).trim()) return { tier: 1, recipeCount: 0 };
     const { key } = canonicalizeIngredientRest(restStr);
     const k = String(key || '')
@@ -1354,10 +1368,7 @@ export function renderIngredient(str, planHintCtx) {
     return '';
   }
 
-  let ingredientStr = str;
-  if (formatState.activeDiet && isDressingLine(str)) {
-    ingredientStr = adaptDressingForDiet(str, formatState.activeDiet);
-  }
+  const ingredientStr = resolveIngredientDisplayLine(str, formatState.activeDiet);
 
   const planHint = planOverlapHintHtml(ingredientStr, planHintCtx);
 
@@ -1553,7 +1564,8 @@ export function maybePushBbqAlias(text, bucket) {
 
 export function collectIngredientHighlightPhrases(ingredientLines) {
   const phrases = [];
-  for (const line of ingredientLines) {
+  for (const raw of ingredientLines) {
+    const line = ingredientLine(raw);
     const dressingLineMatch = line.match(/^Dressing:\s*(.*)$/i);
     if (dressingLineMatch && dressingLineMatch[1].trim()) {
       const raw = dressingLineMatch[1].trim();
@@ -1813,10 +1825,7 @@ export function ingredientLineForClipboard(str) {
     return '';
   }
 
-  let s = str;
-  if (formatState.activeDiet && isDressingLine(str)) {
-    s = adaptDressingForDiet(str, formatState.activeDiet);
-  }
+  const s = resolveIngredientDisplayLine(str, formatState.activeDiet);
 
   const dressingClipboardMatch = s.match(/^Dressing:\s*(.*)$/i);
   if (dressingClipboardMatch) {
@@ -1846,10 +1855,7 @@ export function ingredientLineForClipboardSingleRecipe(str) {
     return '';
   }
 
-  let s = str;
-  if (formatState.activeDiet && isDressingLine(str)) {
-    s = adaptDressingForDiet(str, formatState.activeDiet);
-  }
+  const s = resolveIngredientDisplayLine(str, formatState.activeDiet);
 
   const dressingClipboardMatch = s.match(/^Dressing:\s*(.*)$/i);
   if (!dressingClipboardMatch) return ingredientLineForClipboard(s);
@@ -1965,7 +1971,8 @@ export const OVERLAP_GENERIC_KEYS = new Set([
 
 export function recipeOverlapIngredientKeys(r) {
   const keys = new Set();
-  for (const line of r.ingredients) {
+  for (const ing of r.ingredients) {
+    const line = ingredientLine(ing);
     if (/^dressing:\s*/i.test(line)) continue;
     const { amount, rest } = parseIngredient(line);
     const restStr = rest != null && String(rest).trim() ? rest : line;
