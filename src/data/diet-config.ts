@@ -138,7 +138,8 @@ export interface DressingSub {
 export const DRESSING_SUBS: Record<string, DressingSub[]> = {
   'Vegan': [
     { from: /\bGreek yogurt\b/gi, to: 'coconut yogurt' },
-    { from: /\byogurt\b/gi, to: 'coconut yogurt' },
+    /* Avoid re-matching the word “yogurt” inside “coconut yogurt”. */
+    { from: /\b(?<!coconut )yogurt\b/gi, to: 'coconut yogurt' },
     { from: /\bmayo(nnaise)?\b/gi, to: 'vegan mayo' },
     { from: /\bsour cream\b/gi, to: 'cashew cream' },
     { from: /\bcrema\b/gi, to: 'cashew cream' },
@@ -172,7 +173,7 @@ export const DRESSING_SUBS: Record<string, DressingSub[]> = {
   ],
   'Paleo': [
     { from: /\bGreek yogurt\b/gi, to: 'coconut yogurt' },
-    { from: /\byogurt\b/gi, to: 'coconut yogurt' },
+    { from: /\b(?<!coconut )yogurt\b/gi, to: 'coconut yogurt' },
     { from: /\bmayo(nnaise)?\b/gi, to: 'avocado-oil mayo' },
     { from: /\bsour cream\b/gi, to: 'coconut cream' },
     { from: /\bcrema\b/gi, to: 'coconut cream' },

@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
 import { DIET_KEYS, DIET_ACCENTS, OPTIONAL_PROTEINS } from '@/data/diet-config';
@@ -58,12 +59,15 @@ interface SaladAppProps {
   initialCategory: string;
   /** From `?r=` on `*-salads` diet URLs so the detail recipe survives diet tab changes / remounts. */
   initialPinnedRecipeId?: number | null;
+  /** Keyword-focused heading (SSR) — site brand stays in the header line above. */
+  pageHeading?: string;
 }
 
 export default function SaladApp({
   initialBrowseMode,
   initialCategory,
   initialPinnedRecipeId = null,
+  pageHeading,
 }: SaladAppProps) {
   const router = useRouter();
   const resolvedInitialCategory =
@@ -583,12 +587,18 @@ export default function SaladApp({
   return (
     <>
       {/* ── Header ── */}
-      <header>
-        <h1 className="site-title">
-          <span className="site-title-super">Simple</span>
-          <span className="site-title-simple">Healthy</span>
-          <span className="site-title-core">Meal Prep</span>
-        </h1>
+      <header className="site-header">
+        <Link href="/salads" className="site-brand">
+          Ease
+        </Link>
+        {pageHeading ? (
+          <>
+            <span className="site-header-sep" aria-hidden="true" />
+            <h1 id="page-seo-heading" className="page-seo-heading">
+              {pageHeading}
+            </h1>
+          </>
+        ) : null}
       </header>
 
       {/* ── Browse Mode Bar ── */}

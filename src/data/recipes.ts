@@ -438,7 +438,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '¼ cup fresh cilantro',
       '½ cup roasted plantain chips, crushed',
       '½ cup cooked quinoa',
-      'Dressing: yogurt + lime + hot sauce (chili + vinegar) + cilantro // ¼ cup yogurt + 1 tbsp lime juice + 1 tsp hot sauce + 1 tbsp cilantro (¼ cup Greek yogurt + 1 tbsp lime + hot sauce to taste + chopped cilantro)',
+      'Dressing: plain Greek yogurt + lime juice + hot sauce + cilantro // ¼ cup plain Greek yogurt + 1 tbsp lime juice + hot sauce to taste + 1 tbsp chopped cilantro',
     ],
     steps: [
       'Cook salmon (pan-sear or bake).',

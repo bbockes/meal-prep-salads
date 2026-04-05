@@ -14,6 +14,8 @@
       --text: #1a1a18;
       --muted: #6b6b64;
       --border: #e4e1d9;
+      /* App mark / wordmark (matches favicon) */
+      --brand: #2d8650;
 
       /* Cuisine accent colors (mirrors ACCENT in script) */
       --american: #c73d3a;
@@ -115,29 +117,49 @@
     }
 
     /* ── Header ── */
-    header {
+    .site-header {
       padding: max(28px, env(safe-area-inset-top, 0px)) 48px 0;
       display: flex;
-      align-items: baseline;
-      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 16px;
     }
-    header h1.site-title {
+    .site-brand {
       font-family: 'Raleway', system-ui, sans-serif;
       font-weight: 700;
       font-size: 1.65rem;
-      letter-spacing: -0.015em;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      column-gap: 0.26em;
-      row-gap: 0.12em;
-      color: var(--text);
+      letter-spacing: -0.02em;
+      color: var(--brand);
+      text-decoration: none;
+      flex-shrink: 0;
     }
-    /* Tagline only when a direct child of header (not words inside h1) */
-    header > span {
-      color: var(--muted);
-      font-size: 0.85rem;
-      font-weight: 300;
+    .site-brand:hover {
+      color: color-mix(in srgb, var(--brand) 78%, var(--text));
+    }
+    .site-brand:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+    .site-header-sep {
+      width: 1px;
+      height: 1.35em;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .page-seo-heading {
+      font-family: 'Raleway', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.2rem, 2.2vw, 1.65rem);
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      color: var(--text);
+      margin: 0;
+      flex: 1 1 12rem;
+      min-width: 0;
+      text-decoration: none;
+      border-bottom: none;
+      box-shadow: none;
     }
 
     /* ── Nav ── */
@@ -1028,7 +1050,7 @@
         column-gap: 0;
         row-gap: 28px;
       }
-      header,
+      .site-header,
       nav,
       .browse-mode,
       .prep-mode-coach-mount,
@@ -1149,7 +1171,7 @@
         margin-right: 14px;
         padding: 18px 16px 20px;
       }
-      header,
+      .site-header,
       nav,
       .browse-mode,
       .prep-mode-coach-mount,

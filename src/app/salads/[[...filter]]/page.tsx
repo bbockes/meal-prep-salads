@@ -1,38 +1,10 @@
-import SaladApp from '@/components/SaladApp';
-import { DIET_FROM_SLUG } from '@/data/diet-config';
-
-const SLUG_TO_CATEGORY: Record<string, string> = {
-  'american': 'American',
-  'italian': 'Italian',
-  'greek': 'Greek',
-  'french': 'French',
-  'middle-eastern': 'Middle Eastern',
-  'spanish': 'Spanish',
-  'mexican': 'Mexican',
-  'indian': 'Indian',
-  'thai': 'Thai',
-  'japanese': 'Japanese',
-  'korean': 'Korean',
-  'vietnamese': 'Vietnamese',
-  // Legacy parent cuisines
-  'mediterranean': 'Greek',
-  'asian': 'Japanese',
-  'spanish-mexican': 'Mexican',
-  'tangy': 'Tangy',
-  'creamy': 'Creamy',
-  'spicy': 'Spicy',
-  'fresh': 'Fresh',
-  'savory': 'Savory',
-  'umami': 'Umami',
-  'spring': 'Spring',
-  'summer': 'Summer',
-  'fall': 'Fall',
-  'winter': 'Winter',
-  'year-round': 'Year-round',
-  ...DIET_FROM_SLUG,
-  // Legacy URL: treat like Keto (no High-Protein tab)
-  'high-protein': 'Keto',
-};
+import type { Metadata } from 'next';
+import SaladBrowsePage from '@/components/SaladBrowsePage';
+import { allNestedSaladFilterParams } from '@/data/salad-routes';
+import {
+  buildSaladIndexMetadata,
+  parseSaladsCatchAllFilter,
+} from '@/lib/seo/salad-seo';
 
 function parsePinnedRecipeId(sp: { r?: string | string[] } | undefined): number | null {
   if (!sp) return null;
@@ -48,35 +20,31 @@ interface PageProps {
   searchParams?: Promise<{ r?: string | string[] }>;
 }
 
+export async function generateStaticParams() {
+  return [
+    { filter: [] },
+    { filter: ['flavor'] },
+    { filter: ['season'] },
+    ...allNestedSaladFilterParams(),
+  ];
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { filter } = await params;
+  const { browseMode, activeCategory } = parseSaladsCatchAllFilter(filter);
+  return buildSaladIndexMetadata(browseMode, activeCategory);
+}
+
 export default async function SaladsPage({ params, searchParams }: PageProps) {
   const { filter } = await params;
   const sp = searchParams ? await searchParams : undefined;
   const initialPinnedRecipeId = parsePinnedRecipeId(sp);
-
-  let browseMode: 'cuisine' | 'flavor' | 'season' | 'diet' = 'cuisine';
-  let activeCategory = 'All';
-
-  if (filter && filter.length === 1) {
-    const seg = filter[0];
-    if (seg === 'flavor') {
-      browseMode = 'flavor';
-      activeCategory = 'All';
-    } else if (seg === 'season') {
-      browseMode = 'season';
-      activeCategory = 'All';
-    }
-  } else if (filter && filter.length === 2) {
-    const [filterType, filterValue] = filter;
-    if (filterType === 'cuisine' || filterType === 'flavor' || filterType === 'season' || filterType === 'diet') {
-      browseMode = filterType;
-      activeCategory = SLUG_TO_CATEGORY[filterValue] || decodeURIComponent(filterValue);
-    }
-  }
+  const { browseMode, activeCategory } = parseSaladsCatchAllFilter(filter);
 
   return (
-    <SaladApp
-      initialBrowseMode={browseMode}
-      initialCategory={activeCategory}
+    <SaladBrowsePage
+      browseMode={browseMode}
+      activeCategory={activeCategory}
       initialPinnedRecipeId={initialPinnedRecipeId}
     />
   );
