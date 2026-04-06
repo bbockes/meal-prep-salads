@@ -13,6 +13,7 @@ import {
   adaptStepForProteinSwap,
   getRecommendedProteins,
   isDressingLine,
+  pickTopOptionalProteinsForDisplay,
 } from '@/lib/diet-utils';
 import {
   formatState,
@@ -844,9 +845,6 @@ export default function SaladApp({
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                     </span>
                   );
-                  const sortByRec = (list, recName) =>
-                    [...list].sort((a, b) => (a.name === recName ? -1 : b.name === recName ? 1 : 0));
-
                   const renderProteinItem = (p, i, recName) => {
                     const isSelected = selectedProteinByRecipe[recipe.id] === p.name;
                     const isRec = p.name === recName;
@@ -886,7 +884,7 @@ export default function SaladApp({
                     const dietRecName = proteins.find((p) => p.name === recs.traditional)?.name
                       || proteins.find((p) => p.name === recs.plant)?.name
                       || null;
-                    const sorted = dietRecName ? sortByRec(proteins, dietRecName) : proteins;
+                    const sorted = pickTopOptionalProteinsForDisplay(recipe, proteins, dietRecName, 3);
                     return (
                       <div className="optional-protein-section">
                         <div className="section-heading">
@@ -899,13 +897,17 @@ export default function SaladApp({
                     );
                   }
 
-                  const traditional = sortByRec(
+                  const traditional = pickTopOptionalProteinsForDisplay(
+                    recipe,
                     OPTIONAL_PROTEINS.filter((p) => p.category === 'traditional'),
-                    recs.traditional
+                    recs.traditional,
+                    3
                   );
-                  const plant = sortByRec(
+                  const plant = pickTopOptionalProteinsForDisplay(
+                    recipe,
                     OPTIONAL_PROTEINS.filter((p) => p.category === 'plant'),
-                    recs.plant
+                    recs.plant,
+                    3
                   );
                   return (
                     <div className="optional-protein-section">

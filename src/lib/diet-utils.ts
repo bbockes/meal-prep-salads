@@ -106,6 +106,8 @@ const ORIGINAL_PROTEIN_TO_RECOMMENDED: [RegExp, string][] = [
   [/\brotisserie\b/i, 'grilled chicken breast'],
   [/\bturkey\b/i, 'grilled chicken breast'],
   [/\bkaraage\b/i, 'grilled chicken breast'],
+  [/\b(hard-boiled|soft-boiled|poached)\s+eggs?\b/i, 'hard-boiled eggs'],
+  [/^\d+\s+eggs?$/i, 'hard-boiled eggs'],
   [/\bbeef\b/i, 'steak strips'],
   [/\bsteak\b/i, 'steak strips'],
   [/\bbulgogi\b/i, 'steak strips'],
@@ -174,6 +176,140 @@ export function getRecommendedProteins(recipe: Recipe): { traditional: string; p
   const plantRec = PLANT_BY_CUISINE[recipe.subCuisine || ''] || 'roasted chickpeas';
 
   return { traditional: traditionalRec, plant: plantRec };
+}
+
+/** Heuristic pairing strength for ordering proteins after the starred recommendation. */
+function proteinPairingScore(recipe: Recipe, proteinName: string): number {
+  const blob = recipe.ingredients.map((i) => ingredientLine(i)).join(' ').toLowerCase();
+  const title = recipe.name.toLowerCase();
+  const sc = recipe.subCuisine || '';
+  const cu = recipe.cuisine;
+
+  switch (proteinName) {
+    case 'grilled chicken breast': {
+      let s = 0;
+      if (/\b(chicken|turkey|buffalo|bbq|ranch|cobb|bacon|ham|karaage|tandoori|lemongrass)\b/.test(blob)) s += 6;
+      if (/\b(pepperoni|salami|chorizo)\b/.test(blob)) s += 4;
+      if (/\b(prosciutto|serrano)\b/.test(blob)) s += 3;
+      if (cu === 'American') s += 2;
+      if (sc === 'Indian' || sc === 'Korean') s += 3;
+      return s;
+    }
+    case 'grilled salmon': {
+      let s = 0;
+      if (/\b(salmon|tuna|fish|anchov)\b/.test(blob)) s += 6;
+      if (/\b(ni[cs]oise|nicoise)\b/.test(title) || /\b(ni[cs]oise|nicoise)\b/.test(blob)) s += 5;
+      if (/\b(sesame|miso|baja|taco|smoke)\b/.test(blob)) s += 4;
+      if (cu === 'French' || cu === 'Mediterranean') s += 2;
+      if (sc === 'Japanese') s += 2;
+      return s;
+    }
+    case 'grilled shrimp': {
+      let s = 0;
+      if (/\b(shrimp|prawn|crab)\b/.test(blob)) s += 6;
+      if (/\b(citrus|lime|coconut|papaya|snap pea|watermelon|jicama)\b/.test(blob)) s += 4;
+      if (sc === 'Thai' || sc === 'Vietnamese' || sc === 'Spanish') s += 3;
+      if (cu === 'Asian' && /(crunch|sesame|ginger|sunomono)/.test(title)) s += 2;
+      return s;
+    }
+    case 'steak strips': {
+      let s = 0;
+      if (/\b(beef|steak|bulgogi)\b/.test(blob)) s += 6;
+      if (/\bcobb\b/.test(title)) s += 5;
+      if (/\bhoney\s+crunch\b/.test(title)) s += 5;
+      if (sc === 'Korean' || /\bgochujang|kimchi|sesame\s+oil\b/.test(blob)) s += 3;
+      if (/\b(pepperoni|salami|prosciutto|serrano)\b/.test(blob)) s += 3;
+      return s;
+    }
+    case 'hard-boiled eggs': {
+      let s = 0;
+      if (/\b(hard-boiled|soft-boiled|poached)\s+eggs?\b/.test(blob) || /\b\d+\s+eggs?\b/.test(blob)) s += 6;
+      if (/\b(ni[cs]oise|nicoise)\b/.test(title)) s += 5;
+      if (/\b(bibimbap|lyonnaise|chicory)\b/.test(title) || /\beggs?\b/.test(blob)) s += 4;
+      return s;
+    }
+    case 'roasted chickpeas': {
+      let s = 0;
+      if (/\b(chickpea|hummus|falafel|chaat|lentil|tabbouleh)\b/.test(blob)) s += 6;
+      if (sc === 'Indian' || sc === 'Middle Eastern' || sc === 'Greek') s += 4;
+      if (cu === 'Mediterranean') s += 3;
+      return s;
+    }
+    case 'pan-fried tofu': {
+      let s = 0;
+      if (/\b(tofu|miso|sesame|bibimbap|kimchi|elote|chipotle|edamame)\b/.test(blob)) s += 6;
+      if (sc === 'Japanese' || sc === 'Korean' || sc === 'Thai') s += 3;
+      if (cu.includes('Mexican')) s += 3;
+      return s;
+    }
+    case 'tempeh, sliced': {
+      let s = 0;
+      if (/\b(shroom|peanut|tamari|ginger|crunch)\b/.test(blob)) s += 4;
+      if (/\b(kale|spinach|quinoa|grain|slaw)\b/.test(blob)) s += 2;
+      return s;
+    }
+    case 'edamame, shelled': {
+      let s = 0;
+      if (/\bedamame\b/.test(blob)) s += 6;
+      if (sc === 'Japanese') s += 5;
+      if (/\b(miso|sesame|soy)\b/.test(blob)) s += 2;
+      return s;
+    }
+    case 'hemp seeds': {
+      let s = 0;
+      if (/\b(hemp|chia|seed)\b/.test(blob)) s += 4;
+      if (/\b(kale|super green|spinach)\b/.test(blob) || /super green/i.test(title)) s += 2;
+      return s;
+    }
+    default:
+      return 0;
+  }
+}
+
+function compareProteinNamesForRecipe(recipe: Recipe, a: string, b: string): number {
+  const d = proteinPairingScore(recipe, b) - proteinPairingScore(recipe, a);
+  return d !== 0 ? d : a.localeCompare(b);
+}
+
+const DEFAULT_TOP_PROTEINS = 3;
+
+/** Optional add-on proteins to hide per recipe (e.g. Cobb already includes eggs in the bowl). */
+const OMIT_OPTIONAL_PROTEIN_NAMES_BY_RECIPE_ID: Record<number, ReadonlySet<string>> = {
+  6: new Set(['hard-boiled eggs']),
+};
+
+/**
+ * Up to `limit` options: starred `recName` first when it appears in `pool`, then the next-best
+ * pairings for this recipe (so Traditional / Plant columns differ per salad).
+ */
+export function pickTopOptionalProteinsForDisplay(
+  recipe: Recipe,
+  pool: OptionalProtein[],
+  recName: string | null,
+  limit = DEFAULT_TOP_PROTEINS
+): OptionalProtein[] {
+  const omit = OMIT_OPTIONAL_PROTEIN_NAMES_BY_RECIPE_ID[recipe.id];
+  const usable = omit ? pool.filter((p) => !omit.has(p.name)) : pool;
+  if (usable.length === 0) return [];
+
+  const byName = new Map(usable.map((p) => [p.name, p]));
+  const allNames = [...byName.keys()];
+  const sortedByScore = [...allNames].sort((a, b) => compareProteinNamesForRecipe(recipe, a, b));
+
+  const selected: string[] = [];
+  if (recName && byName.has(recName)) {
+    selected.push(recName);
+  }
+  for (const n of sortedByScore) {
+    if (selected.length >= limit) break;
+    if (!selected.includes(n)) selected.push(n);
+  }
+
+  const rec = recName && selected.includes(recName) ? recName : null;
+  const tail = selected.filter((n) => n !== rec);
+  tail.sort((a, b) => compareProteinNamesForRecipe(recipe, a, b));
+  const orderedNames = rec ? [rec, ...tail] : tail;
+  return orderedNames.map((n) => byName.get(n)!).filter(Boolean);
 }
 
 export function getProteinStepName(fullName: string): string {
