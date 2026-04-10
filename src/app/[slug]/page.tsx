@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import SaladBrowsePage from '@/components/SaladBrowsePage';
-import { FLAT_PREFIX_TO_BROWSE, dietPrefixedBrowsePath } from '@/data/salad-routes';
-import { buildSaladIndexMetadata, dietQueryParamToScope } from '@/lib/seo/salad-seo';
+import { FLAT_PREFIX_TO_BROWSE } from '@/data/salad-routes';
+import { buildSaladIndexMetadata, neutralSaladIndexPath } from '@/lib/seo/salad-seo';
 
 function parsePinnedRecipeId(sp: { r?: string | string[] } | undefined): number | null {
   if (!sp) return null;
@@ -24,19 +24,13 @@ export function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   if (!slug.endsWith('-salads')) return {};
   const prefix = slug.replace(/-salads$/, '');
-  if (prefix === 'high-protein') {
-    return buildSaladIndexMetadata('cuisine', 'All', { dietScope: 'Keto' });
-  }
   const match = FLAT_PREFIX_TO_BROWSE[prefix];
   if (!match) return {};
-  const sp = searchParams ? await searchParams : undefined;
-  const dietFromQuery = dietQueryParamToScope(sp?.diet);
-  const dietScope = match.dietScope ?? dietFromQuery;
-  return buildSaladIndexMetadata(match.mode, match.category, { dietScope });
+  return buildSaladIndexMetadata(match.mode, match.category);
 }
 
 export default async function SlugPage({ params, searchParams }: PageProps) {
@@ -51,7 +45,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
   const prefix = slug.replace(/-salads$/, '');
 
   if (prefix === 'high-protein') {
-    redirect('/keto-salads');
+    redirect('/salads');
   }
 
   const match = FLAT_PREFIX_TO_BROWSE[prefix];
@@ -60,24 +54,17 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     notFound();
   }
 
-  const dietFromQuery = dietQueryParamToScope(sp?.diet);
-  if (dietFromQuery && !match.dietScope) {
-    const target = dietPrefixedBrowsePath(match.mode, match.category, dietFromQuery);
-    if (target) {
-      const qs = new URLSearchParams();
-      if (initialPinnedRecipeId != null) qs.set('r', String(initialPinnedRecipeId));
-      const q = qs.toString();
-      redirect(q ? `${target}?${q}` : target);
-    }
+  if (match.dietScope) {
+    const target = neutralSaladIndexPath(match.mode, match.category);
+    const qs = new URLSearchParams();
+    if (initialPinnedRecipeId != null) qs.set('r', String(initialPinnedRecipeId));
+    redirect(qs.size ? `${target}?${qs}` : target);
   }
-
-  const dietScope = match.dietScope ?? dietFromQuery;
 
   return (
     <SaladBrowsePage
       browseMode={match.mode}
       activeCategory={match.category}
-      initialDietScope={dietScope}
       initialPinnedRecipeId={initialPinnedRecipeId}
     />
   );

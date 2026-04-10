@@ -3,19 +3,13 @@
 
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, type DragEvent } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
-import { DIET_KEYS, OPTIONAL_PROTEINS } from '@/data/diet-config';
+import { OPTIONAL_PROTEINS } from '@/data/diet-config';
 import type { SaladBrowseMode } from '@/data/salad-routes';
-import {
-  dietPrefixedBrowsePath,
-  SALADS_BY_FLAVOR_PATH,
-  SALADS_BY_SEASON_PATH,
-} from '@/data/salad-routes';
+import { SALADS_BY_FLAVOR_PATH, SALADS_BY_SEASON_PATH } from '@/data/salad-routes';
 import { RECIPES, Recipe } from '@/data/recipes';
 import {
-  getOptionalProteinsForDiet,
-  adaptStepForDiet,
   adaptStepForProteinSwap,
   getRecommendedProteins,
   isDressingLine,
@@ -54,9 +48,6 @@ import {
 
 const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
 const MEAL_PREP_MODE_KEY = 'meal-prep-salads:mealPrepMode';
-const PREFERRED_DIET_STORAGE_KEY = 'meal-prep-salads:preferredDietV1';
-/** Written before `router.push` on diet change; read after URL updates so remounted `SaladApp` can restore scroll. */
-const CARD_STRIP_AFTER_DIET_STORAGE_KEY = 'meal-prep-salads:cardStripAfterDietV1';
 
 /** Mon–Sun columns for the meal-plan board (index 0 = Monday). */
 const MEAL_PLAN_DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -101,8 +92,7 @@ let _persistedRecipePortions = 2;
 interface SaladAppProps {
   initialBrowseMode: SaladBrowseMode;
   initialCategory: string;
-  initialDietScope: string | null;
-  /** From `?r=` on diet hub `*-salads` URLs so the detail recipe survives remounts. */
+  /** From `?r=` so the detail recipe survives remounts. */
   initialPinnedRecipeId?: number | null;
   /** Keyword-focused heading (SSR) — site brand stays in the header line above. */
   pageHeading?: string;
@@ -111,30 +101,18 @@ interface SaladAppProps {
 export default function SaladApp({
   initialBrowseMode,
   initialCategory,
-  initialDietScope,
   initialPinnedRecipeId = null,
   pageHeading,
 }: SaladAppProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const cardStripRef = useRef<HTMLDivElement | null>(null);
   const [browseMode, setBrowseMode] = useState<SaladBrowseMode>(initialBrowseMode);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [dietScope, setDietScope] = useState<string | null>(initialDietScope);
   const [selectedId, setSelectedId] = useState(() => {
-    const visible = recipesForCardStrip(
-      initialBrowseMode,
-      initialCategory,
-      initialDietScope,
-      false,
-      [],
-      false
-    );
+    const visible = recipesForCardStrip(initialBrowseMode, initialCategory, null, false, [], false);
     if (!visible.length) return RECIPES[0].id;
     const pin = initialPinnedRecipeId;
-    if (initialDietScope && pin != null && visible.some((r) => r.id === pin)) {
-      return pin;
-    }
+    if (pin != null && visible.some((r) => r.id === pin)) return pin;
     return visible[0].id;
   });
   const selectedIdRef = useRef(selectedId);
@@ -233,8 +211,6 @@ export default function SaladApp({
   useEffect(() => { _persistedUnitMode = unitMode; }, [unitMode]);
   useEffect(() => { _persistedRecipePortions = recipePortions; }, [recipePortions]);
 
-  const activeDiet = dietScope;
-
   // Sync format state for utility functions
   formatState.showAmounts = showAmounts;
   formatState.unitMode = unitMode;
@@ -242,18 +218,17 @@ export default function SaladApp({
   formatState.mealPlanPortions = mealPlanPortions;
   formatState.mealPlanShowAmounts = mealPlanShowAmounts;
   formatState.mealPlanUnitMode = mealPlanUnitMode;
-  formatState.activeDiet = activeDiet;
+  formatState.activeDiet = null;
   formatState.selectedProteinByRecipe = selectedProteinByRecipe;
 
   // Sync from URL (layout effect avoids one painted frame with stale browse tab after navigation)
   useLayoutEffect(() => {
     setBrowseMode(initialBrowseMode);
     setActiveCategory(initialCategory);
-    setDietScope(initialDietScope);
     const visible = recipesForCardStrip(
       initialBrowseMode,
       initialCategory,
-      initialDietScope,
+      null,
       mealPrepMode,
       mealPlanIds,
       smartPicksEnabled
@@ -261,47 +236,18 @@ export default function SaladApp({
     if (!visible.length) return;
     const pin = initialPinnedRecipeId;
     setSelectedId((prev) => {
-      if (initialDietScope) {
-        let next = visible[0].id;
-        if (pin != null && visible.some((r) => r.id === pin)) next = pin;
-        else if (visible.some((r) => r.id === prev)) next = prev;
-        return next;
-      }
-      return visible[0].id;
+      let next = visible[0].id;
+      if (pin != null && visible.some((r) => r.id === pin)) next = pin;
+      else if (visible.some((r) => r.id === prev)) next = prev;
+      return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-sync when URL-derived props change; meal plan / Smart Picks stay client-only
-  }, [initialBrowseMode, initialCategory, initialDietScope, initialPinnedRecipeId]);
+  }, [initialBrowseMode, initialCategory, initialPinnedRecipeId]);
 
   const categoryToUrl = useCallback(
-    (
-      category: string,
-      opts?: {
-        browseModeForAll?: SaladBrowseMode;
-        dietScope?: string | null;
-        pinRecipeId?: number | null;
-      }
-    ) => {
+    (category: string, opts?: { browseModeForAll?: SaladBrowseMode }) => {
       const mode = opts?.browseModeForAll ?? browseMode;
-      const ds = opts?.dietScope !== undefined ? opts.dietScope : dietScope;
-      const pinRecipeId = opts?.pinRecipeId;
       let path: string;
-
-      if (ds) {
-        const dp = dietPrefixedBrowsePath(mode, category, ds);
-        if (dp) {
-          path = dp;
-          const qs = new URLSearchParams();
-          if (
-            pinRecipeId != null &&
-            Number.isFinite(pinRecipeId) &&
-            RECIPES.some((r) => r.id === pinRecipeId)
-          ) {
-            qs.set('r', String(pinRecipeId));
-          }
-          const q = qs.toString();
-          return q ? `${path}?${q}` : path;
-        }
-      }
 
       if (category === 'All') {
         if (mode === 'flavor') path = SALADS_BY_FLAVOR_PATH;
@@ -317,21 +263,17 @@ export default function SaladApp({
       }
       return path;
     },
-    [browseMode, dietScope]
+    [browseMode]
   );
 
   useEffect(() => {
     if (!smartPicksEnabled || !mealPrepMode || mealPlanIds.length === 0) return;
-    const v = recipesForCardStrip(browseMode, activeCategory, dietScope, mealPrepMode, mealPlanIds, true);
+    const v = recipesForCardStrip(browseMode, activeCategory, null, mealPrepMode, mealPlanIds, true);
     if (!v.length) return;
     const prev = selectedIdRef.current;
     if (v.some((r) => r.id === prev)) return;
-    const next = v[0].id;
-    setSelectedId(next);
-    if (dietScope) {
-      router.replace(categoryToUrl(activeCategory, { pinRecipeId: next }), { scroll: false });
-    }
-  }, [smartPicksEnabled, browseMode, activeCategory, dietScope, mealPrepMode, mealPlanIds, router, categoryToUrl]);
+    setSelectedId(v[0].id);
+  }, [smartPicksEnabled, browseMode, activeCategory, mealPrepMode, mealPlanIds]);
 
   const flash = useCallback((msg: string) => {
     setFlashMsg(msg);
@@ -350,25 +292,17 @@ export default function SaladApp({
       const visible = recipesForCardStrip(
         mode,
         defaultCat,
-        dietScope,
+        null,
         mealPrepMode,
         mealPlanIds,
         smartPicksEnabled
       );
-      let dietPin: number | null = null;
       if (visible.length) {
-        const first = visible[0].id;
-        setSelectedId(first);
-        if (dietScope) dietPin = first;
+        setSelectedId(visible[0].id);
       }
-      router.push(
-        dietScope && dietPin != null
-          ? categoryToUrl(defaultCat, { browseModeForAll: mode, pinRecipeId: dietPin })
-          : categoryToUrl(defaultCat, { browseModeForAll: mode }),
-        { scroll: false }
-      );
+      router.push(categoryToUrl(defaultCat, { browseModeForAll: mode }), { scroll: false });
     },
-    [browseMode, dietScope, mealPrepMode, mealPlanIds, router, categoryToUrl, smartPicksEnabled]
+    [browseMode, mealPrepMode, mealPlanIds, router, categoryToUrl, smartPicksEnabled]
   );
 
   const handleSelectCategory = useCallback(
@@ -378,86 +312,25 @@ export default function SaladApp({
       const visible = recipesForCardStrip(
         browseMode,
         cat,
-        dietScope,
+        null,
         mealPrepMode,
         mealPlanIds,
         smartPicksEnabled
       );
       if (!visible.length) return;
-      let nextId = visible[0].id;
-      if (dietScope) {
-        const cur = selectedIdRef.current;
-        if (visible.some((r) => r.id === cur)) nextId = cur;
-      }
+      const cur = selectedIdRef.current;
+      const nextId = visible.some((r) => r.id === cur) ? cur : visible[0].id;
       setActiveCategory(cat);
       setSelectedId(nextId);
-      router.push(
-        dietScope ? categoryToUrl(cat, { pinRecipeId: nextId }) : categoryToUrl(cat),
-        { scroll: false }
-      );
+      router.push(categoryToUrl(cat), { scroll: false });
     },
-    [browseMode, dietScope, mealPrepMode, mealPlanIds, router, categoryToUrl, smartPicksEnabled]
+    [browseMode, mealPrepMode, mealPlanIds, router, categoryToUrl, smartPicksEnabled]
   );
 
-  const handleSelectRecipe = useCallback(
-    (id: number) => {
-      setServingsModalOpen(false);
-      setSelectedId(id);
-      if (dietScope) {
-        router.replace(categoryToUrl(activeCategory, { pinRecipeId: id }), { scroll: false });
-      }
-    },
-    [dietScope, activeCategory, categoryToUrl, router]
-  );
-
-  const handleDietScopeChange = useCallback(
-    (next: string | null) => {
-      setServingsModalOpen(false);
-      setSmartPicksTipOpen(false);
-      try {
-        const strip = cardStripRef.current;
-        sessionStorage.setItem(
-          CARD_STRIP_AFTER_DIET_STORAGE_KEY,
-          JSON.stringify({
-            scrollLeft: strip ? strip.scrollLeft : 0,
-            selectedId: selectedIdRef.current,
-          })
-        );
-      } catch {
-        /* ignore */
-      }
-      setDietScope(next);
-      try {
-        if (next) localStorage.setItem(PREFERRED_DIET_STORAGE_KEY, next);
-        else localStorage.removeItem(PREFERRED_DIET_STORAGE_KEY);
-      } catch {
-        /* ignore */
-      }
-      const visible = recipesForCardStrip(
-        browseMode,
-        activeCategory,
-        next,
-        mealPrepMode,
-        mealPlanIds,
-        smartPicksEnabled
-      );
-      if (!visible.length) return;
-      let nextId = visible[0].id;
-      const cur = selectedIdRef.current;
-      if (visible.some((r) => r.id === cur)) nextId = cur;
-      setSelectedId(nextId);
-      const pin = next ? nextId : null;
-      router.push(
-        categoryToUrl(activeCategory, {
-          browseModeForAll: browseMode,
-          dietScope: next,
-          pinRecipeId: pin,
-        }),
-        { scroll: false }
-      );
-    },
-    [browseMode, activeCategory, mealPrepMode, mealPlanIds, router, categoryToUrl, smartPicksEnabled]
-  );
+  const handleSelectRecipe = useCallback((id: number) => {
+    setServingsModalOpen(false);
+    setSelectedId(id);
+  }, []);
 
   // ── Meal prep mode ──
   const handleToggleMealPrepMode = useCallback(() => {
@@ -577,61 +450,69 @@ export default function SaladApp({
     (id: number) => {
       const r = RECIPES.find((x) => x.id === id);
       if (!r) return;
-      const text = withClipboardOptions({ recipePortions, showAmounts, unitMode }, () => {
-        const saladLines: string[] = [];
-        const dressingBlocks: string[] = [];
-        for (const ing of r.ingredients) {
-          const rendered = ingredientLineForClipboardSingleRecipe(ing);
-          // Clipboard output is plainDressingForClipboard (e.g. "dressing: …" / "DIY …") — not "Dressing:".
-          if (isDressingLine(ing)) dressingBlocks.push(String(rendered || '').trim());
-          else saladLines.push(String(rendered || '').trim());
-        }
-        if (selectedProteinByRecipe[id]) {
-          const pName = selectedProteinByRecipe[id];
-          const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet, r) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
-          if (pDef) {
-            const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
-            saladLines.push(line);
+      const text = withClipboardOptions(
+        { recipePortions, showAmounts, unitMode },
+        () => {
+          const saladLines: string[] = [];
+          const dressingBlocks: string[] = [];
+          for (const ing of r.ingredients) {
+            const rendered = ingredientLineForClipboardSingleRecipe(ing);
+            // Clipboard output is plainDressingForClipboard (e.g. "dressing: …" / "DIY …") — not "Dressing:".
+            if (isDressingLine(ing)) dressingBlocks.push(String(rendered || '').trim());
+            else saladLines.push(String(rendered || '').trim());
           }
+          if (selectedProteinByRecipe[id]) {
+            const pName = selectedProteinByRecipe[id];
+            const pDef = OPTIONAL_PROTEINS.find((p) => p.name === pName);
+            if (pDef) {
+              const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
+              saladLines.push(line);
+            }
+          }
+          const out = [...sortIngredientLinesByAisle(saladLines.filter(Boolean))];
+          if (dressingBlocks.length) for (const b of dressingBlocks) out.push(b);
+          const ingredientsBody = out.join('\n').trimEnd();
+          return `${r.name}\n\n${ingredientsBody}`.trim() + '\n';
         }
-        const out = [...sortIngredientLinesByAisle(saladLines.filter(Boolean))];
-        if (dressingBlocks.length) for (const b of dressingBlocks) out.push(b);
-        const ingredientsBody = out.join('\n').trimEnd();
-        return `${r.name}\n\n${ingredientsBody}`.trim() + '\n';
-      });
+      );
       navigator.clipboard
         .writeText(text)
         .then(() => flash('Ingredients copied!'))
         .catch(() => flash("Couldn't copy — try again or check permissions."));
     },
-    [recipePortions, showAmounts, unitMode, flash, activeDiet, selectedProteinByRecipe]
+    [recipePortions, showAmounts, unitMode, flash, selectedProteinByRecipe]
   );
 
   const handleCopyFullRecipe = useCallback(
     (id: number) => {
       const r = RECIPES.find((x) => x.id === id);
       if (!r) return;
-      let block = ingredientsBlockForFullRecipeCopy(r, {});
-      if (selectedProteinByRecipe[id]) {
-        const pName = selectedProteinByRecipe[id];
-        const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet, r) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
-        if (pDef) {
-          const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
-          block += `\n${line}`;
+      const text = withClipboardOptions(
+        { recipePortions, showAmounts, unitMode },
+        () => {
+          let block = ingredientsBlockForFullRecipeCopy(r, {});
+          if (selectedProteinByRecipe[id]) {
+            const pName = selectedProteinByRecipe[id];
+            const pDef = OPTIONAL_PROTEINS.find((p) => p.name === pName);
+            if (pDef) {
+              const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
+              block += `\n${line}`;
+            }
+          }
+          const selProtein = selectedProteinByRecipe[id] || null;
+          const adaptedSteps = recipeStepsForDisplay(r, selProtein)
+            .map((s) => adaptStepForProteinSwap(s, selProtein))
+            .map((s, i) => `${i + 1}. ${s}`)
+            .join('\n');
+          return `${r.name}\n\nIngredients:\n${block}\n\nSteps:\n${adaptedSteps}`;
         }
-      }
-      const selProtein = selectedProteinByRecipe[id] || null;
-      const adaptedSteps = recipeStepsForDisplay(r, selProtein)
-        .map((s) => activeDiet ? adaptStepForDiet(s, r, activeDiet, selProtein) : adaptStepForProteinSwap(s, selProtein))
-        .map((s, i) => `${i + 1}. ${s}`)
-        .join('\n');
-      const text = `${r.name}\n\nIngredients:\n${block}\n\nSteps:\n${adaptedSteps}`;
+      );
       navigator.clipboard
         .writeText(text)
         .then(() => flash('Full recipe copied!'))
         .catch(() => flash("Couldn't copy — try again or check permissions."));
     },
-    [flash, activeDiet, selectedProteinByRecipe, showAmounts]
+    [flash, selectedProteinByRecipe, showAmounts, recipePortions, unitMode]
   );
 
   const handleCopyMealPlanIngredients = useCallback(() => {
@@ -651,7 +532,7 @@ export default function SaladApp({
           const ingLines = r.ingredients.map((ing) => ingredientLineForClipboard(ing));
           if (selectedProteinByRecipe[id]) {
             const pName = selectedProteinByRecipe[id];
-            const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet, r) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
+            const pDef = OPTIONAL_PROTEINS.find((p) => p.name === pName);
             if (pDef) {
               const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
               ingLines.push(line);
@@ -686,7 +567,7 @@ export default function SaladApp({
       .writeText(text)
       .then(() => flash('Copied ingredients!'))
       .catch(() => flash("Couldn't copy — try again or check permissions."));
-  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash, activeDiet, selectedProteinByRecipe]);
+  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash, selectedProteinByRecipe]);
 
   const handleCopyMealPlanFullRecipes = useCallback(() => {
     if (!mealPlanIds.length) {
@@ -703,7 +584,7 @@ export default function SaladApp({
           let ingredientsBlock = ingredientsBlockForFullRecipeCopy(r, { mealPlanCopy: true });
           if (selectedProteinByRecipe[id]) {
             const pName = selectedProteinByRecipe[id];
-            const pDef = (activeDiet ? getOptionalProteinsForDiet(activeDiet, r) : OPTIONAL_PROTEINS).find((p) => p.name === pName);
+            const pDef = OPTIONAL_PROTEINS.find((p) => p.name === pName);
             if (pDef) {
               const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
               ingredientsBlock += `\n${line}`;
@@ -711,7 +592,7 @@ export default function SaladApp({
           }
           const mealSelProtein = selectedProteinByRecipe[id] || null;
           const adaptedSteps = recipeStepsForDisplay(r, mealSelProtein)
-            .map((s) => activeDiet ? adaptStepForDiet(s, r, activeDiet, mealSelProtein) : adaptStepForProteinSwap(s, mealSelProtein))
+            .map((s) => adaptStepForProteinSwap(s, mealSelProtein))
             .map((s, i) => `${i + 1}. ${s}`)
             .join('\n');
           return `${r.name}\n\nIngredients:\n${ingredientsBlock}\n\nSteps:\n${adaptedSteps}`;
@@ -724,7 +605,7 @@ export default function SaladApp({
       .writeText(text)
       .then(() => flash(`Copied ${mealPlanIds.length} full recipes!`))
       .catch(() => flash("Couldn't copy — try again or check permissions."));
-  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash, activeDiet, selectedProteinByRecipe]);
+  }, [mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, flash, selectedProteinByRecipe]);
 
   // ── Keyboard ──
   useEffect(() => {
@@ -771,7 +652,7 @@ export default function SaladApp({
   const visible = recipesForCardStrip(
     browseMode,
     activeCategory,
-    dietScope,
+    null,
     mealPrepMode,
     mealPlanIds,
     smartPicksEnabled
@@ -783,91 +664,11 @@ export default function SaladApp({
   const stripPlanKeys = useMemo(() => mealPlanOverlapIngredientKeys(mealPlanIds), [mealPlanIds]);
   const displayIngredients = useMemo(() => {
     if (!recipe) return [];
-    return sortIngredientsForPlanOverlapDisplay(recipe.ingredients, planHintCtx, activeDiet);
-  }, [recipe, planHintCtx, activeDiet]);
+    return sortIngredientsForPlanOverlapDisplay(recipe.ingredients, planHintCtx, null);
+  }, [recipe, planHintCtx]);
 
   const smartPicksReady = mealPlanIds.length > 0;
   const smartPicksStripActive = smartPicksEnabled && mealPrepMode && smartPicksReady;
-
-  // Restore horizontal scroll after diet change once the new URL is active (handles `SaladApp` remount).
-  useLayoutEffect(() => {
-    let raw: string | null = null;
-    try {
-      raw = sessionStorage.getItem(CARD_STRIP_AFTER_DIET_STORAGE_KEY);
-    } catch {
-      return;
-    }
-    if (!raw) return;
-
-    let pending: { scrollLeft: number; selectedId: number };
-    try {
-      pending = JSON.parse(raw);
-    } catch {
-      try {
-        sessionStorage.removeItem(CARD_STRIP_AFTER_DIET_STORAGE_KEY);
-      } catch {
-        /* ignore */
-      }
-      return;
-    }
-
-    const visibleNow = recipesForCardStrip(
-      browseMode,
-      activeCategory,
-      dietScope,
-      mealPrepMode,
-      mealPlanIds,
-      smartPicksEnabled
-    );
-    if (!visibleNow.some((r) => r.id === pending.selectedId)) {
-      try {
-        sessionStorage.removeItem(CARD_STRIP_AFTER_DIET_STORAGE_KEY);
-      } catch {
-        /* ignore */
-      }
-      return;
-    }
-
-    const strip = cardStripRef.current;
-    if (!strip) return;
-
-    try {
-      sessionStorage.removeItem(CARD_STRIP_AFTER_DIET_STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
-
-    const nudgeSelectedIntoView = () => {
-      const sel = strip.querySelector<HTMLElement>(`[data-recipe-id="${pending.selectedId}"]`);
-      if (!sel) return;
-      const sr = strip.getBoundingClientRect();
-      const cr = sel.getBoundingClientRect();
-      if (cr.left >= sr.left && cr.right <= sr.right) return;
-      sel.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
-    };
-
-    strip.scrollLeft = pending.scrollLeft;
-    nudgeSelectedIntoView();
-    requestAnimationFrame(() => {
-      const el = cardStripRef.current;
-      if (!el) return;
-      el.scrollLeft = pending.scrollLeft;
-      const sel = el.querySelector<HTMLElement>(`[data-recipe-id="${pending.selectedId}"]`);
-      if (!sel) return;
-      const sr = el.getBoundingClientRect();
-      const cr = sel.getBoundingClientRect();
-      if (cr.left >= sr.left && cr.right <= sr.right) return;
-      sel.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
-    });
-  }, [
-    pathname,
-    browseMode,
-    activeCategory,
-    dietScope,
-    mealPrepMode,
-    mealPlanIds,
-    smartPicksEnabled,
-  ]);
 
   return (
     <>
@@ -901,27 +702,6 @@ export default function SaladApp({
             </button>
           ))}
         </div>
-        <label className="browse-diet-scope">
-          <span className="browse-mode-label">Diet</span>
-          <span className="browse-diet-select-wrap">
-            <select
-              className={`browse-diet-select${dietScope ? ' browse-diet-select--active' : ''}`}
-              aria-label="Filter recipes by diet"
-              value={dietScope ?? ''}
-              onChange={(e) => {
-                const v = e.target.value;
-                handleDietScopeChange(v === '' ? null : v);
-              }}
-            >
-              <option value="">None</option>
-            {DIET_KEYS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-            </select>
-          </span>
-        </label>
         <div className="browse-mode-tail">
           {mealPrepMode && (
             <span className="browse-smart-picks-cluster">
@@ -1075,7 +855,7 @@ export default function SaladApp({
                 <div className="detail-meta" dangerouslySetInnerHTML={{ __html: detailMetaBadgesHtml(recipe, browseMode) }} />
                 <h2 className="detail-title">{recipe.name}</h2>
               </div>
-              <div className="copy-actions">
+              <div className="copy-actions copy-actions--recipe-detail">
                 <button
                   type="button"
                   id="unitsToggleBtn"
@@ -1183,25 +963,6 @@ export default function SaladApp({
                       </li>
                     );
                   };
-
-                  if (activeDiet) {
-                    const proteins = getOptionalProteinsForDiet(activeDiet, recipe);
-                    if (!proteins.length) return null;
-                    const dietRecName = proteins.find((p) => p.name === recs.traditional)?.name
-                      || proteins.find((p) => p.name === recs.plant)?.name
-                      || null;
-                    const sorted = pickTopOptionalProteinsForDisplay(recipe, proteins, dietRecName, 3);
-                    return (
-                      <div className="optional-protein-section">
-                        <div className="section-heading">
-                          <span>💪</span> Add a protein <span className="optional-protein-label">(optional)</span>
-                        </div>
-                        <ul className="ingredients-list optional-protein-list">
-                          {sorted.map((p, i) => renderProteinItem(p, i, dietRecName))}
-                        </ul>
-                      </div>
-                    );
-                  }
 
                   const traditional = pickTopOptionalProteinsForDisplay(
                     recipe,

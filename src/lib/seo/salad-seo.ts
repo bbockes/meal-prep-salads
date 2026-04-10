@@ -6,13 +6,7 @@ import { RECIPES } from '@/data/recipes';
 import { recipesForCardStrip, recipeCardImageSlug } from '@/lib/recipe-utils';
 import { ingredientLine, getRecipeDiets } from '@/lib/diet-utils';
 import { absoluteUrl, getSiteBaseUrl } from '@/lib/seo/site';
-import {
-  FLAT_PREFIX_TO_BROWSE,
-  SALADS_BY_FLAVOR_PATH,
-  SALADS_BY_SEASON_PATH,
-  dietPrefixedBrowsePath,
-  allDietPrefixedCatchAllParams,
-} from '@/data/salad-routes';
+import { FLAT_PREFIX_TO_BROWSE, SALADS_BY_FLAVOR_PATH, SALADS_BY_SEASON_PATH } from '@/data/salad-routes';
 
 const SITE_NAME = 'Ease';
 
@@ -97,27 +91,8 @@ function categoryToFlatSaladsPath(category: string): string {
   return `/${slug}-salads`;
 }
 
-/**
- * Canonical path for indexable salad URLs. Omits `?diet=` — use with diet query stripped.
- * Nested diet + category URLs canonicalize to the diet-free category flat URL.
- */
-export function canonicalPathForSaladIndex(
-  browseMode: SaladBrowseMode,
-  activeCategory: string,
-  dietScope: string | null,
-  opts?: { canonicalDietNested?: boolean }
-): string {
-  if (opts?.canonicalDietNested && activeCategory !== 'All') {
-    if (dietScope) {
-      const dp = dietPrefixedBrowsePath(browseMode, activeCategory, dietScope);
-      if (dp) return dp;
-    }
-    return categoryToFlatSaladsPath(activeCategory);
-  }
-  if (dietScope) {
-    const dp = dietPrefixedBrowsePath(browseMode, activeCategory, dietScope);
-    if (dp) return dp;
-  }
+/** Primary browse URL without diet-prefixed paths (diet hubs redirect here). */
+export function neutralSaladIndexPath(browseMode: SaladBrowseMode, activeCategory: string): string {
   if (activeCategory === 'All') {
     if (browseMode === 'flavor') return SALADS_BY_FLAVOR_PATH;
     if (browseMode === 'season') return SALADS_BY_SEASON_PATH;
@@ -126,9 +101,21 @@ export function canonicalPathForSaladIndex(
   return categoryToFlatSaladsPath(activeCategory);
 }
 
-/** @deprecated Use canonicalPathForSaladIndex with dietScope. */
+/**
+ * Canonical path for indexable salad URLs (diet-specific listings removed).
+ */
+export function canonicalPathForSaladIndex(
+  browseMode: SaladBrowseMode,
+  activeCategory: string,
+  _dietScope?: string | null,
+  _opts?: { canonicalDietNested?: boolean }
+): string {
+  return neutralSaladIndexPath(browseMode, activeCategory);
+}
+
+/** @deprecated Use canonicalPathForSaladIndex. */
 export function canonicalPathForBrowse(browseMode: SaladBrowseMode, activeCategory: string): string {
-  return canonicalPathForSaladIndex(browseMode, activeCategory, null);
+  return neutralSaladIndexPath(browseMode, activeCategory);
 }
 
 export interface SaladPageSeoCopy {
@@ -137,49 +124,22 @@ export interface SaladPageSeoCopy {
   h1: string;
 }
 
-function filterKeywords(
-  browseMode: SaladBrowseMode,
-  activeCategory: string,
-  dietScope: string | null
-): string {
+function filterKeywords(browseMode: SaladBrowseMode, activeCategory: string): string {
   const parts = ['meal prep salad', 'healthy salad'];
   if (activeCategory !== 'All') {
     parts.push(`${activeCategory} salad`, `${activeCategory.toLowerCase()} meal prep`);
   }
-  if (dietScope) {
-    parts.push(`${dietScope.toLowerCase()} recipes`, `${dietScope.toLowerCase()} salad`);
-  }
   return parts.join(', ');
 }
 
-export function getSaladPageSeoCopy(
-  browseMode: SaladBrowseMode,
-  activeCategory: string,
-  dietScope: string | null = null
-): SaladPageSeoCopy {
-  const kw = filterKeywords(browseMode, activeCategory, dietScope);
-
-  if (activeCategory === 'All' && browseMode === 'cuisine' && dietScope) {
-    return {
-      title: `${dietScope} Salad Recipes`,
-      description: `${dietScope} salads for meal prep — ingredients and steps adapted for this way of eating. Plan your week with ${SITE_NAME} and copy your grocery list. Keywords: ${kw}.`,
-      h1: `${dietScope} Salads`,
-    };
-  }
+export function getSaladPageSeoCopy(browseMode: SaladBrowseMode, activeCategory: string): SaladPageSeoCopy {
+  const kw = filterKeywords(browseMode, activeCategory);
 
   if (activeCategory === 'All' && browseMode === 'cuisine') {
     return {
       title: 'Browse Salads by Cuisine',
-      description: `${SITE_NAME} — browse salads by cuisine, flavor, or season, and optionally filter by diet. Build your weekly meal plan and copy a combined grocery list in one click.`,
+      description: `${SITE_NAME} — browse salads by cuisine, flavor, or season. Build your weekly meal plan and copy a combined grocery list in one click.`,
       h1: 'Browse Salads by Cuisine',
-    };
-  }
-
-  if (activeCategory === 'All' && browseMode === 'flavor' && dietScope) {
-    return {
-      title: `Browse ${dietScope} Salads by Flavor`,
-      description: `Explore ${dietScope.toLowerCase()} salads by flavor profile — tangy, creamy, spicy, fresh, and more. Plan your week and copy your grocery list with ${SITE_NAME}. Keywords: ${kw}.`,
-      h1: `Browse ${dietScope} Salads by Flavor`,
     };
   }
 
@@ -188,14 +148,6 @@ export function getSaladPageSeoCopy(
       title: 'Salad Recipes by Flavor',
       description: `Explore salads by flavor profile — tangy, creamy, spicy, fresh, and more. Plan your week and copy your grocery list with ${SITE_NAME}.`,
       h1: 'Browse Salads by Flavor',
-    };
-  }
-
-  if (activeCategory === 'All' && browseMode === 'season' && dietScope) {
-    return {
-      title: `Browse ${dietScope} Salads by Season`,
-      description: `Browse ${dietScope.toLowerCase()} salads by season — spring, summer, fall, winter, and year-round picks. Use ${SITE_NAME} to plan ahead and copy your prep grocery list. Keywords: ${kw}.`,
-      h1: `Browse ${dietScope} Salads by Season`,
     };
   }
 
@@ -208,27 +160,26 @@ export function getSaladPageSeoCopy(
   }
 
   if (browseMode === 'cuisine') {
-    const dietPrefix = dietScope ? `${dietScope} ` : '';
     return {
-      title: `${dietPrefix}${activeCategory} Salad Recipes`,
+      title: `${activeCategory} Salad Recipes`,
       description: `${activeCategory} salads for meal prep — fresh ideas, clear ingredients, and steps. Add favorites to your plan and copy your grocery list with ${SITE_NAME}. Keywords: ${kw}.`,
-      h1: `${dietPrefix}${activeCategory} Salads`,
+      h1: `${activeCategory} Salads`,
     };
   }
 
   if (browseMode === 'flavor') {
     return {
-      title: `${dietScope ? `${dietScope} ` : ''}${activeCategory} Salad Recipes`,
+      title: `${activeCategory} Salad Recipes`,
       description: `${activeCategory} salad ideas for meal prep. Filtered flavor-forward recipes with ${SITE_NAME} — plan your week and copy your list. Keywords: ${kw}.`,
-      h1: dietScope ? `${activeCategory} ${dietScope} Salads` : `${activeCategory} Salads`,
+      h1: `${activeCategory} Salads`,
     };
   }
 
   if (browseMode === 'season') {
     return {
-      title: `${dietScope ? `${dietScope} ` : ''}${activeCategory} Salad Ideas`,
+      title: `${activeCategory} Salad Ideas`,
       description: `${activeCategory} salad recipes for meal prep. Build your plan and copy a grocery list with ${SITE_NAME}. Keywords: ${kw}.`,
-      h1: dietScope ? `${dietScope} ${activeCategory} Salads` : `${activeCategory} Salads`,
+      h1: `${activeCategory} Salads`,
     };
   }
 
@@ -242,14 +193,10 @@ export function getSaladPageSeoCopy(
 export function buildSaladIndexMetadata(
   browseMode: SaladBrowseMode,
   activeCategory: string,
-  seo?: { dietScope?: string | null; canonicalDietNested?: boolean }
+  _seo?: { dietScope?: string | null; canonicalDietNested?: boolean }
 ): Metadata {
-  const dietScope = seo?.dietScope ?? null;
-  const canonicalDietNested = seo?.canonicalDietNested ?? false;
-  const copy = getSaladPageSeoCopy(browseMode, activeCategory, dietScope);
-  const canonicalPath = canonicalPathForSaladIndex(browseMode, activeCategory, dietScope, {
-    canonicalDietNested,
-  });
+  const copy = getSaladPageSeoCopy(browseMode, activeCategory);
+  const canonicalPath = canonicalPathForSaladIndex(browseMode, activeCategory, null);
   const url = absoluteUrl(canonicalPath);
   const title = `${copy.title} | ${SITE_NAME}`;
 
@@ -277,13 +224,11 @@ export function buildSaladIndexMetadata(
 export function defaultRecipeForSeoJsonLd(
   browseMode: SaladBrowseMode,
   activeCategory: string,
-  dietScope: string | null,
   initialPinnedRecipeId: number | null
 ): Recipe | null {
-  const visible = recipesForCardStrip(browseMode, activeCategory, dietScope, false, [], false);
+  const visible = recipesForCardStrip(browseMode, activeCategory, null, false, [], false);
   if (!visible.length) return null;
   if (
-    dietScope &&
     initialPinnedRecipeId != null &&
     visible.some((r: Recipe) => r.id === initialPinnedRecipeId)
   ) {
@@ -295,11 +240,10 @@ export function defaultRecipeForSeoJsonLd(
 export function buildBreadcrumbJsonLd(args: {
   browseMode: SaladBrowseMode;
   activeCategory: string;
-  dietScope: string | null;
   canonicalPath: string;
 }): object {
   const base = getSiteBaseUrl();
-  const copy = getSaladPageSeoCopy(args.browseMode, args.activeCategory, args.dietScope);
+  const copy = getSaladPageSeoCopy(args.browseMode, args.activeCategory);
   const items: { '@type': string; position: number; name: string; item: string }[] =
     args.canonicalPath === '/salads'
       ? [
@@ -374,12 +318,8 @@ export function buildRecipeJsonLd(recipe: Recipe, canonicalPageUrl: string): obj
 export function allPublicSaladPaths(): string[] {
   const set = new Set<string>(['/salads', SALADS_BY_FLAVOR_PATH, SALADS_BY_SEASON_PATH]);
   for (const { mode, category, dietScope } of Object.values(FLAT_PREFIX_TO_BROWSE)) {
-    set.add(
-      canonicalPathForSaladIndex(mode, category, dietScope, { canonicalDietNested: false })
-    );
-  }
-  for (const { slug, filter } of allDietPrefixedCatchAllParams()) {
-    set.add(`/${slug}/${filter.join('/')}`);
+    if (dietScope != null) continue;
+    set.add(canonicalPathForSaladIndex(mode, category, null));
   }
   return [...set].sort();
 }

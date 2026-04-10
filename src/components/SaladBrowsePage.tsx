@@ -13,35 +13,23 @@ import {
 type SaladBrowsePageProps = {
   browseMode: SaladBrowseMode;
   activeCategory: string;
-  initialDietScope: string | null;
-  canonicalDietNested?: boolean;
   initialPinnedRecipeId?: number | null;
 };
 
 export default function SaladBrowsePage({
   browseMode,
   activeCategory,
-  initialDietScope,
-  canonicalDietNested = false,
   initialPinnedRecipeId = null,
 }: SaladBrowsePageProps) {
-  const copy = getSaladPageSeoCopy(browseMode, activeCategory, initialDietScope);
-  const canonicalPath = canonicalPathForSaladIndex(browseMode, activeCategory, initialDietScope, {
-    canonicalDietNested,
-  });
+  const copy = getSaladPageSeoCopy(browseMode, activeCategory);
+  const canonicalPath = canonicalPathForSaladIndex(browseMode, activeCategory, null);
   const pageUrl = absoluteUrl(canonicalPath);
-  const recipe = defaultRecipeForSeoJsonLd(
-    browseMode,
-    activeCategory,
-    initialDietScope,
-    initialPinnedRecipeId
-  );
+  const recipe = defaultRecipeForSeoJsonLd(browseMode, activeCategory, initialPinnedRecipeId);
 
   const jsonLd: object[] = [
     buildBreadcrumbJsonLd({
       browseMode,
       activeCategory,
-      dietScope: initialDietScope,
       canonicalPath,
     }),
   ];
@@ -53,7 +41,6 @@ export default function SaladBrowsePage({
       <SaladApp
         initialBrowseMode={browseMode}
         initialCategory={activeCategory}
-        initialDietScope={initialDietScope}
         initialPinnedRecipeId={initialPinnedRecipeId}
         pageHeading={copy.h1}
       />
