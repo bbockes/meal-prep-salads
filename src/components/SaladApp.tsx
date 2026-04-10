@@ -7,7 +7,11 @@ import { useRouter } from 'next/navigation';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
 import { DIET_KEYS, OPTIONAL_PROTEINS } from '@/data/diet-config';
 import type { SaladBrowseMode } from '@/data/salad-routes';
-import { dietPrefixedBrowsePath } from '@/data/salad-routes';
+import {
+  dietPrefixedBrowsePath,
+  SALADS_BY_FLAVOR_PATH,
+  SALADS_BY_SEASON_PATH,
+} from '@/data/salad-routes';
 import { RECIPES, Recipe } from '@/data/recipes';
 import {
   getOptionalProteinsForDiet,
@@ -296,8 +300,8 @@ export default function SaladApp({
       }
 
       if (category === 'All') {
-        if (mode === 'flavor') path = '/salads/flavor';
-        else if (mode === 'season') path = '/salads/season';
+        if (mode === 'flavor') path = SALADS_BY_FLAVOR_PATH;
+        else if (mode === 'season') path = SALADS_BY_SEASON_PATH;
         else path = '/salads';
       } else {
         const slug = category

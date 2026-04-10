@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import SaladBrowsePage from '@/components/SaladBrowsePage';
-import { allNestedSaladFilterParams, dietPrefixedBrowsePath } from '@/data/salad-routes';
+import { dietPrefixedBrowsePath } from '@/data/salad-routes';
 import {
   buildSaladIndexMetadata,
   dietQueryParamToScope,
-  parseSaladsCatchAllFilter,
 } from '@/lib/seo/salad-seo';
 
 function parsePinnedRecipeId(sp: { r?: string | string[] } | undefined): number | null {
@@ -18,38 +17,21 @@ function parsePinnedRecipeId(sp: { r?: string | string[] } | undefined): number 
 }
 
 interface PageProps {
-  params: Promise<{ filter?: string[] }>;
   searchParams?: Promise<{ r?: string | string[]; diet?: string | string[] }>;
 }
 
-export async function generateStaticParams() {
-  return [{ filter: [] }, ...allNestedSaladFilterParams()];
-}
-
-export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
-  const { filter } = await params;
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const sp = searchParams ? await searchParams : undefined;
-  const parsed = parseSaladsCatchAllFilter(filter);
   const dietFromQuery = dietQueryParamToScope(sp?.diet);
-  const dietScope = parsed.dietScope ?? dietFromQuery;
-  return buildSaladIndexMetadata(parsed.browseMode, parsed.activeCategory, {
-    dietScope,
-    canonicalDietNested: parsed.canonicalDietNested,
-  });
+  return buildSaladIndexMetadata('season', 'All', { dietScope: dietFromQuery });
 }
 
-export default async function SaladsPage({ params, searchParams }: PageProps) {
-  const { filter } = await params;
+export default async function SaladsBySeasonPage({ searchParams }: PageProps) {
   const sp = searchParams ? await searchParams : undefined;
   const initialPinnedRecipeId = parsePinnedRecipeId(sp);
-  const parsed = parseSaladsCatchAllFilter(filter);
   const dietFromQuery = dietQueryParamToScope(sp?.diet);
-  if (dietFromQuery && !parsed.dietScope) {
-    const target = dietPrefixedBrowsePath(
-      parsed.browseMode,
-      parsed.activeCategory,
-      dietFromQuery
-    );
+  if (dietFromQuery) {
+    const target = dietPrefixedBrowsePath('season', 'All', dietFromQuery);
     if (target) {
       const qs = new URLSearchParams();
       if (initialPinnedRecipeId != null) qs.set('r', String(initialPinnedRecipeId));
@@ -57,14 +39,12 @@ export default async function SaladsPage({ params, searchParams }: PageProps) {
       redirect(q ? `${target}?${q}` : target);
     }
   }
-  const dietScope = parsed.dietScope ?? dietFromQuery;
 
   return (
     <SaladBrowsePage
-      browseMode={parsed.browseMode}
-      activeCategory={parsed.activeCategory}
-      initialDietScope={dietScope}
-      canonicalDietNested={parsed.canonicalDietNested}
+      browseMode="season"
+      activeCategory="All"
+      initialDietScope={null}
       initialPinnedRecipeId={initialPinnedRecipeId}
     />
   );

@@ -908,7 +908,8 @@ export function boldCompositeDressingBody(body) {
   const { amount, rest } = parseIngredient(body);
   if (amount) {
     const disp = formatAmountForDisplay(amount, rest);
-    return `<span class="amount">${escapeHtml(disp)}</span> ${boldCompositeDressingBody(rest)}`;
+    const needsOf = /^(pinch|pinches|dash|dashes|handful|handfuls)$/i.test(String(amount).trim());
+    return `<span class="amount">${escapeHtml(disp)}</span> ${needsOf ? 'of ' : ''}${boldCompositeDressingBody(rest)}`;
   }
 
   if (body.startsWith('(')) {
@@ -971,6 +972,89 @@ export function boldCompositeDressingBody(body) {
   }
 
   return escapeHtml(body);
+}
+
+function renderDressingTermsWithAmountsHtml(body: string): string {
+  const trimmed = String(body || '').trim();
+  if (!trimmed) return '';
+  const chunks = splitPlusAtDepthZero(trimmed);
+  const out: string[] = [];
+  const seenKeys = new Set<string>();
+
+  const isHerbLike = (t: string) =>
+    /\b(parsley|cilantro|coriander leaves|dill|chives|basil|mint|oregano|thyme|rosemary|tarragon|herbs?)\b/i.test(
+      t
+    );
+
+  const defaultAmountForUnquantified = (t: string): string | null => {
+    const s = String(t || '').trim().toLowerCase();
+    if (!s) return null;
+    if (isHerbLike(s)) return null;
+    if (/\bgarlic\b/.test(s)) return '1 clove';
+    if (/\bshallot\b/.test(s)) return '1 tbsp';
+    if (/\b(dijon|mustard)\b/.test(s)) return '1 tsp';
+    if (/\bsoy sauce\b/.test(s)) return '1 tsp';
+    if (/\b(tamari)\b/.test(s)) return '1 tsp';
+    if (/\b(worcestershire)\b/.test(s)) return '1 tsp';
+    if (/\b(parmesan|pecorino|nutritional yeast)\b/.test(s)) return '2 tbsp';
+    if (/\b(miso)\b/.test(s)) return '1 tsp';
+    if (/\b(honey|maple syrup|monk fruit)\b/.test(s)) return '1 tsp';
+    if (/\b(vinegar|lemon juice|lime juice)\b/.test(s)) return '1 tbsp';
+    if (/\b(olive oil|sesame oil|oil)\b/.test(s)) return '1 tbsp';
+    if (/\b(hot sauce|buffalo|sriracha|chili crisp)\b/.test(s)) return '1 tbsp';
+    if (/\b(salt|pepper)\b/.test(s)) return '¼ tsp';
+    return '1 tsp';
+  };
+
+  for (let i = 0; i < chunks.length; i++) {
+    let c = String(chunks[i] || '').trim();
+    if (!c) continue;
+    if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+    // Preserve per-term highlighting inside parentheticals (e.g. "ranch (½ tbsp mayo + …)").
+    // `boldCompositeDressingBody` already highlights any nested amounts.
+    if (findFirstBalancedParenRegion(c)) {
+      out.push(boldCompositeDressingBody(c));
+      continue;
+    }
+    const { amount, rest } = parseIngredient(c);
+    if (amount && rest) {
+      // De-dupe common near-synonyms (e.g. "extra-virgin olive oil" vs "olive oil").
+      const k0 = normalizeIngredientRestForKey(rest)
+        .replace(/\bextra-virgin\s+olive\s+oil\b/g, 'olive oil')
+        .trim();
+      if (k0 && seenKeys.has(k0)) continue;
+      if (k0) seenKeys.add(k0);
+      const disp = formatAmountForDisplay(amount, rest);
+      const needsOf = /^(pinch|pinches|dash|dashes|handful|handfuls)$/i.test(
+        String(amount).trim()
+      );
+      out.push(
+        `<span class="amount">${escapeHtml(disp)}</span> ${needsOf ? 'of ' : ''}${boldCompositeDressingBody(rest)}`
+      );
+      continue;
+    }
+    // No explicit amount: for herbs, show the term as-is; otherwise, inject a reasonable default amount.
+    const amt = defaultAmountForUnquantified(c);
+    if (!amt) {
+      const k0 = normalizeIngredientRestForKey(c)
+        .replace(/\bextra-virgin\s+olive\s+oil\b/g, 'olive oil')
+        .trim();
+      if (k0 && seenKeys.has(k0)) continue;
+      if (k0) seenKeys.add(k0);
+      out.push(escapeHtml(c));
+    } else {
+      const k0 = normalizeIngredientRestForKey(c)
+        .replace(/\bextra-virgin\s+olive\s+oil\b/g, 'olive oil')
+        .trim();
+      if (k0 && seenKeys.has(k0)) continue;
+      if (k0) seenKeys.add(k0);
+      const needsOf = /^(pinch|pinches|dash|dashes|handful|handfuls)$/i.test(String(amt).trim());
+      out.push(
+        `<span class="amount">${escapeHtml(amt)}</span> ${needsOf ? 'of ' : ''}${escapeHtml(c)}`
+      );
+    }
+  }
+  return out.join(' + ');
 }
 
 export function stripCompositeDressingAmounts(body) {
@@ -1139,6 +1223,40 @@ export function formatDressingComboPartLine(chunk) {
   return html;
 }
 
+/** DIY block only: each combo dressing on its own row, lowercase label in the left column. */
+export function formatDressingDiyComboPartLine(chunk) {
+  let c = chunk.trim();
+  const region = findFirstBalancedParenRegion(c);
+  const labelLower = escapeHtml(dressingChunkLabel(c).toLowerCase());
+  if (!region) {
+    return (
+      `<div class="dressing-diy-combo-row dressing-diy-combo-row-flat">` +
+      `<span class="dressing-diy-part-label">${labelLower}:</span>` +
+      `<span class="dressing-diy-part-recipe">${boldCompositeDressingBody(c)}</span>` +
+      `</div>`
+    );
+  }
+  const { pIdx, end } = region;
+  const inner = c.slice(pIdx + 1, end);
+  const after = c.slice(end + 1).trim();
+  const innerForDisplay = formatState.showAmounts ? keepOnlyQuantifiedDressingTerms(inner) : inner;
+  const afterForDisplay = formatState.showAmounts ? keepOnlyQuantifiedDressingTerms(after) : after;
+  if (!innerForDisplay && !afterForDisplay) return '';
+  let recipe = '';
+  if (innerForDisplay) {
+    recipe += `<span class="dressing-diy-part-recipe-inner">${boldCompositeDressingBody(innerForDisplay)}</span>`;
+  }
+  if (afterForDisplay) {
+    recipe += `<span class="dressing-diy-part-recipe-tail">${innerForDisplay ? ' ' : ''}${boldCompositeDressingBody(afterForDisplay)}</span>`;
+  }
+  return (
+    `<div class="dressing-diy-combo-row">` +
+    `<span class="dressing-diy-part-label">${labelLower}:</span>` +
+    `<span class="dressing-diy-part-recipe">${recipe}</span>` +
+    `</div>`
+  );
+}
+
 export function keepOnlyQuantifiedDressingTerms(body) {
   const src = String(body || '').trim();
   if (!src) return '';
@@ -1192,23 +1310,22 @@ export function dressingConceptualSegment(fullDressingLine) {
   return (parts[0] || '').trim();
 }
 
-/** Short name(s) for headings — e.g. "Ranch", "Caesar + Buffalo". */
+/** Short name(s) for DIY headings — lowercase, e.g. "ranch", "caesar + buffalo". */
 export function dressingDiyHeadingTitle(fullDressingLine) {
   const body = dressingConceptualSegment(fullDressingLine);
-  if (!body) return 'Dressing';
+  if (!body) return 'dressing';
   let trimmed = body;
   if (/^or\s+/i.test(trimmed)) trimmed = trimmed.replace(/^or\s+/i, '');
   const chunks = splitPlusAtDepthZero(trimmed);
+  const segLower = (ch) => {
+    let c = ch.trim();
+    if (/^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+    return dressingChunkLabel(c).toLowerCase();
+  };
   if (chunks.length <= 1) {
-    return displayComboSegmentLabel(dressingChunkLabel(trimmed));
+    return segLower(trimmed);
   }
-  return chunks
-    .map((ch, i) => {
-      let c = ch.trim();
-      if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
-      return displayComboSegmentLabel(dressingChunkLabel(c));
-    })
-    .join(' + ');
+  return chunks.map(segLower).join(' + ');
 }
 
 /** Plain text for the main ingredients list (same weight as other lines). */
@@ -1247,8 +1364,19 @@ export function renderDressingDiyBodyHtml(fullDressingLine) {
   const amountPart = parts.length >= 2 ? parts[parts.length - 1].trim() : '';
 
   if (formatState.showAmounts && amountPart) {
-    const t = relocateTrailingDressingParen(amountPart).trim();
-    return t ? boldCompositeDressingBody(t) : '';
+    // Prefer the conceptual recipe (the part inside parens) so the DIY list stays consistent
+    // between amount modes. The amountPart variant often omits small items like sugar.
+    const src = relocateTrailingDressingParen(conceptual || amountPart).trim();
+    if (!src) return '';
+    const region = findFirstBalancedParenRegion(src);
+    if (!region) {
+      return renderDressingTermsWithAmountsHtml(src);
+    }
+    const inner = src.slice(region.pIdx + 1, region.end).trim();
+    let after = src.slice(region.end + 1).trim();
+    after = after.replace(/^\+\s*/g, '').trim();
+    const body = inner + (after ? ` + ${after}` : '');
+    return body ? renderDressingTermsWithAmountsHtml(body) : '';
   }
 
   let trimmed = conceptual;
@@ -1257,6 +1385,11 @@ export function renderDressingDiyBodyHtml(fullDressingLine) {
   if (formatState.showAmounts) trimmed = relocateTrailingDressingParen(trimmed);
   trimmed = trimmed.trim();
   if (!trimmed) return '';
+
+  // If this is a simple `a + b + c` list (no parens), show an amount token for every term.
+  if (formatState.showAmounts && !findFirstBalancedParenRegion(trimmed)) {
+    return renderDressingTermsWithAmountsHtml(trimmed);
+  }
 
   const chunks = splitPlusAtDepthZero(trimmed);
   if (chunks.length <= 1) {
@@ -1277,10 +1410,7 @@ export function renderDressingDiyBodyHtml(fullDressingLine) {
     .map((ch, i) => {
       let c = ch.trim();
       if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
-      if (!findFirstBalancedParenRegion(c)) {
-        return boldCompositeDressingBody(c);
-      }
-      return formatDressingComboPartLine(c);
+      return formatDressingDiyComboPartLine(c);
     })
     .filter(Boolean)
     .join('');
@@ -1295,8 +1425,9 @@ export function renderDressingDiySectionHtml(fullDressingLine) {
   const title = dressingDiyHeadingTitle(adaptedLine);
   return (
     `<div class="dressing-diy-section">` +
-    `<div class="section-heading dressing-diy-heading">` +
-    `<span>🥄</span> DIY ${escapeHtml(title)} <span class="dressing-diy-optional-label">(optional)</span>` +
+    `<div class="dressing-diy-head">` +
+    `<div class="section-heading dressing-diy-heading"><span>🥄</span> DIY ${escapeHtml(title)}</div>` +
+    `<div class="dressing-diy-optional-label">(optional)</div>` +
     `</div>` +
     `<div class="dressing-diy-body">${bodyHtml}</div>` +
     `</div>`
@@ -1401,7 +1532,29 @@ export function renderIngredient(str, planHintCtx) {
   if (!formatState.showAmounts) {
     inner = escapeHtml(ingredientLineWithoutAmounts(ingredientStr));
   } else if (!amount) {
-    inner = escapeHtml(ingredientStr);
+    const body = ingredientLineWithoutAmounts(ingredientStr);
+    const herbLike =
+      /\b(parsley|cilantro|coriander leaves|dill|chives|basil|mint|oregano|thyme|rosemary|tarragon|herbs?)\b/i.test(
+        body
+      );
+    if (herbLike) {
+      inner = escapeHtml(body);
+    } else {
+      // Use the same defaults as DIY dressings: if we have no authored amount, infer a small reasonable one.
+      let inferred = '1 tsp';
+      const low = body.toLowerCase();
+      if (/\bgarlic\b/.test(low)) inferred = '1 clove';
+      else if (/\bshallot\b/.test(low)) inferred = '1 tbsp';
+      else if (/\b(dijon|mustard)\b/.test(low)) inferred = '1 tsp';
+      else if (/\bsoy sauce\b/.test(low) || /\btamari\b/.test(low) || /\bworcestershire\b/.test(low)) inferred = '1 tsp';
+      else if (/\b(parmesan|pecorino|nutritional yeast)\b/.test(low)) inferred = '2 tbsp';
+      else if (/\b(honey|maple syrup|monk fruit)\b/.test(low)) inferred = '1 tsp';
+      else if (/\b(vinegar|lemon juice|lime juice)\b/.test(low)) inferred = '1 tbsp';
+      else if (/\b(olive oil|sesame oil|oil)\b/.test(low)) inferred = '1 tbsp';
+      else if (/\b(hot sauce|buffalo|sriracha|chili crisp)\b/.test(low)) inferred = '1 tbsp';
+      else if (/\b(salt|pepper)\b/.test(low)) inferred = '¼ tsp';
+      inner = `<span class="amount">${escapeHtml(inferred)}</span> ${escapeHtml(body)}`;
+    }
   } else {
     const disp = formatAmountForDisplay(amount, rest);
     inner = `<span class="amount">${escapeHtml(disp)}</span> ${escapeHtml(rest)}`;
@@ -1577,6 +1730,29 @@ export function maybePushBbqAlias(text, bucket) {
   if (/^bbq\b/i.test(t)) pushPhraseVariants(bucket, 'BBQ');
 }
 
+function extractIngredientPhrasesFromStepText(stepText: string): string[] {
+  const s = String(stepText || '').trim();
+  if (!s) return [];
+  const re =
+    /\b(?:add|top(?:\s+with)?|sprinkle(?:\s+with)?|season(?:\s+with)?|toss(?:\s+with)?|mix(?:\s+in)?|stir(?:\s+in)?|fold(?:\s+in)?|garnish(?:\s+with)?|finish(?:\s+with)?|whisk(?:\s+in)?|combine)\b\s+([^.;]+)/gi;
+  const out: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(s))) {
+    const blob = (m[1] || '').trim();
+    if (!blob) continue;
+    const parts = blob
+      .split(/\s*(?:,|\+|\band\b)\s*/i)
+      .map((x) => x.trim())
+      .filter(Boolean);
+    for (const p of parts) {
+      const cleaned = p.replace(/\b(to\s+taste|as\s+needed)\b/gi, '').trim();
+      if (cleaned.length < 2) continue;
+      out.push(cleaned);
+    }
+  }
+  return out;
+}
+
 export function collectIngredientHighlightPhrases(ingredientLines) {
   const phrases = [];
   for (const raw of ingredientLines) {
@@ -1613,6 +1789,9 @@ export function collectIngredientHighlightPhrases(ingredientLines) {
     seen.add(low);
     out.push(p);
   }
+  for (const hard of ['salt', 'pepper']) {
+    if (!seen.has(hard)) out.push(hard);
+  }
   return out.sort((a, b) => b.length - a.length);
 }
 
@@ -1630,6 +1809,27 @@ export function isOptionalProteinUpsellStep(stepText: string): boolean {
   if (/\b(salami|pepperoni|prosciutto|anchov)/i.test(s)) return true;
   if (/\brotisserie\b/i.test(s) && /\bchicken\b/i.test(s)) return true;
   return false;
+}
+
+function cleanServeImmediatelyStep(stepText: string): { keep: boolean; text: string } {
+  let s = String(stepText || '').trim();
+  if (!s) return { keep: false, text: '' };
+
+  // Keep chill/rest steps (these are useful actions).
+  if (/\b(chill|refrigerate|rest|let\s+sit)\b/i.test(s)) return { keep: true, text: s };
+
+  // Remove pure "Serve/Enjoy/Dig in" steps.
+  if (/^(serve|enjoy|dig\s+in)\b/i.test(s)) return { keep: false, text: '' };
+
+  // If the step ends with "and serve immediately/right away", drop that tail.
+  s = s
+    .replace(/\s*(?:[,.;:]?\s*)?\b(?:and\s+)?serve\s+(?:immediately|right\s+away)\b\.?\s*$/i, '')
+    .replace(/\s*(?:[,.;:]?\s*)?\b(?:and\s+)?enjoy\b\.?\s*$/i, '')
+    .replace(/\s*(?:[,.;:]?\s*)?\b(?:and\s+)?dig\s+in\b\.?\s*$/i, '')
+    .trim();
+
+  if (!s) return { keep: false, text: '' };
+  return { keep: true, text: s };
 }
 
 function findIndexForSyntheticProteinStep(steps: string[]): number {
@@ -1675,7 +1875,11 @@ export function buildSyntheticSelectedProteinStep(selectedFullName: string): str
 }
 
 export function recipeStepsForDisplay(recipe: Recipe, selectedProtein: string | null): string[] {
-  const base = (recipe.steps || []).filter((st) => !isOptionalProteinUpsellStep(st));
+  const base = (recipe.steps || [])
+    .filter((st) => !isOptionalProteinUpsellStep(st))
+    .map((st) => cleanServeImmediatelyStep(st))
+    .filter((x) => x.keep)
+    .map((x) => x.text);
   if (!selectedProtein) return base;
   if (adaptedStepsAlreadyMentionSelectedProtein(base, recipe, selectedProtein)) {
     return base;
@@ -1717,6 +1921,11 @@ export function formatStepLineHtml(stepText, recipe) {
     }
   }
   const phrases = collectIngredientHighlightPhrases(recipe.ingredients || []);
+  for (const chunk of extractIngredientPhrasesFromStepText(step)) {
+    expandIngredientChunkToPhrases(chunk, phrases);
+    maybePushGreensAlias(chunk, phrases);
+    maybePushBbqAlias(chunk, phrases);
+  }
   if (selectedProtein) {
     const words = getProteinStepName(selectedProtein);
     if (words) phrases.push(words);
@@ -1786,7 +1995,7 @@ export function plainDressingDiyBlockFromChunk(chunk, chunkIndex) {
   const c = normalizeDressingChunkForClipboard(String(chunk).trim(), chunkIndex);
   if (!c) return '';
   const region = findFirstBalancedParenRegion(c);
-  const label = displayComboSegmentLabel(dressingChunkLabel(c));
+  const label = dressingChunkLabel(c).toLowerCase();
   if (!region) {
     const line = formatPlainIngredientChunk(c);
     return line ? `DIY ${label}:\n${line}` : `DIY ${label}:`;
@@ -1796,6 +2005,23 @@ export function plainDressingDiyBlockFromChunk(chunk, chunkIndex) {
   const items = plainSubrecipeItemLinesOnly(inner, after);
   if (!items.length) return `DIY ${label}:`;
   return `DIY ${label}:\n${items.join('\n')}`;
+}
+
+/** One clipboard line: `caesar: mayo + lemon + …` (lowercase dressing name). */
+export function plainDressingDiyRecipeLineFromChunk(chunk, chunkIndex) {
+  const c = normalizeDressingChunkForClipboard(String(chunk).trim(), chunkIndex);
+  if (!c) return '';
+  const region = findFirstBalancedParenRegion(c);
+  const label = dressingChunkLabel(c).toLowerCase();
+  if (!region) {
+    const line = formatPlainIngredientChunk(c);
+    return line ? `${label}: ${line}` : '';
+  }
+  const inner = c.slice(region.pIdx + 1, region.end);
+  const after = c.slice(region.end + 1).trim();
+  const items = plainSubrecipeItemLinesOnly(inner, after);
+  if (!items.length) return '';
+  return `${label}: ${items.join(' + ')}`;
 }
 
 export function dressingHeadlineLowerForClipboard(raw) {
@@ -1815,23 +2041,23 @@ export function plainDressingForClipboard(body) {
     const c = chunks[0];
     const region = findFirstBalancedParenRegion(c);
     if (region) {
-      const label = displayComboSegmentLabel(dressingChunkLabel(c));
-      const diy = plainDressingDiyBlockFromChunk(c, 0);
-      return `${dressingHeadlineLowerForClipboard(label)}\n\n${diy}`;
+      const title = dressingChunkLabel(c).toLowerCase();
+      const row = plainDressingDiyRecipeLineFromChunk(c, 0);
+      const parts = [`DIY ${title}`, '(optional)', ''];
+      if (row) parts.push(row);
+      return parts.join('\n');
     }
     return dressingHeadlineLowerForClipboard(formatPlainIngredientChunk(c));
   }
 
-  const title = chunks.map((c) => displayComboSegmentLabel(dressingChunkLabel(c))).join(' + ');
-  const diyBlocks = [];
+  const title = chunks.map((c) => dressingChunkLabel(c).toLowerCase()).join(' + ');
+  const rowLines = [];
   for (let i = 0; i < chunks.length; i++) {
-    if (!findFirstBalancedParenRegion(chunks[i])) continue;
-    const block = plainDressingDiyBlockFromChunk(chunks[i], i);
-    if (block) diyBlocks.push(block);
+    const line = plainDressingDiyRecipeLineFromChunk(chunks[i], i);
+    if (line) rowLines.push(line);
   }
-  const head = dressingHeadlineLowerForClipboard(title);
-  if (!diyBlocks.length) return head;
-  return `${head}\n\n${diyBlocks.join('\n\n')}`;
+  if (!rowLines.length) return dressingHeadlineLowerForClipboard(trimmed);
+  return ['DIY ' + title, '(optional)', '', ...rowLines].join('\n');
 }
 
 export function ingredientLineForClipboard(str) {

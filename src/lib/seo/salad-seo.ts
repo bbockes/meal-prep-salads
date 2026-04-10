@@ -8,6 +8,8 @@ import { ingredientLine, getRecipeDiets } from '@/lib/diet-utils';
 import { absoluteUrl, getSiteBaseUrl } from '@/lib/seo/site';
 import {
   FLAT_PREFIX_TO_BROWSE,
+  SALADS_BY_FLAVOR_PATH,
+  SALADS_BY_SEASON_PATH,
   dietPrefixedBrowsePath,
   allDietPrefixedCatchAllParams,
 } from '@/data/salad-routes';
@@ -117,8 +119,8 @@ export function canonicalPathForSaladIndex(
     if (dp) return dp;
   }
   if (activeCategory === 'All') {
-    if (browseMode === 'flavor') return '/salads/flavor';
-    if (browseMode === 'season') return '/salads/season';
+    if (browseMode === 'flavor') return SALADS_BY_FLAVOR_PATH;
+    if (browseMode === 'season') return SALADS_BY_SEASON_PATH;
     return '/salads';
   }
   return categoryToFlatSaladsPath(activeCategory);
@@ -215,20 +217,18 @@ export function getSaladPageSeoCopy(
   }
 
   if (browseMode === 'flavor') {
-    const dietPrefix = dietScope ? `${dietScope} ` : '';
     return {
-      title: `${dietPrefix}${activeCategory} Salad Recipes`,
+      title: `${dietScope ? `${dietScope} ` : ''}${activeCategory} Salad Recipes`,
       description: `${activeCategory} salad ideas for meal prep. Filtered flavor-forward recipes with ${SITE_NAME} — plan your week and copy your list. Keywords: ${kw}.`,
-      h1: `${dietPrefix}${activeCategory} Salads`,
+      h1: dietScope ? `${activeCategory} ${dietScope} Salads` : `${activeCategory} Salads`,
     };
   }
 
   if (browseMode === 'season') {
-    const dietPrefix = dietScope ? `${dietScope} ` : '';
     return {
-      title: `${dietPrefix}${activeCategory} Salad Ideas`,
+      title: `${dietScope ? `${dietScope} ` : ''}${activeCategory} Salad Ideas`,
       description: `${activeCategory} salad recipes for meal prep. Build your plan and copy a grocery list with ${SITE_NAME}. Keywords: ${kw}.`,
-      h1: `${dietPrefix}${activeCategory} Salads`,
+      h1: dietScope ? `${dietScope} ${activeCategory} Salads` : `${activeCategory} Salads`,
     };
   }
 
@@ -372,7 +372,7 @@ export function buildRecipeJsonLd(recipe: Recipe, canonicalPageUrl: string): obj
 
 /** Unique canonical paths for sitemap (flat filter URLs + hub paths). */
 export function allPublicSaladPaths(): string[] {
-  const set = new Set<string>(['/salads', '/salads/flavor', '/salads/season']);
+  const set = new Set<string>(['/salads', SALADS_BY_FLAVOR_PATH, SALADS_BY_SEASON_PATH]);
   for (const { mode, category, dietScope } of Object.values(FLAT_PREFIX_TO_BROWSE)) {
     set.add(
       canonicalPathForSaladIndex(mode, category, dietScope, { canonicalDietNested: false })

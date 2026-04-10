@@ -1,6 +1,10 @@
 import { DIET_FROM_SLUG } from '@/data/diet-config';
 import { FLAVOR_KEYS, SEASON_KEYS } from '@/data/constants';
 
+/** Global browse hubs (not under `/salads/...`). */
+export const SALADS_BY_FLAVOR_PATH = '/salads-by-flavor';
+export const SALADS_BY_SEASON_PATH = '/salads-by-season';
+
 /** Second segment of `/salads/{type}/{value}` — maps URL slug → browse category label. */
 export const NESTED_SLUG_TO_CATEGORY: Record<string, string> = {
   american: 'American',
