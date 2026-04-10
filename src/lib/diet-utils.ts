@@ -278,6 +278,39 @@ const OMIT_OPTIONAL_PROTEIN_NAMES_BY_RECIPE_ID: Record<number, ReadonlySet<strin
   6: new Set(['hard-boiled eggs']),
 };
 
+function recipeAlreadyHasProtein(recipe: Recipe, proteinName: string): boolean {
+  const blob = recipe.ingredients
+    .filter((ing) => !isDressingLine(ing) && !isOptionalLine(ingredientLine(ing)))
+    .map((i) => ingredientLine(i))
+    .join(' ')
+    .toLowerCase();
+
+  switch (proteinName) {
+    case 'grilled chicken breast':
+      return /\bchicken\b/.test(blob) || /\brotisserie\b/.test(blob) || /\bturkey\b/.test(blob);
+    case 'grilled salmon':
+      return /\b(salmon|tuna|fish)\b/.test(blob) || /\banchov/.test(blob);
+    case 'grilled shrimp':
+      return /\b(shrimp|prawn|crab)\b/.test(blob);
+    case 'steak strips':
+      return /\b(steak|beef)\b/.test(blob) || /\bbulgogi\b/.test(blob);
+    case 'hard-boiled eggs':
+      return /\beggs?\b/.test(blob);
+    case 'roasted chickpeas':
+      return /\b(chickpeas?|chickpea|garbanzo)\b/.test(blob);
+    case 'pan-fried tofu':
+      return /\btofu\b/.test(blob);
+    case 'tempeh, sliced':
+      return /\btempeh\b/.test(blob);
+    case 'edamame, shelled':
+      return /\bedamame\b/.test(blob);
+    case 'hemp seeds':
+      return /\bhemp seeds?\b/.test(blob);
+    default:
+      return false;
+  }
+}
+
 /**
  * Up to `limit` options: starred `recName` first when it appears in `pool`, then the next-best
  * pairings for this recipe (so Traditional / Plant columns differ per salad).
@@ -289,7 +322,8 @@ export function pickTopOptionalProteinsForDisplay(
   limit = DEFAULT_TOP_PROTEINS
 ): OptionalProtein[] {
   const omit = OMIT_OPTIONAL_PROTEIN_NAMES_BY_RECIPE_ID[recipe.id];
-  const usable = omit ? pool.filter((p) => !omit.has(p.name)) : pool;
+  const usable0 = omit ? pool.filter((p) => !omit.has(p.name)) : pool;
+  const usable = usable0.filter((p) => !recipeAlreadyHasProtein(recipe, p.name));
   if (usable.length === 0) return [];
 
   const byName = new Map(usable.map((p) => [p.name, p]));

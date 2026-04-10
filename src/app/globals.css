@@ -1816,6 +1816,13 @@
     .dressing-diy-heading.section-heading {
       text-transform: none;
     }
+    .dressing-diy-heading .dressing-diy-optional-label {
+      text-transform: none;
+      font-weight: 400;
+      font-size: 0.8em;
+      color: var(--muted);
+      letter-spacing: normal;
+    }
     .dressing-diy-optional-label {
       font-weight: 400;
       font-size: 0.8em;
@@ -1836,16 +1843,11 @@
       flex-direction: column;
       gap: 0.55rem;
     }
-    .dressing-diy-combo-row {
-      display: grid;
-      grid-template-columns: max-content minmax(0, 1fr);
-      column-gap: 0.65rem;
-      row-gap: 0.15rem;
-      align-items: baseline;
+    .dressing-diy-combo-line {
+      display: block;
     }
     .dressing-diy-part-label {
       color: var(--muted);
-      text-transform: lowercase;
       white-space: nowrap;
     }
     .dressing-diy-part-recipe,

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, type DragEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
 import { DIET_KEYS, OPTIONAL_PROTEINS } from '@/data/diet-config';
 import type { SaladBrowseMode } from '@/data/salad-routes';
@@ -55,6 +55,8 @@ import {
 const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
 const MEAL_PREP_MODE_KEY = 'meal-prep-salads:mealPrepMode';
 const PREFERRED_DIET_STORAGE_KEY = 'meal-prep-salads:preferredDietV1';
+/** Written before `router.push` on diet change; read after URL updates so remounted `SaladApp` can restore scroll. */
+const CARD_STRIP_AFTER_DIET_STORAGE_KEY = 'meal-prep-salads:cardStripAfterDietV1';
 
 /** Mon–Sun columns for the meal-plan board (index 0 = Monday). */
 const MEAL_PLAN_DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -114,6 +116,8 @@ export default function SaladApp({
   pageHeading,
 }: SaladAppProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const cardStripRef = useRef<HTMLDivElement | null>(null);
   const [browseMode, setBrowseMode] = useState<SaladBrowseMode>(initialBrowseMode);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [dietScope, setDietScope] = useState<string | null>(initialDietScope);
@@ -410,6 +414,18 @@ export default function SaladApp({
     (next: string | null) => {
       setServingsModalOpen(false);
       setSmartPicksTipOpen(false);
+      try {
+        const strip = cardStripRef.current;
+        sessionStorage.setItem(
+          CARD_STRIP_AFTER_DIET_STORAGE_KEY,
+          JSON.stringify({
+            scrollLeft: strip ? strip.scrollLeft : 0,
+            selectedId: selectedIdRef.current,
+          })
+        );
+      } catch {
+        /* ignore */
+      }
       setDietScope(next);
       try {
         if (next) localStorage.setItem(PREFERRED_DIET_STORAGE_KEY, next);
@@ -566,7 +582,8 @@ export default function SaladApp({
         const dressingBlocks: string[] = [];
         for (const ing of r.ingredients) {
           const rendered = ingredientLineForClipboardSingleRecipe(ing);
-          if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
+          // Clipboard output is plainDressingForClipboard (e.g. "dressing: …" / "DIY …") — not "Dressing:".
+          if (isDressingLine(ing)) dressingBlocks.push(String(rendered || '').trim());
           else saladLines.push(String(rendered || '').trim());
         }
         if (selectedProteinByRecipe[id]) {
@@ -772,6 +789,86 @@ export default function SaladApp({
   const smartPicksReady = mealPlanIds.length > 0;
   const smartPicksStripActive = smartPicksEnabled && mealPrepMode && smartPicksReady;
 
+  // Restore horizontal scroll after diet change once the new URL is active (handles `SaladApp` remount).
+  useLayoutEffect(() => {
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(CARD_STRIP_AFTER_DIET_STORAGE_KEY);
+    } catch {
+      return;
+    }
+    if (!raw) return;
+
+    let pending: { scrollLeft: number; selectedId: number };
+    try {
+      pending = JSON.parse(raw);
+    } catch {
+      try {
+        sessionStorage.removeItem(CARD_STRIP_AFTER_DIET_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    const visibleNow = recipesForCardStrip(
+      browseMode,
+      activeCategory,
+      dietScope,
+      mealPrepMode,
+      mealPlanIds,
+      smartPicksEnabled
+    );
+    if (!visibleNow.some((r) => r.id === pending.selectedId)) {
+      try {
+        sessionStorage.removeItem(CARD_STRIP_AFTER_DIET_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    const strip = cardStripRef.current;
+    if (!strip) return;
+
+    try {
+      sessionStorage.removeItem(CARD_STRIP_AFTER_DIET_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+
+    const nudgeSelectedIntoView = () => {
+      const sel = strip.querySelector<HTMLElement>(`[data-recipe-id="${pending.selectedId}"]`);
+      if (!sel) return;
+      const sr = strip.getBoundingClientRect();
+      const cr = sel.getBoundingClientRect();
+      if (cr.left >= sr.left && cr.right <= sr.right) return;
+      sel.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+    };
+
+    strip.scrollLeft = pending.scrollLeft;
+    nudgeSelectedIntoView();
+    requestAnimationFrame(() => {
+      const el = cardStripRef.current;
+      if (!el) return;
+      el.scrollLeft = pending.scrollLeft;
+      const sel = el.querySelector<HTMLElement>(`[data-recipe-id="${pending.selectedId}"]`);
+      if (!sel) return;
+      const sr = el.getBoundingClientRect();
+      const cr = sel.getBoundingClientRect();
+      if (cr.left >= sr.left && cr.right <= sr.right) return;
+      sel.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+    });
+  }, [
+    pathname,
+    browseMode,
+    activeCategory,
+    dietScope,
+    mealPrepMode,
+    mealPlanIds,
+    smartPicksEnabled,
+  ]);
+
   return (
     <>
       {/* ── Header ── */}
@@ -900,7 +997,7 @@ export default function SaladApp({
 
       {/* ── Card Strip ── */}
       <div className="card-strip-wrapper">
-        <div className="card-strip" id="cardStrip">
+        <div className="card-strip" id="cardStrip" ref={cardStripRef}>
           {visible.map((r) => {
             const accent = ACCENT[r.subCuisine];
             const sel = r.id === selectedId ? 'selected' : '';
@@ -917,6 +1014,7 @@ export default function SaladApp({
               <div
                 key={r.id}
                 className={`recipe-card ${sel} ${plan}`}
+                data-recipe-id={r.id}
                 style={
                   {
                     '--card-accent': accent,
@@ -1117,6 +1215,7 @@ export default function SaladApp({
                     recs.plant,
                     3
                   );
+                  if (!traditional.length && !plant.length) return null;
                   return (
                     <div className="optional-protein-section">
                       <div className="section-heading">

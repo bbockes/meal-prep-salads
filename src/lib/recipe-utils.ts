@@ -47,6 +47,18 @@ export function escapeAttr(s) {
     .replace(/"/g, '&quot;');
 }
 
+/** Normalize common punctuation spacing artifacts from authored strings. */
+export function normalizeTextPunctuation(s) {
+  let t = String(s ?? '');
+  // Remove space before commas, ensure single space after commas.
+  t = t.replace(/\s+,/g, ',');
+  t = t.replace(/,(?!\s|$)/g, ', ');
+  t = t.replace(/,\s{2,}/g, ', ');
+  // Collapse accidental multi-spaces.
+  t = t.replace(/\s{2,}/g, ' ');
+  return t.trim();
+}
+
 export function recipeCardImageSlug(name, imageSlug) {
   if (imageSlug) return imageSlug;
   const base = String(name).replace(/\s+Salad$/i, '').trim();
@@ -902,7 +914,7 @@ export function relocateTrailingDressingParen(amountsBody) {
 // ── Dressing rendering (HTML) ─────────────────────────────────────────────────
 
 export function boldCompositeDressingBody(body) {
-  body = body.trim();
+  body = normalizeTextPunctuation(body).trim();
   if (!body) return '';
 
   const { amount, rest } = parseIngredient(body);
@@ -1146,6 +1158,35 @@ export function displayComboSegmentLabel(raw) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+export function displayDressingPartLabel(raw) {
+  const t = String(raw || '').trim();
+  if (!t) return t;
+  // Prefer nice-looking acronyms for short labels like bbq, blt, etc.
+  if (/^[a-z]{2,4}$/.test(t)) return t.toUpperCase();
+  return displayComboSegmentLabel(t.toLowerCase());
+}
+
+export function titleCaseWordsPreservingAcronyms(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return s;
+  return s
+    .split(/\s+/g)
+    .map((token) => {
+      if (!token) return token;
+      if (/^[A-Z0-9]{2,}$/.test(token)) return token;
+      return token
+        .split('-')
+        .map((part) => {
+          if (!part) return part;
+          if (/^[A-Z0-9]{2,}$/.test(part)) return part;
+          const lower = part.toLowerCase();
+          return lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join('-');
+    })
+    .join(' ');
+}
+
 export function dressingChunkLabel(chunk) {
   let c = String(chunk).trim();
   if (!c) return c;
@@ -1223,15 +1264,15 @@ export function formatDressingComboPartLine(chunk) {
   return html;
 }
 
-/** DIY block only: each combo dressing on its own row, lowercase label in the left column. */
+/** DIY block only: each combo dressing on its own line, `Label: ...` with no hanging indent on wrap. */
 export function formatDressingDiyComboPartLine(chunk) {
   let c = chunk.trim();
   const region = findFirstBalancedParenRegion(c);
-  const labelLower = escapeHtml(dressingChunkLabel(c).toLowerCase());
+  const labelDisp = escapeHtml(displayDressingPartLabel(dressingChunkLabel(c)));
   if (!region) {
     return (
-      `<div class="dressing-diy-combo-row dressing-diy-combo-row-flat">` +
-      `<span class="dressing-diy-part-label">${labelLower}:</span>` +
+      `<div class="dressing-diy-combo-line dressing-diy-combo-line-flat">` +
+      `<span class="dressing-diy-part-label">${labelDisp}:</span> ` +
       `<span class="dressing-diy-part-recipe">${boldCompositeDressingBody(c)}</span>` +
       `</div>`
     );
@@ -1250,8 +1291,8 @@ export function formatDressingDiyComboPartLine(chunk) {
     recipe += `<span class="dressing-diy-part-recipe-tail">${innerForDisplay ? ' ' : ''}${boldCompositeDressingBody(afterForDisplay)}</span>`;
   }
   return (
-    `<div class="dressing-diy-combo-row">` +
-    `<span class="dressing-diy-part-label">${labelLower}:</span>` +
+    `<div class="dressing-diy-combo-line">` +
+    `<span class="dressing-diy-part-label">${labelDisp}:</span> ` +
     `<span class="dressing-diy-part-recipe">${recipe}</span>` +
     `</div>`
   );
@@ -1310,22 +1351,22 @@ export function dressingConceptualSegment(fullDressingLine) {
   return (parts[0] || '').trim();
 }
 
-/** Short name(s) for DIY headings — lowercase, e.g. "ranch", "caesar + buffalo". */
+/** Short name(s) for DIY headings — capitalized, e.g. "Ranch", "Caesar + Buffalo". */
 export function dressingDiyHeadingTitle(fullDressingLine) {
   const body = dressingConceptualSegment(fullDressingLine);
-  if (!body) return 'dressing';
+  if (!body) return 'Dressing';
   let trimmed = body;
   if (/^or\s+/i.test(trimmed)) trimmed = trimmed.replace(/^or\s+/i, '');
   const chunks = splitPlusAtDepthZero(trimmed);
-  const segLower = (ch) => {
+  const segTitle = (ch) => {
     let c = ch.trim();
     if (/^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
-    return dressingChunkLabel(c).toLowerCase();
+    return titleCaseWordsPreservingAcronyms(displayDressingPartLabel(dressingChunkLabel(c)));
   };
   if (chunks.length <= 1) {
-    return segLower(trimmed);
+    return segTitle(trimmed);
   }
-  return chunks.map(segLower).join(' + ');
+  return chunks.map(segTitle).join(' + ');
 }
 
 /** Plain text for the main ingredients list (same weight as other lines). */
@@ -1339,17 +1380,24 @@ export function dressingShopperLineText(fullDressingLine) {
 }
 
 export function dressingHasDiyBreakdown(fullDressingLine) {
-  const parts = dressingVariantBodies(fullDressingLine);
-  if (parts.length >= 2) return true;
-  const conceptual = dressingConceptualSegment(fullDressingLine);
+  // Only treat as DIY when there's an actual sub-recipe structure (balanced parens),
+  // not when the dressing is already authored as a plain ingredient list.
+  const adaptedLine = resolveIngredientDisplayLine(fullDressingLine, formatState.activeDiet || null);
+  const parts = dressingVariantBodies(adaptedLine);
+  const conceptual = dressingConceptualSegment(adaptedLine);
   if (!conceptual) return false;
-  let trimmed = conceptual;
-  if (/^or\s+/i.test(trimmed)) trimmed = trimmed.replace(/^or\s+/i, '');
-  const chunks = splitPlusAtDepthZero(trimmed);
-  for (let i = 0; i < chunks.length; i++) {
-    let c = chunks[i].trim();
-    if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
-    if (findFirstBalancedParenRegion(c)) return true;
+
+  const candidates = [conceptual, ...(parts.length >= 2 ? [parts[parts.length - 1]] : [])];
+  for (const candRaw of candidates) {
+    let cand = String(candRaw || '').trim();
+    if (!cand) continue;
+    if (/^or\s+/i.test(cand)) cand = cand.replace(/^or\s+/i, '');
+    const chunks = splitPlusAtDepthZero(cand);
+    for (let i = 0; i < chunks.length; i++) {
+      let c = chunks[i].trim();
+      if (i === 0 && /^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
+      if (findFirstBalancedParenRegion(c)) return true;
+    }
   }
   return false;
 }
@@ -1425,10 +1473,7 @@ export function renderDressingDiySectionHtml(fullDressingLine) {
   const title = dressingDiyHeadingTitle(adaptedLine);
   return (
     `<div class="dressing-diy-section">` +
-    `<div class="dressing-diy-head">` +
-    `<div class="section-heading dressing-diy-heading"><span>🥄</span> DIY ${escapeHtml(title)}</div>` +
-    `<div class="dressing-diy-optional-label">(optional)</div>` +
-    `</div>` +
+    `<div class="section-heading dressing-diy-heading"><span>🥄</span> DIY ${escapeHtml(title)} <span class="dressing-diy-optional-label">(optional)</span></div>` +
     `<div class="dressing-diy-body">${bodyHtml}</div>` +
     `</div>`
   );
@@ -1514,7 +1559,9 @@ export function renderIngredient(str, planHintCtx) {
     return '';
   }
 
-  const ingredientStr = resolveIngredientDisplayLine(str, formatState.activeDiet);
+  const ingredientStr = normalizeTextPunctuation(
+    resolveIngredientDisplayLine(str, formatState.activeDiet)
+  );
 
   const planHint = planOverlapHintHtml(ingredientStr, planHintCtx);
 
@@ -1869,6 +1916,21 @@ function adaptedStepsAlreadyMentionSelectedProtein(
   return false;
 }
 
+/**
+ * With no optional protein selected, swappable tokens (chicken, shrimp, …) are stripped from steps.
+ * Some steps then lose their direct object (“Toss in buffalo sauce.”) — omit until a protein is chosen.
+ */
+function isStepUnusableWithoutOptionalProtein(stepText: string, recipe: Recipe): boolean {
+  const activeDiet = formatState.activeDiet;
+  const adapted = activeDiet
+    ? adaptStepForDiet(stepText, recipe, activeDiet, null)
+    : adaptStepForProteinSwap(stepText, null);
+  const t = adapted.trim();
+  if (!t) return true;
+  if (stepText.trim() === t) return false;
+  return /^\s*(toss|coat|mix|dredge|dip|turn)\s+in\b/i.test(t);
+}
+
 export function buildSyntheticSelectedProteinStep(selectedFullName: string): string {
   const n = getProteinStepName(selectedFullName);
   return `${SYNTHETIC_SELECTED_PROTEIN_STEP_PREFIX}Add ${n} to the salad before serving.`;
@@ -1880,16 +1942,21 @@ export function recipeStepsForDisplay(recipe: Recipe, selectedProtein: string | 
     .map((st) => cleanServeImmediatelyStep(st))
     .filter((x) => x.keep)
     .map((x) => x.text);
-  if (!selectedProtein) return base;
-  if (adaptedStepsAlreadyMentionSelectedProtein(base, recipe, selectedProtein)) {
-    return base;
+
+  const steps = !selectedProtein
+    ? base.filter((st) => !isStepUnusableWithoutOptionalProtein(st, recipe))
+    : base;
+
+  if (!selectedProtein) return steps;
+  if (adaptedStepsAlreadyMentionSelectedProtein(steps, recipe, selectedProtein)) {
+    return steps;
   }
   const synthetic = buildSyntheticSelectedProteinStep(selectedProtein);
-  const idx = findIndexForSyntheticProteinStep(base);
+  const idx = findIndexForSyntheticProteinStep(steps);
   if (idx >= 0) {
-    return [...base.slice(0, idx), synthetic, ...base.slice(idx)];
+    return [...steps.slice(0, idx), synthetic, ...steps.slice(idx)];
   }
-  return [...base, synthetic];
+  return [...steps, synthetic];
 }
 
 export function adaptStepText(stepText, recipe) {
@@ -1958,7 +2025,7 @@ export function formatStepLineHtml(stepText, recipe) {
 // ── Clipboard functions ───────────────────────────────────────────────────────
 
 export function formatPlainIngredientChunk(ch) {
-  const t = ch.trim();
+  const t = normalizeTextPunctuation(ch).trim();
   if (!t) return '';
   if (!formatState.showAmounts) {
     return ingredientLineWithoutAmounts(t);
@@ -2012,11 +2079,8 @@ export function plainDressingDiyRecipeLineFromChunk(chunk, chunkIndex) {
   const c = normalizeDressingChunkForClipboard(String(chunk).trim(), chunkIndex);
   if (!c) return '';
   const region = findFirstBalancedParenRegion(c);
-  const label = dressingChunkLabel(c).toLowerCase();
-  if (!region) {
-    const line = formatPlainIngredientChunk(c);
-    return line ? `${label}: ${line}` : '';
-  }
+  const label = displayDressingPartLabel(dressingChunkLabel(c));
+  if (!region) return '';
   const inner = c.slice(region.pIdx + 1, region.end);
   const after = c.slice(region.end + 1).trim();
   const items = plainSubrecipeItemLinesOnly(inner, after);
@@ -2031,8 +2095,25 @@ export function dressingHeadlineLowerForClipboard(raw) {
   return body ? `dressing: ${body}` : 'dressing:';
 }
 
-export function plainDressingForClipboard(body) {
+/**
+ * @param body - `pickDressingBodyFromLine` segment (conceptual or amounts variant).
+ * @param fullDressingLine - Full resolved `Dressing: …` line (for shopper headline). Defaults to `Dressing: ${body}`.
+ */
+export function plainDressingForClipboard(body, fullDressingLine) {
   const trimmed = body.trim();
+  const fullLine =
+    fullDressingLine && String(fullDressingLine).trim()
+      ? String(fullDressingLine).trim()
+      : `Dressing: ${trimmed}`;
+
+  /** Same idea as the bullet in the UI (`dressingShopperLineText`), then `dressing:` prefix for plain-text copy. */
+  const shopperDressingListLine = () => {
+    const shopper = dressingShopperLineText(fullLine);
+    return shopper ? `dressing: ${shopper}` : 'dressing:';
+  };
+
+  const withShopperLineBeforeDiy = (diyBlock) => `${shopperDressingListLine()}\n\n${diyBlock}`;
+
   const rawChunks = splitPlusAtDepthZero(trimmed);
   const chunks = rawChunks.map((ch, i) => normalizeDressingChunkForClipboard(ch, i)).filter(Boolean);
   if (!chunks.length) return dressingHeadlineLowerForClipboard(trimmed);
@@ -2043,11 +2124,15 @@ export function plainDressingForClipboard(body) {
     if (region) {
       const title = dressingChunkLabel(c).toLowerCase();
       const row = plainDressingDiyRecipeLineFromChunk(c, 0);
-      const parts = [`DIY ${title}`, '(optional)', ''];
-      if (row) parts.push(row);
-      return parts.join('\n');
+      const diy = row ? `DIY ${title} (optional)\n${row}` : `DIY ${title} (optional)`;
+      return withShopperLineBeforeDiy(diy);
     }
     return dressingHeadlineLowerForClipboard(formatPlainIngredientChunk(c));
+  }
+
+  // Only include a DIY block when at least one segment has a sub-recipe (parens).
+  if (!chunks.some((c) => findFirstBalancedParenRegion(c))) {
+    return dressingHeadlineLowerForClipboard(trimmed);
   }
 
   const title = chunks.map((c) => dressingChunkLabel(c).toLowerCase()).join(' + ');
@@ -2057,7 +2142,7 @@ export function plainDressingForClipboard(body) {
     if (line) rowLines.push(line);
   }
   if (!rowLines.length) return dressingHeadlineLowerForClipboard(trimmed);
-  return ['DIY ' + title, '(optional)', '', ...rowLines].join('\n');
+  return withShopperLineBeforeDiy(['DIY ' + title + ' (optional)', ...rowLines].join('\n'));
 }
 
 export function ingredientLineForClipboard(str) {
@@ -2074,7 +2159,7 @@ export function ingredientLineForClipboard(str) {
   if (dressingClipboardMatch) {
     const body = pickDressingBodyFromLine(s);
     if (!body.trim()) return s;
-    return plainDressingForClipboard(body);
+    return plainDressingForClipboard(body, s);
   }
 
   if (!formatState.showAmounts) {
@@ -2102,7 +2187,7 @@ export function ingredientLineForClipboardSingleRecipe(str) {
   if (!dressingClipboardMatch) return ingredientLineForClipboard(s);
   const body = pickDressingBodyFromLine(s);
   if (!body.trim()) return s;
-  return plainDressingForClipboard(body);
+  return plainDressingForClipboard(body, s);
 }
 
 export function withClipboardOptions(opts, fn) {
@@ -2483,7 +2568,7 @@ export function consolidateIngredientLinesForCopy(lines, unitMode) {
     const titleLine = dressingHeadlineLowerForClipboard(blockLines[0]);
     dressingHeadlines.push(titleLine);
 
-    const firstDiyIdx = blockLines.findIndex((l) => /^DIY\s+.+\:/i.test(l));
+    const firstDiyIdx = blockLines.findIndex((l) => /^DIY\s+.+\(optional\)/i.test(l));
     if (firstDiyIdx >= 0) {
       dressingDiyBodies.push(joinDiyBlockLinesWithSectionBreaks(blockLines.slice(firstDiyIdx)));
       continue;
@@ -2540,7 +2625,7 @@ export function ingredientsBlockForFullRecipeCopy(r, opts) {
   const dressingBlocks = [];
   for (const ing of r.ingredients) {
     const rendered = ingredientLineForClipboardSingleRecipe(ing);
-    if (/^Dressing:\s*/i.test(String(rendered || '').trim())) dressingBlocks.push(String(rendered || '').trim());
+    if (isDressingLine(ing)) dressingBlocks.push(String(rendered || '').trim());
     else saladLines.push(String(rendered || '').trim());
   }
   const salad = saladLines.filter(Boolean);
