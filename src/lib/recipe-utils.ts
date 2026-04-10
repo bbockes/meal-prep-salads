@@ -1041,7 +1041,7 @@ function renderDressingTermsWithAmountsHtml(body: string): string {
         String(amount).trim()
       );
       out.push(
-        `<span class="amount">${escapeHtml(disp)}</span> ${needsOf ? 'of ' : ''}${boldCompositeDressingBody(rest)}`
+        `<span class="amount">${escapeHtml(disp)}</span>${needsOf ? ' of ' : ''}${boldCompositeDressingBody(rest)}`
       );
       continue;
     }
@@ -1061,12 +1061,14 @@ function renderDressingTermsWithAmountsHtml(body: string): string {
       if (k0 && seenKeys.has(k0)) continue;
       if (k0) seenKeys.add(k0);
       const needsOf = /^(pinch|pinches|dash|dashes|handful|handfuls)$/i.test(String(amt).trim());
+      const disp = formatAmountForDisplay(amt, c);
       out.push(
-        `<span class="amount">${escapeHtml(amt)}</span> ${needsOf ? 'of ' : ''}${escapeHtml(c)}`
+        `<span class="amount">${escapeHtml(disp)}</span>${needsOf ? ' of ' : ''}${escapeHtml(c)}`
       );
     }
   }
-  return out.join(' + ');
+  const termSpans = out.map((html) => `<span class="dressing-diy-term">${html}</span>`);
+  return termSpans.join(' <span class="dressing-diy-plus" aria-hidden="true">+</span> ');
 }
 
 export function stripCompositeDressingAmounts(body) {
@@ -1264,17 +1266,21 @@ export function formatDressingComboPartLine(chunk) {
   return html;
 }
 
-/** DIY block only: each combo dressing on its own line, `Label: ...` with no hanging indent on wrap. */
+/** One DIY combo row as an `<li>` matching `ingredients-list` markup (bullet + body). */
 export function formatDressingDiyComboPartLine(chunk) {
   let c = chunk.trim();
   const region = findFirstBalancedParenRegion(c);
   const labelDisp = escapeHtml(displayDressingPartLabel(dressingChunkLabel(c)));
+  const rowBody = (innerRecipeHtml) =>
+    `<li>` +
+    `<span class="bullet" aria-hidden="true"></span>` +
+    `<span class="ingredient-body dressing-diy-line-body">` +
+    innerRecipeHtml +
+    `</span></li>`;
   if (!region) {
-    return (
-      `<div class="dressing-diy-combo-line dressing-diy-combo-line-flat">` +
+    return rowBody(
       `<span class="dressing-diy-part-label">${labelDisp}:</span> ` +
-      `<span class="dressing-diy-part-recipe">${boldCompositeDressingBody(c)}</span>` +
-      `</div>`
+        `<span class="dressing-diy-part-recipe">${boldCompositeDressingBody(c)}</span>`
     );
   }
   const { pIdx, end } = region;
@@ -1290,11 +1296,21 @@ export function formatDressingDiyComboPartLine(chunk) {
   if (afterForDisplay) {
     recipe += `<span class="dressing-diy-part-recipe-tail">${innerForDisplay ? ' ' : ''}${boldCompositeDressingBody(afterForDisplay)}</span>`;
   }
+  return rowBody(
+    `<span class="dressing-diy-part-label">${labelDisp}:</span> ` + `<span class="dressing-diy-part-recipe">${recipe}</span>`
+  );
+}
+
+function wrapDressingDiyIngredientsList(liOrBodyHtml) {
+  const inner = String(liOrBodyHtml || '').trim();
+  if (!inner) return '';
+  if (/^\s*<li[\s>]/i.test(inner)) {
+    return `<ul class="ingredients-list dressing-diy-ingredients-list">${inner}</ul>`;
+  }
   return (
-    `<div class="dressing-diy-combo-line">` +
-    `<span class="dressing-diy-part-label">${labelDisp}:</span> ` +
-    `<span class="dressing-diy-part-recipe">${recipe}</span>` +
-    `</div>`
+    `<ul class="ingredients-list dressing-diy-ingredients-list">` +
+    `<li><span class="bullet" aria-hidden="true"></span><span class="ingredient-body dressing-diy-line-body">${inner}</span></li>` +
+    `</ul>`
   );
 }
 
@@ -1402,7 +1418,7 @@ export function dressingHasDiyBreakdown(fullDressingLine) {
   return false;
 }
 
-/** HTML body only (no wrapper) for the optional DIY block. */
+/** HTML body only (no wrapper) for the DIY dressing block. */
 export function renderDressingDiyBodyHtml(fullDressingLine) {
   // Use the same diet-adapted dressing string as the main list so DIY never shows dairy/meat/etc.
   // that the active diet already swaps in the full `Dressing:` line.
@@ -1418,13 +1434,13 @@ export function renderDressingDiyBodyHtml(fullDressingLine) {
     if (!src) return '';
     const region = findFirstBalancedParenRegion(src);
     if (!region) {
-      return renderDressingTermsWithAmountsHtml(src);
+      return wrapDressingDiyIngredientsList(renderDressingTermsWithAmountsHtml(src));
     }
     const inner = src.slice(region.pIdx + 1, region.end).trim();
     let after = src.slice(region.end + 1).trim();
     after = after.replace(/^\+\s*/g, '').trim();
     const body = inner + (after ? ` + ${after}` : '');
-    return body ? renderDressingTermsWithAmountsHtml(body) : '';
+    return body ? wrapDressingDiyIngredientsList(renderDressingTermsWithAmountsHtml(body)) : '';
   }
 
   let trimmed = conceptual;
@@ -1436,7 +1452,7 @@ export function renderDressingDiyBodyHtml(fullDressingLine) {
 
   // If this is a simple `a + b + c` list (no parens), show an amount token for every term.
   if (formatState.showAmounts && !findFirstBalancedParenRegion(trimmed)) {
-    return renderDressingTermsWithAmountsHtml(trimmed);
+    return wrapDressingDiyIngredientsList(renderDressingTermsWithAmountsHtml(trimmed));
   }
 
   const chunks = splitPlusAtDepthZero(trimmed);
@@ -1451,7 +1467,7 @@ export function renderDressingDiyBodyHtml(fullDressingLine) {
     let out = '';
     if (innerForDisplay) out += boldCompositeDressingBody(innerForDisplay);
     if (afterForDisplay) out += (out ? ' ' : '') + boldCompositeDressingBody(afterForDisplay);
-    return out;
+    return out ? wrapDressingDiyIngredientsList(out) : '';
   }
 
   const partLines = chunks
@@ -1462,7 +1478,7 @@ export function renderDressingDiyBodyHtml(fullDressingLine) {
     })
     .filter(Boolean)
     .join('');
-  return partLines ? `<div class="dressing-diy-stack">${partLines}</div>` : '';
+  return wrapDressingDiyIngredientsList(partLines);
 }
 
 export function renderDressingDiySectionHtml(fullDressingLine) {
@@ -1473,8 +1489,10 @@ export function renderDressingDiySectionHtml(fullDressingLine) {
   const title = dressingDiyHeadingTitle(adaptedLine);
   return (
     `<div class="dressing-diy-section">` +
-    `<div class="section-heading dressing-diy-heading"><span>🥄</span> DIY ${escapeHtml(title)} <span class="dressing-diy-optional-label">(optional)</span></div>` +
-    `<div class="dressing-diy-body">${bodyHtml}</div>` +
+    `<div class="section-heading dressing-diy-heading">` +
+    `<div class="section-heading-label"><span>🥄</span> DIY ${escapeHtml(title)}</div>` +
+    `</div>` +
+    `${bodyHtml}` +
     `</div>`
   );
 }
@@ -1600,7 +1618,7 @@ export function renderIngredient(str, planHintCtx) {
       else if (/\b(olive oil|sesame oil|oil)\b/.test(low)) inferred = '1 tbsp';
       else if (/\b(hot sauce|buffalo|sriracha|chili crisp)\b/.test(low)) inferred = '1 tbsp';
       else if (/\b(salt|pepper)\b/.test(low)) inferred = '¼ tsp';
-      inner = `<span class="amount">${escapeHtml(inferred)}</span> ${escapeHtml(body)}`;
+      inner = `<span class="amount">${escapeHtml(formatAmountForDisplay(inferred, body))}</span> ${escapeHtml(body)}`;
     }
   } else {
     const disp = formatAmountForDisplay(amount, rest);
@@ -2124,7 +2142,7 @@ export function plainDressingForClipboard(body, fullDressingLine) {
     if (region) {
       const title = dressingChunkLabel(c).toLowerCase();
       const row = plainDressingDiyRecipeLineFromChunk(c, 0);
-      const diy = row ? `DIY ${title} (optional)\n${row}` : `DIY ${title} (optional)`;
+      const diy = row ? `DIY ${title}\n${row}` : `DIY ${title}`;
       return withShopperLineBeforeDiy(diy);
     }
     return dressingHeadlineLowerForClipboard(formatPlainIngredientChunk(c));
@@ -2142,7 +2160,7 @@ export function plainDressingForClipboard(body, fullDressingLine) {
     if (line) rowLines.push(line);
   }
   if (!rowLines.length) return dressingHeadlineLowerForClipboard(trimmed);
-  return withShopperLineBeforeDiy(['DIY ' + title + ' (optional)', ...rowLines].join('\n'));
+  return withShopperLineBeforeDiy(['DIY ' + title, ...rowLines].join('\n'));
 }
 
 export function ingredientLineForClipboard(str) {
@@ -2568,7 +2586,7 @@ export function consolidateIngredientLinesForCopy(lines, unitMode) {
     const titleLine = dressingHeadlineLowerForClipboard(blockLines[0]);
     dressingHeadlines.push(titleLine);
 
-    const firstDiyIdx = blockLines.findIndex((l) => /^DIY\s+.+\(optional\)/i.test(l));
+    const firstDiyIdx = blockLines.findIndex((l) => /^DIY\s+/i.test(l));
     if (firstDiyIdx >= 0) {
       dressingDiyBodies.push(joinDiyBlockLinesWithSectionBreaks(blockLines.slice(firstDiyIdx)));
       continue;

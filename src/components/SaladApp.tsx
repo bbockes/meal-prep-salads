@@ -976,6 +976,12 @@ export default function SaladApp({
                     recs.plant,
                     3
                   );
+                  // Star the canonical rec when it’s still listed; otherwise star the top pick (rec may be
+                  // omitted when the bowl already includes that protein).
+                  const traditionalStarName =
+                    traditional.find((p) => p.name === recs.traditional)?.name ?? traditional[0]?.name ?? null;
+                  const plantStarName =
+                    plant.find((p) => p.name === recs.plant)?.name ?? plant[0]?.name ?? null;
                   if (!traditional.length && !plant.length) return null;
                   return (
                     <div className="optional-protein-section">
@@ -986,13 +992,13 @@ export default function SaladApp({
                         <div className="protein-column">
                           <div className="protein-column-heading">Traditional</div>
                           <ul className="ingredients-list optional-protein-list">
-                            {traditional.map((p, i) => renderProteinItem(p, i, recs.traditional))}
+                            {traditional.map((p, i) => renderProteinItem(p, i, traditionalStarName))}
                           </ul>
                         </div>
                         <div className="protein-column">
                           <div className="protein-column-heading">Plant-Based</div>
                           <ul className="ingredients-list optional-protein-list">
-                            {plant.map((p, i) => renderProteinItem(p, i, recs.plant))}
+                            {plant.map((p, i) => renderProteinItem(p, i, plantStarName))}
                           </ul>
                         </div>
                       </div>

@@ -1803,57 +1803,66 @@
       filter: brightness(1.08);
     }
 
-    /* ── DIY dressing (optional), below main ingredients list ── */
+    /* ── DIY dressing: same list + heading rhythm as ingredients / optional protein ── */
     .dressing-diy-section {
       margin-top: 16px;
       padding-top: 8px;
     }
-    .dressing-diy-head {
+    .dressing-diy-heading .section-heading-label {
       display: flex;
-      flex-direction: column;
-      gap: 2px;
+      align-items: center;
+      gap: 8px;
     }
-    .dressing-diy-heading.section-heading {
-      text-transform: none;
+    .dressing-diy-ingredients-list {
+      margin-top: 0;
     }
-    .dressing-diy-heading .dressing-diy-optional-label {
-      text-transform: none;
-      font-weight: 400;
-      font-size: 0.8em;
+    .dressing-diy-line-body {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.35rem 0.45rem;
+      min-width: 0;
+      word-break: normal;
+      overflow-wrap: normal;
+    }
+    /* One flex item per ingredient: amount + name stay together (no “1” / “tsp” split). */
+    .dressing-diy-term {
+      display: inline-flex;
+      align-items: baseline;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      max-width: 100%;
+      /* nowrap + flex can collapse literal spaces; gap separates amount from name */
+      gap: 0.35em;
+    }
+    .dressing-diy-plus {
       color: var(--muted);
-      letter-spacing: normal;
+      font-weight: 500;
+      flex-shrink: 0;
+      user-select: none;
     }
-    .dressing-diy-optional-label {
-      font-weight: 400;
-      font-size: 0.8em;
-      color: var(--muted);
+    .dressing-diy-part-label {
+      flex-shrink: 0;
+      font-weight: 600;
+      color: var(--text);
     }
-    .dressing-diy-body {
-      margin-top: 10px;
-      font-size: 0.93rem;
-      line-height: 1.45;
-      color: var(--muted);
+    .dressing-diy-part-recipe {
+      flex: 1;
+      min-width: 0;
+      color: inherit;
     }
-    .dressing-diy-body .amount {
+    .dressing-diy-part-recipe-inner,
+    .dressing-diy-part-recipe-tail {
+      color: inherit;
+    }
+    .dressing-diy-ingredients-list .amount {
       font-weight: 700;
       color: var(--detail-accent);
     }
-    .dressing-diy-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-    }
-    .dressing-diy-combo-line {
-      display: block;
-    }
-    .dressing-diy-part-label {
-      color: var(--muted);
-      white-space: nowrap;
-    }
-    .dressing-diy-part-recipe,
-    .dressing-diy-part-recipe-inner,
-    .dressing-diy-part-recipe-tail {
-      color: var(--muted);
+    @media (min-width: 720px) {
+      .dressing-diy-ingredients-list .dressing-diy-part-recipe {
+        white-space: nowrap;
+      }
     }
 
     /* ── Optional Protein Section (diet mode) ── */
