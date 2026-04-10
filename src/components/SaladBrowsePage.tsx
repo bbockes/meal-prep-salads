@@ -1,12 +1,11 @@
 import SaladApp from '@/components/SaladApp';
 import SeoJsonLd from '@/components/SeoJsonLd';
-import { DIET_KEYS } from '@/data/diet-config';
 import type { SaladBrowseMode } from '@/data/salad-routes';
 import { absoluteUrl } from '@/lib/seo/site';
 import {
   buildBreadcrumbJsonLd,
   buildRecipeJsonLd,
-  canonicalPathForBrowse,
+  canonicalPathForSaladIndex,
   defaultRecipeForSeoJsonLd,
   getSaladPageSeoCopy,
 } from '@/lib/seo/salad-seo';
@@ -14,25 +13,35 @@ import {
 type SaladBrowsePageProps = {
   browseMode: SaladBrowseMode;
   activeCategory: string;
+  initialDietScope: string | null;
+  canonicalDietNested?: boolean;
   initialPinnedRecipeId?: number | null;
 };
 
 export default function SaladBrowsePage({
   browseMode,
   activeCategory,
+  initialDietScope,
+  canonicalDietNested = false,
   initialPinnedRecipeId = null,
 }: SaladBrowsePageProps) {
-  const seoCategory =
-    browseMode === 'diet' && activeCategory === 'All' ? DIET_KEYS[0] : activeCategory;
-  const copy = getSaladPageSeoCopy(browseMode, seoCategory);
-  const canonicalPath = canonicalPathForBrowse(browseMode, activeCategory);
+  const copy = getSaladPageSeoCopy(browseMode, activeCategory, initialDietScope);
+  const canonicalPath = canonicalPathForSaladIndex(browseMode, activeCategory, initialDietScope, {
+    canonicalDietNested,
+  });
   const pageUrl = absoluteUrl(canonicalPath);
-  const recipe = defaultRecipeForSeoJsonLd(browseMode, activeCategory, initialPinnedRecipeId);
+  const recipe = defaultRecipeForSeoJsonLd(
+    browseMode,
+    activeCategory,
+    initialDietScope,
+    initialPinnedRecipeId
+  );
 
   const jsonLd: object[] = [
     buildBreadcrumbJsonLd({
       browseMode,
-      activeCategory: seoCategory,
+      activeCategory,
+      dietScope: initialDietScope,
       canonicalPath,
     }),
   ];
@@ -44,6 +53,7 @@ export default function SaladBrowsePage({
       <SaladApp
         initialBrowseMode={browseMode}
         initialCategory={activeCategory}
+        initialDietScope={initialDietScope}
         initialPinnedRecipeId={initialPinnedRecipeId}
         pageHeading={copy.h1}
       />

@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
-import { DIET_KEYS, DIET_ACCENTS } from '@/data/diet-config';
 import { Recipe, RECIPES } from '@/data/recipes';
 import {
   shouldOmitIngredient,
@@ -77,14 +76,12 @@ export function detailMetaBadgesHtml(r, browseMode) {
 export function getNavTabs(browseMode) {
   if (browseMode === 'cuisine') return ['All', ...Object.keys(ACCENT)];
   if (browseMode === 'flavor') return ['All', ...FLAVOR_KEYS];
-  if (browseMode === 'diet') return [...DIET_KEYS];
   return ['All', ...SEASON_KEYS];
 }
 
 export function accentForNavCat(cat, browseMode) {
   if (browseMode === 'cuisine') return ACCENT[cat] || '#4a5568';
   if (browseMode === 'flavor') return FLAVOR_ACCENTS[cat] || '#4a5568';
-  if (browseMode === 'diet') return DIET_ACCENTS[cat] || '#4a5568';
   return SEASON_ACCENTS[cat] || '#4a5568';
 }
 
@@ -96,20 +93,22 @@ export const OVERLAP_TAB_TIP_COPY =
 
 // ── Visible recipes ───────────────────────────────────────────────────────────
 
-export function getVisibleRecipes(browseMode, activeCategory) {
-  if (browseMode === 'diet') {
-    if (!activeCategory || activeCategory === 'All') return RECIPES.slice();
-    return RECIPES.filter((r) => getRecipeDiets(r).includes(activeCategory));
-  }
+export function getVisibleRecipes(browseMode, activeCategory, dietScope) {
+  let base;
   if (browseMode === 'cuisine') {
-    return activeCategory === 'All' ? RECIPES : RECIPES.filter((r) => r.subCuisine === activeCategory);
+    base = activeCategory === 'All' ? RECIPES : RECIPES.filter((r) => r.subCuisine === activeCategory);
+  } else if (browseMode === 'flavor') {
+    if (activeCategory === 'All') base = RECIPES;
+    else base = RECIPES.filter((r) => r.flavorTags.includes(activeCategory));
+  } else if (activeCategory === 'All') {
+    base = RECIPES;
+  } else {
+    base = RECIPES.filter((r) => r.seasons.includes(activeCategory));
   }
-  if (browseMode === 'flavor') {
-    if (activeCategory === 'All') return RECIPES;
-    return RECIPES.filter((r) => r.flavorTags.includes(activeCategory));
+  if (dietScope) {
+    return base.filter((r) => getRecipeDiets(r).includes(dietScope));
   }
-  if (activeCategory === 'All') return RECIPES;
-  return RECIPES.filter((r) => r.seasons.includes(activeCategory));
+  return base;
 }
 
 /** Sort by ingredient overlap with the meal plan (highest first); ties use cuisine browse order. */
@@ -127,11 +126,12 @@ export function sortRecipesByPlanOverlap(recipes, mealPlanIds) {
 export function recipesForCardStrip(
   browseMode,
   activeCategory,
+  dietScope,
   mealPrepMode,
   mealPlanIds,
   smartPicksEnabled = false
 ) {
-  const raw = getVisibleRecipes(browseMode, activeCategory);
+  const raw = getVisibleRecipes(browseMode, activeCategory, dietScope);
   const smartOn = smartPicksEnabled && mealPrepMode && mealPlanIds.length > 0;
   if (smartOn) {
     const inPlan = new Set(mealPlanIds);

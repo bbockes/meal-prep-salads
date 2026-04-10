@@ -275,6 +275,70 @@
     .browse-mode-toggle button.active:focus-visible {
       outline-color: var(--browse-toggle-active-fg);
     }
+    .browse-diet-scope {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .browse-diet-scope .browse-mode-label {
+      margin: 0;
+    }
+    .browse-diet-select-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: stretch;
+      flex-shrink: 0;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .browse-diet-select-wrap::after {
+      content: '';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      margin-top: -2px;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid var(--muted);
+      pointer-events: none;
+      opacity: 0.85;
+    }
+    .browse-diet-select {
+      appearance: none;
+      -webkit-appearance: none;
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.84rem;
+      font-weight: 600;
+      padding: 8px 32px 8px 14px;
+      min-width: 7.5rem;
+      max-width: 100%;
+      color: var(--muted);
+      cursor: pointer;
+      line-height: 1.25;
+      transition: color 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .browse-diet-select:hover {
+      color: var(--text);
+    }
+    .browse-diet-select--active {
+      color: var(--text);
+    }
+    .browse-diet-select:focus,
+    .browse-diet-select:focus-visible,
+    .browse-diet-select:active {
+      outline: none;
+      box-shadow: none;
+    }
     .browse-mode-spacer {
       flex: 1 1 auto;
       min-width: 4px;
@@ -456,6 +520,23 @@
         flex: 1 1 0;
         min-width: 0;
         text-align: center;
+      }
+      .browse-diet-scope .browse-mode-label {
+        flex: 0 0 auto;
+      }
+      .browse-diet-scope {
+        flex: 1 1 100%;
+        width: 100%;
+        justify-content: space-between;
+      }
+      .browse-diet-select-wrap {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 100%;
+      }
+      .browse-diet-select {
+        width: 100%;
+        min-width: 0;
       }
       .browse-mode-tail {
         display: flex;
