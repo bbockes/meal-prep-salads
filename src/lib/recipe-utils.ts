@@ -795,6 +795,21 @@ export function parseIngredient(str) {
   return { amount: null, rest: str };
 }
 
+/** Strip leading amounts from each top-level ` + ` segment (e.g. "3 cups romaine + 1 cup cabbage" → "romaine + cabbage"). */
+export function ingredientLineWithoutAmounts(str) {
+  const trimmed = String(str || '').trim();
+  if (!trimmed) return trimmed;
+  const chunks = splitPlusAtDepthZero(trimmed);
+  const parts = chunks.map((chunk) => {
+    const c = chunk.trim();
+    if (!c) return '';
+    const { amount, rest } = parseIngredient(c);
+    if (amount && rest) return rest.trim();
+    return c;
+  });
+  return parts.filter(Boolean).join(' + ');
+}
+
 // ── Dressing handling ─────────────────────────────────────────────────────────
 
 export const DRESSING_VARIANT_SPLIT = /\s+\/\/\s+/;
@@ -1383,13 +1398,13 @@ export function renderIngredient(str, planHintCtx) {
 
   const { amount, rest } = parseIngredient(ingredientStr);
   let inner;
-  if (!amount) {
+  if (!formatState.showAmounts) {
+    inner = escapeHtml(ingredientLineWithoutAmounts(ingredientStr));
+  } else if (!amount) {
     inner = escapeHtml(ingredientStr);
-  } else if (formatState.showAmounts) {
+  } else {
     const disp = formatAmountForDisplay(amount, rest);
     inner = `<span class="amount">${escapeHtml(disp)}</span> ${escapeHtml(rest)}`;
-  } else {
-    inner = escapeHtml(rest);
   }
   return `<li><span class="bullet"></span><span class="ingredient-body">${inner}${planHint}</span></li>`;
 }
@@ -1736,9 +1751,11 @@ export function formatStepLineHtml(stepText, recipe) {
 export function formatPlainIngredientChunk(ch) {
   const t = ch.trim();
   if (!t) return '';
+  if (!formatState.showAmounts) {
+    return ingredientLineWithoutAmounts(t);
+  }
   const { amount, rest } = parseIngredient(t);
   if (amount && rest) {
-    if (!formatState.showAmounts) return String(rest).trim();
     const a = formatAmountForDisplay(amount, rest);
     return `${a} ${rest}`.trim();
   }
@@ -1835,9 +1852,7 @@ export function ingredientLineForClipboard(str) {
   }
 
   if (!formatState.showAmounts) {
-    const { amount, rest } = parseIngredient(s);
-    if (!amount) return s;
-    return rest;
+    return ingredientLineWithoutAmounts(s);
   }
 
   const { amount, rest } = parseIngredient(s);
