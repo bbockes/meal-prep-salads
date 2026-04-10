@@ -119,15 +119,15 @@ The experience should feel like the recipe was always written for that diet.
 
 ### Diet Definitions
 
-**`vegan`** — No meat, poultry, seafood, dairy, eggs, or honey. Dressing swaps: replace anchovy with capers or miso, replace parmesan with nutritional yeast, replace dairy with cashew/coconut cream, replace egg yolk with dijon. Protein options: chickpeas, lentils, tofu, tempeh, edamame, roasted seeds.
+`**vegan`** — No meat, poultry, seafood, dairy, eggs, or honey. Dressing swaps: replace anchovy with capers or miso, replace parmesan with nutritional yeast, replace dairy with cashew/coconut cream, replace egg yolk with dijon. Protein options: chickpeas, lentils, tofu, tempeh, edamame, roasted seeds.
 
-**`vegetarian`** — No meat, poultry, or seafood. Dairy and eggs allowed. Dressing swaps: replace anchovy/fish sauce with soy sauce or omit. Protein options: hard boiled egg, halloumi, paneer, chickpeas, lentils, tofu.
+`**vegetarian**` — No meat, poultry, or seafood. Dairy and eggs allowed. Dressing swaps: replace anchovy/fish sauce with soy sauce or omit. Protein options: hard boiled egg, halloumi, paneer, chickpeas, lentils, tofu.
 
-**`high-protein`** — Emphasize protein-dense ingredients. No restrictions on food groups. Dressing swaps: replace oil-heavy dressings with greek yogurt base where possible. Protein options: grilled chicken, salmon, shrimp, tuna, hard boiled egg, steak strips, edamame. Boost with hemp seeds, parmesan, or legumes.
+`**high-protein**` — Emphasize protein-dense ingredients. No restrictions on food groups. Dressing swaps: replace oil-heavy dressings with greek yogurt base where possible. Protein options: grilled chicken, salmon, shrimp, tuna, hard boiled egg, steak strips, edamame. Boost with hemp seeds, parmesan, or legumes.
 
-**`keto`** — No grains, no legumes, low sugar, high fat. Omit: croutons, corn, beans, most fruit, high-sugar dressings. Dressing swaps: full-fat olive oil or avocado oil bases, no honey or maple syrup. Protein options: grilled chicken, salmon, shrimp, steak, hard boiled egg, bacon bits.
+`**keto**` — No grains, no legumes, low sugar, high fat. Omit: croutons, corn, beans, most fruit, high-sugar dressings. Dressing swaps: full-fat olive oil or avocado oil bases, no honey or maple syrup. Protein options: grilled chicken, salmon, shrimp, steak, hard boiled egg, bacon bits.
 
-**`paleo`** — No grains, no legumes, no dairy, no refined sugar. Omit: croutons, corn, beans, any cheese, yogurt-based dressings. Dressing swaps: olive oil or avocado oil base, lemon, garlic, fresh herbs. No dairy, no soy. Protein options: grilled chicken, salmon, shrimp, steak, hard boiled egg.
+`**paleo**` — No grains, no legumes, no dairy, no refined sugar. Omit: croutons, corn, beans, any cheese, yogurt-based dressings. Dressing swaps: olive oil or avocado oil base, lemon, garlic, fresh herbs. No dairy, no soy. Protein options: grilled chicken, salmon, shrimp, steak, hard boiled egg.
 
 ### Recipe Title Convention
 
@@ -156,6 +156,7 @@ Titles should be ingredient-agnostic — no protein in the title. This allows th
 Every URL follows this pattern: `/{food-category}/{filter-type}/{filter-value}`
 
 Filter types:
+
 - `cuisine` — italian, mediterranean, french, mexican, asian, american
 - `flavor` — spicy, smoky, savory, creamy
 - `season` — spring, summer, fall, winter
@@ -165,47 +166,56 @@ Filter types:
 
 **Tier 1 — Highest Priority (build first)**
 
-| URL | Target Keyword | Volume | KD |
-|-----|---------------|--------|----|
-| `/meal-prep/diet/vegan` | vegan meal prep ideas | 60.5K | 18 |
-| `/meal-prep/diet/vegetarian` | vegetarian meal prep ideas | 8.1K | 17 |
-| `/salads/diet/vegan` | vegan salads | — | low |
-| `/salads/cuisine/mediterranean` | mediterranean salads | 2.4K | 39 |
-| `/salads/cuisine/mexican` | mexican salads | 1.6K | 15 |
-| `/salads/cuisine/italian` | italian salads | 2.9K | 43 |
-| `/salads/cuisine/asian` | asian salads | 1.3K | 29 |
-| `/salads/cuisine/french` | french salads | 1.0K | 22 |
-| `/salads/diet/high-protein` | high protein salads | — | low |
+
+| URL                             | Target Keyword             | Volume | KD  |
+| ------------------------------- | -------------------------- | ------ | --- |
+| `/meal-prep/diet/vegan`         | vegan meal prep ideas      | 60.5K  | 18  |
+| `/meal-prep/diet/vegetarian`    | vegetarian meal prep ideas | 8.1K   | 17  |
+| `/salads/diet/vegan`            | vegan salads               | —      | low |
+| `/salads/cuisine/mediterranean` | mediterranean salads       | 2.4K   | 39  |
+| `/salads/cuisine/mexican`       | mexican salads             | 1.6K   | 15  |
+| `/salads/cuisine/italian`       | italian salads             | 2.9K   | 43  |
+| `/salads/cuisine/asian`         | asian salads               | 1.3K   | 29  |
+| `/salads/cuisine/french`        | french salads              | 1.0K   | 22  |
+| `/salads/diet/high-protein`     | high protein salads        | —      | low |
+
 
 **Tier 2 — Medium Priority**
 
-| URL | Target Keyword | Volume | KD |
-|-----|---------------|--------|----|
-| `/meal-prep/diet/high-protein` | high protein meal prep | 12.1K | 36 |
-| `/meal-prep/salads` | salad meal prep | 1.0K | 10 |
-| `/meal-prep/diet/keto` | keto meal prep ideas | 1.3K | 26 |
-| `/salads/flavor/spicy` | spicy salads | 50 | 16 |
-| `/salads/flavor/savory` | savory salads | 70 | 11 |
-| `/salads/flavor/creamy` | creamy salads | 30 | n/a |
+
+| URL                            | Target Keyword         | Volume | KD  |
+| ------------------------------ | ---------------------- | ------ | --- |
+| `/meal-prep/diet/high-protein` | high protein meal prep | 12.1K  | 36  |
+| `/meal-prep/salads`            | salad meal prep        | 1.0K   | 10  |
+| `/meal-prep/diet/keto`         | keto meal prep ideas   | 1.3K   | 26  |
+| `/salads/flavor/spicy`         | spicy salads           | 50     | 16  |
+| `/salads/flavor/savory`        | savory salads          | 70     | 11  |
+| `/salads/flavor/creamy`        | creamy salads          | 30     | n/a |
+
 
 **Tier 3 — Future (when entrees/snacks are added)**
 
-| URL | Target Keyword | Volume | KD |
-|-----|---------------|--------|----|
-| `/meal-prep` | healthy meal prep ideas | 18.1K | 43 |
-| `/snacks/diet/high-protein` | high protein snacks | 110K | 28 |
-| `/entrees/cuisine/mediterranean` | mediterranean meals | — | — |
-| `/meal-prep/season/summer` | summer meal prep | — | low |
+
+| URL                              | Target Keyword          | Volume | KD  |
+| -------------------------------- | ----------------------- | ------ | --- |
+| `/meal-prep`                     | healthy meal prep ideas | 18.1K  | 43  |
+| `/snacks/diet/high-protein`      | high protein snacks     | 110K   | 28  |
+| `/entrees/cuisine/mediterranean` | mediterranean meals     | —      | —   |
+| `/meal-prep/season/summer`       | summer meal prep        | —      | low |
+
 
 ### Per-URL Hero Copy Examples
 
-**`/salads/cuisine/mediterranean`**
+`**/salads/cuisine/mediterranean`**
+
 > **Mediterranean Salads** — Fresh, vibrant, and packed with flavor — browse our collection of Mediterranean salads. Add your favorites to this week's meal plan and copy your grocery list in one click.
 
-**`/meal-prep/diet/vegan`**
+`**/meal-prep/diet/vegan`**
+
 > **Vegan Meal Prep Ideas** — Planning a week of vegan meals has never been easier. Browse our vegan-friendly recipes, build your weekly meal plan, and get your full grocery list instantly.
 
-**`/salads/diet/high-protein`**
+`**/salads/diet/high-protein`**
+
 > **High Protein Salads** — Fuel your week with high-protein salads that actually taste good. Pick your recipes, add your optional protein, and copy your meal prep grocery list in seconds.
 
 ### Structured Data Example
@@ -253,6 +263,7 @@ Auto-generate `sitemap.xml` including every filter URL:
 ## Phase 4: Already Built
 
 The current `index.html` already has:
+
 - Meal plan builder (add/remove recipes, visible at bottom of page)
 - Grocery list aggregation across selected recipes
 - Servings scaling
@@ -294,6 +305,7 @@ When a user tries to add a 4th item:
 ### AI Architecture Principles
 
 The AI layer should:
+
 - Interpret user goals and map natural language to structured constraints
 - Recommend recipes from the existing inventory
 - Generate meal plans from known recipe candidates only
@@ -301,6 +313,7 @@ The AI layer should:
 - Summarize grocery needs
 
 The AI layer should NOT:
+
 - Invent nutritional facts without grounding
 - Invent ingredients not in the system
 - Silently change canonical recipes
@@ -319,6 +332,7 @@ Chat should be an **entry point**, not the only interface. Users express intent 
 ### AI Output Validation
 
 All AI output must be validated before rendering:
+
 - Recipe IDs exist
 - Ingredients exist or are explicitly user-added
 - Servings are positive, steps are non-empty

@@ -436,7 +436,7 @@
     }
 
     @media (max-width: 1024px) {
-      .browse-smart-picks-tip-wrap {
+      .browse-mode .browse-smart-picks-tip-wrap {
         display: none;
       }
       .browse-mode {
@@ -974,31 +974,124 @@
       letter-spacing: -0.02em;
       color: var(--text);
     }
-    .meal-plan-chips {
+    .meal-plan-panel-title-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 0;
+      align-items: center;
+      gap: 8px 10px;
+      min-width: 0;
+    }
+    .meal-plan-panel-title-row .meal-plan-panel-title {
+      margin: 0;
+    }
+    .meal-plan-board {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      overflow-x: auto;
+      margin-bottom: 4px;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .meal-plan-column {
+      flex: 1 1 0;
+      min-width: 104px;
+      display: flex;
+      flex-direction: column;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg);
+      /* Height comes from day header + body (body min fits ~4 chips by default). */
       min-height: 0;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .meal-plan-column--drag-over {
+      border-color: #7c8aa0;
+      box-shadow: 0 0 0 2px rgba(74, 85, 104, 0.18);
+      background: linear-gradient(180deg, var(--bg) 0%, rgba(74, 85, 104, 0.07) 100%);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .meal-plan-column {
+        transition: none;
+      }
+    }
+    .meal-plan-column-head {
+      font-family: 'Raleway', system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 8px 7px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .meal-plan-column-body {
+      flex: 1;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      /* Room for ~four chips without oversized empty columns (tighter row height + gaps). */
+      min-height: calc(4 * 3rem + 18px);
     }
     .meal-plan-chip {
-      display: inline-flex;
+      display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 6px;
-      padding: 6px 10px 6px 12px;
-      border-radius: 999px;
-      background: var(--bg);
+      padding: 6px 8px 6px 10px;
+      border-radius: 10px;
+      background: var(--surface);
       border: 1.5px solid var(--border);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 500;
       color: var(--text);
+      width: 100%;
       max-width: 100%;
+      box-sizing: border-box;
+      cursor: grab;
+    }
+    .meal-plan-chip:active {
+      cursor: grabbing;
+    }
+    /* Hide source chip while dragging so only the custom drag preview is visible */
+    .meal-plan-chip--dragging {
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+    /* Custom drag image: recipe title + light shadow (avoids a second “boxed” chip). */
+    .meal-plan-drag-ghost {
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      z-index: 2147483647;
+      padding: 5px 10px;
+      max-width: min(240px, 70vw);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 6px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+      border: none;
+      outline: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
     }
     .meal-plan-chip span {
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      line-height: 1.3;
       min-width: 0;
+      flex: 1;
     }
     .meal-plan-chip-remove {
       flex-shrink: 0;

@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client';
 
-import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, type DragEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
@@ -49,6 +49,42 @@ import {
 const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
 const MEAL_PREP_MODE_KEY = 'meal-prep-salads:mealPrepMode';
 
+/** Mon–Sun columns for the meal-plan board (index 0 = Monday). */
+const MEAL_PLAN_DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+/** New recipes added from a card (+) always go to Monday, not “today”. */
+const DEFAULT_MEAL_PLAN_ADD_DAY_INDEX = 0;
+
+function emptyMealPlanByDay() {
+  return [[], [], [], [], [], [], []];
+}
+
+/** Legacy flat `ids` → all recipes on Monday so copy order stays predictable. */
+function migrateMealPlanIdsToByDay(ids: number[]) {
+  const cols = emptyMealPlanByDay();
+  ids.forEach((id) => cols[0].push(id));
+  return cols;
+}
+
+function moveRecipeToDayColumn(prev: number[][], id: number, toDay: number) {
+  const next = prev.map((col) => col.filter((x) => x !== id));
+  if (toDay < 0 || toDay > 6) return next;
+  next[toDay] = [...next[toDay], id];
+  return next;
+}
+
+/** Label for meal-plan chips: append " Salad" when missing; capitalize Salad/Salads; never duplicate salad words. */
+function mealPlanChipDisplayName(name: string) {
+  const s = name.trim();
+  const lower = s.toLowerCase();
+  if (lower === 'salad') return 'Salad';
+  if (lower === 'salads') return 'Salads';
+  if (/\s+salads$/i.test(s)) return s.replace(/\s+salads$/i, ' Salads');
+  if (/\s+salad$/i.test(s)) return s.replace(/\s+salad$/i, ' Salad');
+  if (/\bsalads$/i.test(s)) return s.replace(/\bsalads$/i, 'Salads');
+  if (/\bsalad$/i.test(s)) return s.replace(/\bsalad$/i, 'Salad');
+  return `${s} Salad`;
+}
+
 let _persistedShowAmounts = false;
 let _persistedUnitMode: 'us' | 'metric' = 'us';
 let _persistedRecipePortions = 2;
@@ -88,7 +124,8 @@ export default function SaladApp({
   selectedIdRef.current = selectedId;
 
   const [mealPrepMode, setMealPrepMode] = useState(false);
-  const [mealPlanIds, setMealPlanIds] = useState<number[]>([]);
+  const [mealPlanByDay, setMealPlanByDay] = useState<number[][]>(emptyMealPlanByDay);
+  const mealPlanIds = useMemo(() => mealPlanByDay.flat(), [mealPlanByDay]);
   const [mealPlanPortions, setMealPlanPortions] = useState(2);
   const [mealPlanShowAmounts, setMealPlanShowAmounts] = useState(false);
   const [mealPlanUnitMode, setMealPlanUnitMode] = useState<'us' | 'metric'>('us');
@@ -107,6 +144,11 @@ export default function SaladApp({
   const [smartPicksTipOpen, setSmartPicksTipOpen] = useState(false);
   const [smartPicksEnabled, setSmartPicksEnabled] = useState(false);
   const [selectedProteinByRecipe, setSelectedProteinByRecipe] = useState<Record<number, string>>({});
+  /** Which day column is currently a drag-over drop target. */
+  const [mealPlanDragOverDay, setMealPlanDragOverDay] = useState<number | null>(null);
+  /** Custom drag preview node (must stay in `document` until drag ends). */
+  const mealPlanDragGhostRef = useRef<HTMLDivElement | null>(null);
+  const [mealPlanTipOpen, setMealPlanTipOpen] = useState(false);
 
   /** Avoid writing `{ ids: [] }` on mount before the hydrate effect applies — that was wiping the plan on route remount (`/salads` ↔ `/*-salads`). */
   const skipNextMealPlanPersist = useRef(true);
@@ -125,7 +167,15 @@ export default function SaladApp({
       if (raw) {
         const o = JSON.parse(raw);
         const valid = new Set(RECIPES.map((r) => r.id));
-        if (Array.isArray(o.ids)) setMealPlanIds(o.ids.filter((id: number) => valid.has(id)));
+        if (Array.isArray(o.byDay) && o.byDay.length === 7) {
+          const cols = o.byDay.map((col: unknown) =>
+            Array.isArray(col) ? col.filter((id: number) => valid.has(id)) : []
+          );
+          while (cols.length < 7) cols.push([]);
+          setMealPlanByDay(cols.slice(0, 7) as number[][]);
+        } else if (Array.isArray(o.ids)) {
+          setMealPlanByDay(migrateMealPlanIdsToByDay(o.ids.filter((id: number) => valid.has(id))));
+        }
         if (typeof o.portions === 'number' && o.portions >= 2 && o.portions <= 30)
           setMealPlanPortions(Math.round(o.portions));
         if (typeof o.showAmounts === 'boolean') setMealPlanShowAmounts(o.showAmounts);
@@ -147,7 +197,7 @@ export default function SaladApp({
       localStorage.setItem(
         MEAL_PLAN_STORAGE_KEY,
         JSON.stringify({
-          ids: mealPlanIds,
+          byDay: mealPlanByDay,
           portions: mealPlanPortions,
           showAmounts: mealPlanShowAmounts,
           unitMode: mealPlanUnitMode,
@@ -155,7 +205,7 @@ export default function SaladApp({
         })
       );
     } catch {}
-  }, [mealPrepMode, mealPlanIds, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, smartPicksEnabled]);
+  }, [mealPrepMode, mealPlanByDay, mealPlanPortions, mealPlanShowAmounts, mealPlanUnitMode, smartPicksEnabled]);
 
   useEffect(() => {
     if (!mealPlanHydratedFromStorage) return;
@@ -318,15 +368,26 @@ export default function SaladApp({
   }, []);
 
   const handleToggleMealPlanRecipe = useCallback((id: number) => {
-    setMealPlanIds((prev) => {
-      const idx = prev.indexOf(id);
-      return idx >= 0 ? prev.filter((x) => x !== id) : [...prev, id];
+    setMealPlanByDay((prev) => {
+      let fromCol = -1;
+      for (let i = 0; i < prev.length; i++) {
+        if (prev[i].includes(id)) {
+          fromCol = i;
+          break;
+        }
+      }
+      if (fromCol >= 0) {
+        return prev.map((col, i) => (i === fromCol ? col.filter((x) => x !== id) : col));
+      }
+      return prev.map((c, i) =>
+        i === DEFAULT_MEAL_PLAN_ADD_DAY_INDEX ? [...c, id] : c
+      );
     });
   }, []);
 
   const handleRemoveFromMealPlan = useCallback(
     (id: number) => {
-      setMealPlanIds((prev) => prev.filter((x) => x !== id));
+      setMealPlanByDay((prev) => prev.map((col) => col.filter((x) => x !== id)));
       if (servingsModalOpen && servingsModalTarget === 'mealPlan') {
         setServingsModalOpen(false);
       }
@@ -335,11 +396,33 @@ export default function SaladApp({
   );
 
   const handleClearMealPlan = useCallback(() => {
-    setMealPlanIds([]);
+    setMealPlanByDay(emptyMealPlanByDay());
     if (servingsModalOpen && servingsModalTarget === 'mealPlan') {
       setServingsModalOpen(false);
     }
   }, [servingsModalOpen, servingsModalTarget]);
+
+  const handleMealPlanDropOnDay = useCallback((dayIndex: number, e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setMealPlanDragOverDay(null);
+    const raw = e.dataTransfer.getData('text/plain');
+    const id = parseInt(raw, 10);
+    if (!Number.isFinite(id)) return;
+    setMealPlanByDay((prev) => moveRecipeToDayColumn(prev, id, dayIndex));
+  }, []);
+
+  useEffect(() => {
+    const clearDragOver = () => setMealPlanDragOverDay(null);
+    window.addEventListener('dragend', clearDragOver);
+    return () => window.removeEventListener('dragend', clearDragOver);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      mealPlanDragGhostRef.current?.remove();
+      mealPlanDragGhostRef.current = null;
+    };
+  }, []);
 
   // ── Amounts / units toggles ──
   const handleToggleAmounts = useCallback(() => {
@@ -562,13 +645,29 @@ export default function SaladApp({
     if (!smartPicksTipOpen) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.browse-smart-picks-tip-wrap')) {
+      if (!target.closest('.browse-mode .browse-smart-picks-tip-wrap')) {
         setSmartPicksTipOpen(false);
       }
     };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, [smartPicksTipOpen]);
+
+  useEffect(() => {
+    if (!mealPlanTipOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.meal-plan-panel-tip-wrap')) {
+        setMealPlanTipOpen(false);
+      }
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [mealPlanTipOpen]);
+
+  useEffect(() => {
+    if (!mealPrepMode) setMealPlanTipOpen(false);
+  }, [mealPrepMode]);
 
   // ── Computed values ──
   const visible = recipesForCardStrip(browseMode, activeCategory, mealPrepMode, mealPlanIds, smartPicksEnabled);
@@ -953,11 +1052,31 @@ export default function SaladApp({
       </div>
 
       {/* ── Meal Plan Panel ── */}
-      {(mealPrepMode || mealPlanIds.length > 0) && (
+      {mealPrepMode && (
         <section className="meal-plan-panel" style={{ '--detail-accent': '#4a5568' } as React.CSSProperties} aria-labelledby="mealPlanPanelHeading">
           <div className="meal-plan-panel-header">
-            <div>
+            <div className="meal-plan-panel-title-row">
               <h2 id="mealPlanPanelHeading" className="meal-plan-panel-title">This week&apos;s meal plan</h2>
+              <span
+                className={`browse-smart-picks-tip-wrap meal-plan-panel-tip-wrap${mealPlanTipOpen ? ' is-open' : ''}`}
+              >
+                <button
+                  type="button"
+                  className="browse-smart-picks-tip-btn"
+                  aria-label="How to use the meal plan"
+                  aria-expanded={mealPlanTipOpen ? 'true' : 'false'}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMealPlanTipOpen((prev) => !prev);
+                  }}
+                >
+                  i
+                </button>
+                <span className="browse-smart-picks-tip-bubble" role="tooltip">
+                  Tap <strong>+</strong> on a card to add recipes to a day (checkmark removes). Drag chips between
+                  days to plan your week.
+                </span>
+              </span>
             </div>
             <div className="copy-actions">
               <button
@@ -1017,35 +1136,92 @@ export default function SaladApp({
               </button>
             </div>
           </div>
-          {mealPlanIds.length === 0 ? (
-            mealPrepMode ? (
-              <p className="meal-plan-empty">
-                Tap <strong>+</strong> on a card to add recipes to your meal plan (or the checkmark to remove).
-              </p>
-            ) : (
-              <p className="meal-plan-empty">
-                Turn on <strong>Prep mode</strong> in the bar above to add recipes to your meal plan.
-              </p>
-            )
-          ) : null}
-          <div className="meal-plan-chips">
-            {mealPlanIds.map((id) => {
-              const r = RECIPES.find((x) => x.id === id);
-              if (!r) return null;
-              return (
-                <div key={id} className="meal-plan-chip">
-                  <span>{r.name}</span>
-                  <button
-                    type="button"
-                    className="meal-plan-chip-remove"
-                    onClick={() => handleRemoveFromMealPlan(id)}
-                    aria-label={`Remove ${r.name} from meal plan`}
-                  >
-                    ×
-                  </button>
+          <div
+            className="meal-plan-board"
+            aria-label="Meal plan by day of the week. Each day can hold multiple recipes; drag chips between columns."
+          >
+            {MEAL_PLAN_DAY_LABELS.map((dayLabel, dayIdx) => (
+              <div
+                key={dayLabel}
+                className={`meal-plan-column${mealPlanDragOverDay === dayIdx ? ' meal-plan-column--drag-over' : ''}`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (!e.dataTransfer.types.includes('text/plain')) return;
+                  e.dataTransfer.dropEffect = 'move';
+                  setMealPlanDragOverDay((prev) => (prev === dayIdx ? prev : dayIdx));
+                }}
+                onDrop={(e) => handleMealPlanDropOnDay(dayIdx, e)}
+              >
+                <div className="meal-plan-column-head">{dayLabel}</div>
+                <div className="meal-plan-column-body">
+                  {mealPlanByDay[dayIdx].map((id) => {
+                    const r = RECIPES.find((x) => x.id === id);
+                    if (!r) return null;
+                    const planLabel = mealPlanChipDisplayName(r.name);
+                    return (
+                      <div
+                        key={id}
+                        className="meal-plan-chip"
+                        draggable
+                        onDragStart={(e) => {
+                          const chip = e.currentTarget;
+                          e.dataTransfer.setData('text/plain', String(id));
+                          e.dataTransfer.effectAllowed = 'move';
+
+                          mealPlanDragGhostRef.current?.remove();
+                          const ghost = document.createElement('div');
+                          ghost.className = 'meal-plan-drag-ghost';
+                          ghost.textContent = planLabel;
+                          ghost.setAttribute('aria-hidden', 'true');
+                          document.body.appendChild(ghost);
+                          const rect = chip.getBoundingClientRect();
+                          const ox = Math.min(
+                            Math.max(e.clientX - rect.left, 0),
+                            Math.max(rect.width, 1)
+                          );
+                          const oy = Math.min(
+                            Math.max(e.clientY - rect.top, 0),
+                            Math.max(rect.height, 1)
+                          );
+                          let dragImageOk = false;
+                          try {
+                            e.dataTransfer.setDragImage(ghost, ox, oy);
+                            dragImageOk = true;
+                            mealPlanDragGhostRef.current = ghost;
+                          } catch {
+                            ghost.remove();
+                            mealPlanDragGhostRef.current = null;
+                          }
+
+                          // Hiding the source in the same tick breaks native drag in Chrome/WebKit.
+                          // If setDragImage failed, keep the chip visible so the browser still has a drag preview.
+                          requestAnimationFrame(() => {
+                            if (dragImageOk) chip.classList.add('meal-plan-chip--dragging');
+                          });
+                        }}
+                        onDragEnd={(e) => {
+                          e.currentTarget.classList.remove('meal-plan-chip--dragging');
+                          mealPlanDragGhostRef.current?.remove();
+                          mealPlanDragGhostRef.current = null;
+                          setMealPlanDragOverDay(null);
+                        }}
+                      >
+                        <span>{planLabel}</span>
+                        <button
+                          type="button"
+                          className="meal-plan-chip-remove"
+                          draggable={false}
+                          onClick={() => handleRemoveFromMealPlan(id)}
+                          aria-label={`Remove ${planLabel} from ${dayLabel}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
           <div className="meal-plan-footer">
             <button
