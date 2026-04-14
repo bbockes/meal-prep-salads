@@ -987,7 +987,7 @@ export default function SaladApp({
                   return (
                     <div className="optional-protein-section">
                       <div className="section-heading">
-                        <span>💪</span> Add a protein <span className="optional-protein-label">(optional)</span>
+                        <span>💪</span> Add Protein <span className="optional-protein-label">(optional)</span>
                       </div>
                       <div className="protein-columns">
                         <div className="protein-column">
