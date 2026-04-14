@@ -397,7 +397,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '¼ cup almonds',
       '½ cup cooked wild rice',
       'optional: rice vinegar, splash',
-      'Dressing: miso + soy sauce + sesame oil + ginger + honey // 1 tbsp miso + 1 tbsp soy + 1 tsp sesame oil + 1 tsp ginger + 1 tsp honey (1 tbsp white miso + 1 tbsp soy sauce + 1 tsp toasted sesame oil + 1 tsp ginger + 1 tsp honey)',
+      'Dressing: miso dressing (miso + soy sauce + sesame oil + ginger + honey) // 1 tbsp miso + 1 tbsp soy + 1 tsp sesame oil + 1 tsp ginger + 1 tsp honey (1 tbsp white miso + 1 tbsp soy sauce + 1 tsp toasted sesame oil + 1 tsp ginger + 1 tsp honey)',
     ],
     steps: [
       'Sauté mushrooms until deeply browned.',
@@ -438,7 +438,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '¼ cup fresh cilantro',
       '½ cup roasted plantain chips, crushed',
       '½ cup cooked quinoa',
-      'Dressing: plain Greek yogurt + lime juice + hot sauce + cilantro // ¼ cup plain Greek yogurt + 1 tbsp lime juice + hot sauce to taste + 1 tbsp chopped cilantro',
+      'Dressing: cilantro-lime yogurt dressing (plain Greek yogurt + lime juice + hot sauce + cilantro) // ¼ cup plain Greek yogurt + 1 tbsp lime juice + hot sauce to taste + 1 tbsp chopped cilantro',
     ],
     steps: [
       'Cook salmon (pan-sear or bake).',
@@ -494,7 +494,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '½ cup shredded carrots',
       '1 avocado, sliced',
       '¼ cup toasted coconut chips',
-      'Dressing: shiro miso + rice vinegar + sesame oil + honey + ginger // 1 tbsp white miso + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey + 1 tsp grated ginger (1 tbsp miso + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey + 1 tsp ginger)',
+      'Dressing: shiro miso dressing (shiro miso + rice vinegar + sesame oil + honey + ginger) // 1 tbsp white miso + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey + 1 tsp grated ginger (1 tbsp miso + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey + 1 tsp ginger)',
     ],
     steps: [
       'Whisk miso dressing until smooth.',
@@ -553,7 +553,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '1 cup cherry tomatoes, halved',
       '¼ cup red onion, thinly sliced',
       '¼ cup fresh cilantro + mint',
-      'Dressing: yogurt + lemon + cumin + garlic // ¼ cup Greek yogurt + 1 tbsp lemon juice + ½ tsp cumin + 1 garlic clove (¼ cup yogurt + 1 tbsp lemon + toasted cumin + grated garlic)',
+      'Dressing: yogurt-cumin dressing (yogurt + lemon + cumin + garlic) // ¼ cup Greek yogurt + 1 tbsp lemon juice + ½ tsp cumin + 1 garlic clove (¼ cup yogurt + 1 tbsp lemon + toasted cumin + grated garlic)',
     ],
     steps: [
       'Marinate chicken in yogurt + tandoori spice mix, pan-cook or broil.',
@@ -685,7 +685,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '½ cup shredded carrots',
       '3 scallions, sliced',
       '1 tbsp sesame seeds',
-      'Dressing: gochujang + rice vinegar + sesame oil + honey // 1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey (1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey)',
+      'Dressing: gochujang dressing (gochujang + rice vinegar + sesame oil + honey) // 1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey (1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey)',
     ],
     steps: [
       'In a hot pan, sear beef until browned, about 2–3 min per side.',
@@ -703,7 +703,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '3 scallions, sliced',
       '1 tsp sesame seeds',
       '¼ cup toasted coconut flakes + sliced almonds',
-      'Dressing: sesame oil + rice vinegar + honey + soy sauce // 1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp honey + 1 tbsp soy sauce (1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp honey + 1 tbsp soy)',
+      'Dressing: sesame-honey vinaigrette (sesame oil + rice vinegar + honey + soy sauce) // 1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp honey + 1 tbsp soy sauce (1 tsp sesame oil + 1 tbsp rice vinegar + 1 tsp honey + 1 tbsp soy)',
     ],
     steps: [
       'Toss coleslaw mix with sesame dressing.',
@@ -1400,7 +1400,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '¼ cup fresh cilantro',
       '3 scallions, sliced',
       '1 tsp Tajín seasoning',
-      'Dressing: lime + salt (lime juice + salt) // 2 tbsp lime juice + pinch of salt (2 tbsp lime juice + pinch of salt)',
+      'Dressing: lime dressing (lime juice + salt) // 2 tbsp lime juice + pinch of salt (2 tbsp lime juice + pinch of salt)',
     ],
     steps: [
       'Combine watermelon, jicama, and jalapeño in a bowl.',

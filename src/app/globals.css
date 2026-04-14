@@ -172,6 +172,9 @@
       box-sizing: border-box;
       flex-wrap: nowrap;
       overflow-x: auto;
+      /* Prevent vertical "wiggle" / scroll chaining when swiping tabs on mobile. */
+      overflow-y: clip;
+      touch-action: pan-x;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-x: contain;
       scrollbar-width: thin;
