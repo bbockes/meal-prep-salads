@@ -278,7 +278,7 @@ export function buildBreadcrumbJsonLd(args: {
 
 export function buildRecipeJsonLd(recipe: Recipe, canonicalPageUrl: string): object {
   const slug = recipeCardImageSlug(recipe.name, recipe.imageSlug);
-  const imageUrl = absoluteUrl(`/images/${slug}.png`);
+  const imageUrl = absoluteUrl(`/images/${slug}.webp`);
   const ingredients = recipe.ingredients.map((ing) => ingredientLine(ing));
   const diets = getRecipeDiets(recipe);
   const keywords = [

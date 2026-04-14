@@ -12,6 +12,9 @@
  *   node scripts/generate-recipe-images.mjs --skip-existing
  *   node scripts/generate-recipe-images.mjs --batch   # no pause between images
  *   MEAL_PREP_IMAGES_BATCH=1 node …                # same as --batch (no prompts)
+ *
+ * After generating PNGs into `images/`, run `npm run optimize-images` to write resized WebP to
+ * `public/images/` and `images/` (masters stay as PNG under `images/` only). The app loads `.webp`.
  */
 
 import fs from 'fs';

@@ -151,8 +151,8 @@ export default function SaladApp({
   /** After true, meal-plan state reflects localStorage (or “no saved plan”). Used so we don’t clear Smart Picks using stale empty state in the same effect pass as hydrate. */
   const [mealPlanHydratedFromStorage, setMealPlanHydratedFromStorage] = useState(false);
 
-  // Load meal plan from localStorage
-  useEffect(() => {
+  // Load meal plan from localStorage (layout effect so prep mode / plan paint in one frame — no flash after useEffect)
+  useLayoutEffect(() => {
     try {
       const mode = localStorage.getItem(MEAL_PREP_MODE_KEY);
       if (mode === '1') setMealPrepMode(true);
@@ -241,8 +241,9 @@ export default function SaladApp({
       else if (visible.some((r) => r.id === prev)) next = prev;
       return next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-sync when URL-derived props change; meal plan / Smart Picks stay client-only
-  }, [initialBrowseMode, initialCategory, initialPinnedRecipeId]);
+    // mealPlanHydratedFromStorage: re-run once storage has been read so strip/selection use meal prep + plan (not a flash frame).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- do not re-sync on every meal-plan edit; hydration + URL changes only
+  }, [initialBrowseMode, initialCategory, initialPinnedRecipeId, mealPlanHydratedFromStorage]);
 
   const categoryToUrl = useCallback(
     (category: string, opts?: { browseModeForAll?: SaladBrowseMode }) => {
@@ -798,7 +799,7 @@ export default function SaladApp({
                 style={
                   {
                     '--card-accent': accent,
-                    '--card-image': `url('/images/${cardSlug}.png')`,
+                    '--card-image': `url('/images/${cardSlug}.webp')`,
                   } as React.CSSProperties
                 }
                 role="button"

@@ -3282,7 +3282,7 @@ function escapeAttr(s) {
     .replace(/"/g, '&quot;');
 }
 
-/** Matches `slugForRecipe` in scripts/generate-recipe-images.mjs → images/<slug>.png */
+/** Matches `slugForRecipe` in scripts/generate-recipe-images.mjs → images/<slug>.webp (run npm run optimize-images after adding PNGs). */
 function recipeCardImageSlug(name) {
   const base = String(name).replace(/\s+Salad$/i, '').trim();
   return base
@@ -3481,7 +3481,7 @@ function renderCards() {
       ? `<span class="card-smart-picks-matches" title="Ingredients overlapping your meal plan">${overlapN} shared</span>`
       : '';
     return `
-      <div class="recipe-card ${sel} ${plan}" style="--card-accent:${accent};--card-image:url('images/${escapeAttr(cardSlug)}.png')"
+      <div class="recipe-card ${sel} ${plan}" style="--card-accent:${accent};--card-image:url('images/${escapeAttr(cardSlug)}.webp')"
            role="button"
            tabindex="0"
            aria-label="${escapeAttr(`View ${r.name}`)}"
