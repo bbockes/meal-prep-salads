@@ -138,14 +138,15 @@ export function getSaladPageSeoCopy(browseMode: SaladBrowseMode, activeCategory:
   if (activeCategory === 'All' && browseMode === 'cuisine') {
     return {
       title: 'Browse Salads by Cuisine',
-      description: `${SITE_NAME} — browse salads by cuisine, flavor, or season. Build your weekly meal plan and copy a combined grocery list in one click.`,
+      description:
+        'Browse salads by cuisine, flavor, or season. Build your weekly meal plan and copy a combined grocery list in one click.',
       h1: 'Browse Salads by Cuisine',
     };
   }
 
   if (activeCategory === 'All' && browseMode === 'flavor') {
     return {
-      title: 'Salad Recipes by Flavor',
+      title: 'Browse Salads by Flavor',
       description: `Explore salads by flavor profile — tangy, creamy, spicy, fresh, and more. Plan your week and copy your grocery list with ${SITE_NAME}.`,
       h1: 'Browse Salads by Flavor',
     };
@@ -161,7 +162,7 @@ export function getSaladPageSeoCopy(browseMode: SaladBrowseMode, activeCategory:
 
   if (browseMode === 'cuisine') {
     return {
-      title: `${activeCategory} Salad Recipes`,
+      title: `${activeCategory} Salads`,
       description: `${activeCategory} salads for meal prep — fresh ideas, clear ingredients, and steps. Add favorites to your plan and copy your grocery list with ${SITE_NAME}. Keywords: ${kw}.`,
       h1: `${activeCategory} Salads`,
     };
@@ -169,7 +170,7 @@ export function getSaladPageSeoCopy(browseMode: SaladBrowseMode, activeCategory:
 
   if (browseMode === 'flavor') {
     return {
-      title: `${activeCategory} Salad Recipes`,
+      title: `${activeCategory} Salads`,
       description: `${activeCategory} salad ideas for meal prep. Filtered flavor-forward recipes with ${SITE_NAME} — plan your week and copy your list. Keywords: ${kw}.`,
       h1: `${activeCategory} Salads`,
     };
@@ -177,14 +178,14 @@ export function getSaladPageSeoCopy(browseMode: SaladBrowseMode, activeCategory:
 
   if (browseMode === 'season') {
     return {
-      title: `${activeCategory} Salad Ideas`,
+      title: `${activeCategory} Salads`,
       description: `${activeCategory} salad recipes for meal prep. Build your plan and copy a grocery list with ${SITE_NAME}. Keywords: ${kw}.`,
       h1: `${activeCategory} Salads`,
     };
   }
 
   return {
-    title: 'Salad Recipes',
+    title: 'Salads',
     description: `Salad recipes for meal prep with ${SITE_NAME}.`,
     h1: 'Salads',
   };
