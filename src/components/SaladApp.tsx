@@ -899,13 +899,6 @@ export default function SaladApp({
                   }
                 }}
               >
-                {r.id === selectedId && (
-                  <span className="card-selected-badge" aria-hidden="true" title="Selected">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  </span>
-                )}
                 {smartPicksStripActive && (
                   <span className="card-smart-picks-matches" title="Ingredients overlapping your meal plan">
                     {overlapN} shared

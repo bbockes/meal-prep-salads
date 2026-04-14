@@ -687,7 +687,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       'Dressing: gochujang dressing (gochujang + rice vinegar + sesame oil + honey) // 1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp sesame oil + 1 tsp honey (1 tbsp gochujang + 1 tbsp rice vinegar + 1 tsp toasted sesame oil + 1 tsp honey)',
     ],
     steps: [
-      'In a hot pan, sear beef until browned, about 2–3 min per side.',
+      '\uE000PROTONLY\uE000In a hot pan, sear beef until browned, about 2–3 min per side.',
       'Toss romaine, cabbage, and carrots together.',
       'Dress with gochujang vinaigrette.',
       'Spoon what you seared in step 1 over the salad.',
@@ -743,8 +743,8 @@ const RECIPE_SEED: RecipeSeed[] = [
       'Dressing: nuoc cham (fish sauce + lime + palm sugar + Thai chili + garlic) // 2 tbsp fish sauce + 2 tbsp lime juice + 1 tsp honey + 1 chili + 1 garlic clove (2 tbsp fish sauce + 2 tbsp lime + honey + chili + garlic)',
     ],
     steps: [
-      'Marinate chicken and pan-cook or grill until caramelized.',
-      'Shred chicken and let cool.',
+      '\uE000PROTONLY\uE000Marinate chicken and pan-cook or grill until caramelized.',
+      '\uE000PROTONLY\uE000Shred chicken and let cool.',
       'Toss cabbage, romaine, and carrots with nuoc cham dressing.',
       'Add chicken and fresh herbs.',
       'Top with crispy fried shallots and crushed peanuts.',
@@ -826,7 +826,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '½ lime',
     ],
     steps: [
-      'Shred or slice chicken.',
+      '\uE000PROTONLY\uE000Shred or slice chicken.',
       'Massage kale with a little Caesar dressing for 30–60 sec.',
       'Toss kale + romaine with dressing.',
       'Add chicken, tomatoes, and parmesan.',
@@ -1024,7 +1024,7 @@ const RECIPE_SEED: RecipeSeed[] = [
       '1 cucumber, chopped',
       '1 cup shredded cabbage',
       '½ cup toasted almond meal + chopped walnuts',
-      'Dressing: pesto (basil + pine nuts + garlic + parmesan + olive oil) + olive oil + lemon // 2 tbsp pesto + 1 tbsp olive oil + 1 tsp lemon juice (2 tbsp basil pesto + EVOO + lemon)',
+      'Dressing: pesto lemon dressing (pesto (basil + pine nuts + garlic + parmesan + olive oil) + olive oil + lemon) // 2 tbsp pesto + 1 tbsp olive oil + 1 tsp lemon juice (2 tbsp basil pesto + EVOO + lemon)',
     ],
     steps: [
       'Toss greens + cabbage in a bowl.',

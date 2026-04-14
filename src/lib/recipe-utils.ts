@@ -31,6 +31,19 @@ export const formatState = {
 
 export const SCALING_BASE_PORTIONS = 2;
 
+// ── Protein-only steps ─────────────────────────────────────────────────────────
+
+export const PROTEIN_ONLY_STEP_PREFIX = '\uE000PROTONLY\uE000';
+
+export function isProteinOnlyStep(stepText: string): boolean {
+  return String(stepText || '').startsWith(PROTEIN_ONLY_STEP_PREFIX);
+}
+
+export function stripProteinOnlyStepPrefix(stepText: string): string {
+  const s = String(stepText || '');
+  return isProteinOnlyStep(s) ? s.slice(PROTEIN_ONLY_STEP_PREFIX.length) : s;
+}
+
 // ── HTML helpers ──────────────────────────────────────────────────────────────
 
 export function escapeHtml(s) {
@@ -1271,6 +1284,14 @@ export function formatDressingDiyComboPartLine(chunk) {
   let c = chunk.trim();
   const region = findFirstBalancedParenRegion(c);
   const labelDisp = escapeHtml(displayDressingPartLabel(dressingChunkLabel(c)));
+  const labelCore = String(displayDressingPartLabel(dressingChunkLabel(c)) || '').trim().toLowerCase();
+  const chunkCore = String(stripCompositeDressingAmounts(c) || '')
+    .trim()
+    .replace(/^[()]+/, '')
+    .replace(/[()]+$/, '')
+    .replace(/[).,;:]+$/g, '')
+    .trim()
+    .toLowerCase();
   const rowBody = (innerRecipeHtml) =>
     `<li>` +
     `<span class="bullet" aria-hidden="true"></span>` +
@@ -1278,6 +1299,10 @@ export function formatDressingDiyComboPartLine(chunk) {
     innerRecipeHtml +
     `</span></li>`;
   if (!region) {
+    // Avoid "Sumac: sumac" style repetition for simple add-ons.
+    if (labelCore && chunkCore && labelCore === chunkCore) {
+      return rowBody(`<span class="dressing-diy-part-recipe">${boldCompositeDressingBody(c)}</span>`);
+    }
     return rowBody(
       `<span class="dressing-diy-part-label">${labelDisp}:</span> ` +
         `<span class="dressing-diy-part-recipe">${boldCompositeDressingBody(c)}</span>`
@@ -1374,6 +1399,35 @@ export function dressingDiyHeadingTitle(fullDressingLine) {
   let trimmed = body;
   if (/^or\s+/i.test(trimmed)) trimmed = trimmed.replace(/^or\s+/i, '');
   const chunks = splitPlusAtDepthZero(trimmed);
+  const tryCollapseComboTitle = (rawChunks) => {
+    if (!rawChunks || rawChunks.length < 2) return null;
+    // Only collapse when the first chunk is a real "named dressing recipe" (has parens),
+    // and the remaining chunks are simple add-ons (no parens).
+    const first = String(rawChunks[0] || '').trim();
+    if (!findFirstBalancedParenRegion(first)) return null;
+    const rest = rawChunks.slice(1).map((c) => String(c || '').trim()).filter(Boolean);
+    if (!rest.length || rest.length > 2) return null;
+    if (rest.some((c) => findFirstBalancedParenRegion(c))) return null;
+
+    const base = titleCaseWordsPreservingAcronyms(displayDressingPartLabel(dressingChunkLabel(first)));
+    const addOns = rest.map((c) => titleCaseWordsPreservingAcronyms(displayDressingPartLabel(dressingChunkLabel(c))));
+    const baseHasDressWord = /\b(dressing|vinaigrette)\b/i.test(base);
+    if (!baseHasDressWord) return null;
+    // Avoid collapsing when add-ons are themselves full dressings (keeps "Caesar + Buffalo").
+    if (addOns.some((a) => /\b(dressing|vinaigrette)\b/i.test(a))) return null;
+
+    const m = base.match(/^(.*)\b(dressing|vinaigrette)\b(.*)$/i);
+    if (!m) return null;
+    const before = String(m[1] || '').trim().replace(/[ -]+$/g, '');
+    const word = String(m[2] || '').trim();
+    const after = String(m[3] || '').trim();
+    const prefix = [before, ...addOns].filter(Boolean).join('-').replace(/-+/g, '-');
+    const collapsed = `${prefix} ${word}${after ? ` ${after}` : ''}`.trim();
+    return collapsed;
+  };
+
+  const collapsed = tryCollapseComboTitle(chunks);
+  if (collapsed) return collapsed;
   const segTitle = (ch) => {
     let c = ch.trim();
     if (/^or\s+/i.test(c)) c = c.replace(/^or\s+/i, '');
@@ -1468,6 +1522,40 @@ export function renderDressingDiyBodyHtml(fullDressingLine) {
     if (innerForDisplay) out += boldCompositeDressingBody(innerForDisplay);
     if (afterForDisplay) out += (out ? ' ' : '') + boldCompositeDressingBody(afterForDisplay);
     return out ? wrapDressingDiyIngredientsList(out) : '';
+  }
+
+  // If this is effectively "base vinaigrette/dressing + simple add-ons", flatten the DIY list
+  // into one ingredient list (instead of labeled combo parts).
+  const tryFlattenCollapsedCombo = (rawChunks) => {
+    if (!rawChunks || rawChunks.length < 2) return null;
+    const first = String(rawChunks[0] || '').trim();
+    const region = findFirstBalancedParenRegion(first);
+    if (!region) return null;
+    const rest = rawChunks.slice(1).map((c) => String(c || '').trim()).filter(Boolean);
+    if (!rest.length || rest.length > 2) return null;
+    if (rest.some((c) => findFirstBalancedParenRegion(c))) return null;
+
+    const baseTitle = titleCaseWordsPreservingAcronyms(displayDressingPartLabel(dressingChunkLabel(first)));
+    if (!/\b(dressing|vinaigrette)\b/i.test(baseTitle)) return null;
+    // Avoid flattening when add-ons look like full dressings.
+    const addOnTitles = rest.map((c) => titleCaseWordsPreservingAcronyms(displayDressingPartLabel(dressingChunkLabel(c))));
+    if (addOnTitles.some((a) => /\b(dressing|vinaigrette)\b/i.test(a))) return null;
+
+    const inner = first.slice(region.pIdx + 1, region.end).trim();
+    let after = first.slice(region.end + 1).trim();
+    after = after.replace(/^\+\s*/g, '').trim();
+    const baseBody = inner + (after ? ` + ${after}` : '');
+    const tail = rest.join(' + ');
+    const body = (baseBody + (tail ? ` + ${tail}` : '')).trim();
+    return body || null;
+  };
+
+  const flattened = tryFlattenCollapsedCombo(chunks);
+  if (flattened) {
+    if (formatState.showAmounts) {
+      return wrapDressingDiyIngredientsList(renderDressingTermsWithAmountsHtml(flattened));
+    }
+    return wrapDressingDiyIngredientsList(boldCompositeDressingBody(flattened));
   }
 
   const partLines = chunks
@@ -1893,7 +1981,7 @@ export function isOptionalProteinUpsellStep(stepText: string): boolean {
 }
 
 function cleanServeImmediatelyStep(stepText: string): { keep: boolean; text: string } {
-  let s = String(stepText || '').trim();
+  let s = stripProteinOnlyStepPrefix(String(stepText || '')).trim();
   if (!s) return { keep: false, text: '' };
 
   // Keep chill/rest steps (these are useful actions).
@@ -1982,6 +2070,7 @@ export function buildSyntheticSelectedProteinStep(selectedFullName: string): str
 export function recipeStepsForDisplay(recipe: Recipe, selectedProtein: string | null): string[] {
   const base = (recipe.steps || [])
     .filter((st) => !isOptionalProteinUpsellStep(st))
+    .filter((st) => (selectedProtein ? true : !isProteinOnlyStep(st)))
     .map((st) => cleanServeImmediatelyStep(st))
     .filter((x) => x.keep)
     .map((x) => x.text);
