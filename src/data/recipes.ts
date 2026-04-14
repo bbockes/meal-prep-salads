@@ -214,7 +214,6 @@ const RECIPE_SEED: RecipeSeed[] = [
     ingredients: [
       '2 cups romaine',
       '1 cup arugula',
-      '8 oz steak, cooked and sliced thin',
       '½ cup cooked quinoa',
       '¼ cup pickled red onions',
       '1 cup cherry tomatoes, halved',
@@ -224,7 +223,7 @@ const RECIPE_SEED: RecipeSeed[] = [
     ],
     steps: [
       'Toss greens + quinoa with honey Dijon dressing.',
-      'Add sliced steak, tomatoes, and pickled onions.',
+      'Add protein, tomatoes, and pickled onions.',
       'Top with toasted walnuts.',
       'Drizzle extra dressing.',
       'Optional: finish with hot honey.',

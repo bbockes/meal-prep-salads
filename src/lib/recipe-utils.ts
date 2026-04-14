@@ -1645,6 +1645,8 @@ export const INGREDIENT_STEP_STOP_PHRASES = new Set([
   'for',
   'up',
   'by',
+  // Avoid highlighting generic verbs/nouns that appear in ingredient names.
+  'mix',
 ]);
 
 export function stripTrailingParentheticals(s) {
@@ -1659,7 +1661,7 @@ export function stripTrailingParentheticals(s) {
 }
 
 export const WEAK_PREP_PREFIX =
-  /^(shredded|thinly|finely|roughly|grated|minced|chopped|diced|cubed|halved|sliced|crushed|packed|bagged|divided|frozen)\s+/i;
+  /^(shredded|thinly|finely|roughly|grated|minced|chopped|diced|cubed|halved|sliced|crushed|packed|bagged|divided|frozen|toasted|shaved|crumbled|pre-cut)\s+/i;
 
 export const INGREDIENT_DROP_MIDDLE = new Set([
   'red',
@@ -1828,8 +1830,14 @@ export function collectIngredientHighlightPhrases(ingredientLines) {
       const variants = raw.split(DRESSING_VARIANT_SPLIT).map((s) => s.trim()).filter(Boolean);
       for (const variant of variants) {
         const stripped = stripCompositeDressingAmounts(variant);
-        for (const part of stripped.split(/\s*\+\s*/)) {
-          const t = part.trim();
+        const parts = stripped.includes(' + ') ? splitPlusAtDepthZero(stripped) : stripped.split(/\s*\+\s*/);
+        for (const part of parts) {
+          const t = part
+            .trim()
+            .replace(/^[()]+/, '')
+            .replace(/[()]+$/, '')
+            .replace(/[).,;:]+$/g, '')
+            .trim();
           expandIngredientChunkToPhrases(t, phrases);
           maybePushBbqAlias(t, phrases);
         }
@@ -1842,6 +1850,14 @@ export function collectIngredientHighlightPhrases(ingredientLines) {
         expandIngredientChunkToPhrases(ch, phrases);
         maybePushGreensAlias(ch, phrases);
         maybePushBbqAlias(ch, phrases);
+      }
+
+      // Citrus segments: match step phrasing like "citrus segments" even when the ingredient
+      // is authored as "orange or grapefruit segments".
+      const low = raw.toLowerCase();
+      if (/\b(orange|grapefruit)\b/.test(low) && /\bsegments?\b/.test(low)) {
+        pushPhraseVariants(phrases, 'citrus segments');
+        pushPhraseVariants(phrases, 'citrus');
       }
     }
   }
@@ -1946,7 +1962,16 @@ function isStepUnusableWithoutOptionalProtein(stepText: string, recipe: Recipe):
   const t = adapted.trim();
   if (!t) return true;
   if (stepText.trim() === t) return false;
-  return /^\s*(toss|coat|mix|dredge|dip|turn)\s+in\b/i.test(t);
+  // Common "no direct object" after stripping swappable protein tokens.
+  if (/^\s*(toss|coat|mix|dredge|dip|turn)\s+in\b/i.test(t)) return true;
+  if (/^\s*(?:in\s+a\s+[^,]+,\s*)?(sear|pan-?sear|grill|cook|roast|bake|fry|saute|sauté)\s+(?:until|for)\b/i.test(t)) return true;
+  if (/^\s*(?:in\s+a\s+[^,]+,\s*)?(sear|pan-?sear|grill|cook|fry|saute|sauté)\s+until\b/i.test(t)) return true;
+  // "Shred/slice/chop ..." steps that only make sense when a protein is present.
+  if (/^\s*(shred|slice|chop|mince|dice)\b/i.test(t)) return true;
+  // Steps that refer to the omitted protein-cooking step.
+  if (/\bwhat\s+you\s+seared\b/i.test(t)) return true;
+  if (/\b(step\s*1|step\s*one)\b/i.test(t) && /\b(sear|grill|cook)\b/i.test(t)) return true;
+  return false;
 }
 
 export function buildSyntheticSelectedProteinStep(selectedFullName: string): string {
@@ -2006,11 +2031,6 @@ export function formatStepLineHtml(stepText, recipe) {
     }
   }
   const phrases = collectIngredientHighlightPhrases(recipe.ingredients || []);
-  for (const chunk of extractIngredientPhrasesFromStepText(step)) {
-    expandIngredientChunkToPhrases(chunk, phrases);
-    maybePushGreensAlias(chunk, phrases);
-    maybePushBbqAlias(chunk, phrases);
-  }
   if (selectedProtein) {
     const words = getProteinStepName(selectedProtein);
     if (words) phrases.push(words);

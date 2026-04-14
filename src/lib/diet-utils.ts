@@ -154,7 +154,15 @@ const PLANT_BY_CUISINE: Record<string, string> = {
   'Vietnamese': 'pan-fried tofu',
 };
 
+const RECOMMENDED_PROTEIN_OVERRIDE_BY_RECIPE_ID: Partial<
+  Record<number, { traditional?: string; plant?: string }>
+> = {
+  // Honey Crunch is designed as a "pick your protein" salad; steak is the canonical pairing.
+  15: { traditional: 'steak strips' },
+};
+
 export function getRecommendedProteins(recipe: Recipe): { traditional: string; plant: string } {
+  const ovr = RECOMMENDED_PROTEIN_OVERRIDE_BY_RECIPE_ID[recipe.id];
   let traditionalRec: string | null = null;
 
   for (const ing of recipe.ingredients) {
@@ -175,7 +183,10 @@ export function getRecommendedProteins(recipe: Recipe): { traditional: string; p
 
   const plantRec = PLANT_BY_CUISINE[recipe.subCuisine || ''] || 'roasted chickpeas';
 
-  return { traditional: traditionalRec, plant: plantRec };
+  return {
+    traditional: ovr?.traditional || traditionalRec,
+    plant: ovr?.plant || plantRec,
+  };
 }
 
 /** Heuristic pairing strength for ordering proteins after the starred recommendation. */

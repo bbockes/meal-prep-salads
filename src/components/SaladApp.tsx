@@ -135,6 +135,11 @@ export default function SaladApp({
 
   const [flashMsg, setFlashMsg] = useState<string | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout>>();
+  const [copySuccessBtn, setCopySuccessBtn] = useState<string | null>(null);
+  const copySuccessTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const cardStripScrollByKey = useRef<Record<string, number>>({});
+  const cardStripKeyRef = useRef<string>('');
 
   const [smartPicksTipOpen, setSmartPicksTipOpen] = useState(false);
   const [smartPicksEnabled, setSmartPicksEnabled] = useState(false);
@@ -282,10 +287,18 @@ export default function SaladApp({
     flashTimer.current = setTimeout(() => setFlashMsg(null), 2200);
   }, []);
 
+  const pulseCopyBtn = useCallback((id: string) => {
+    setCopySuccessBtn(id);
+    if (copySuccessTimer.current) clearTimeout(copySuccessTimer.current);
+    copySuccessTimer.current = setTimeout(() => setCopySuccessBtn(null), 1100);
+  }, []);
+
   // ── Browse mode / category selection ──
   const handleSelectBrowseMode = useCallback(
     (mode: SaladBrowseMode) => {
       if (mode === browseMode) return;
+      const curKey = `${browseMode}:${activeCategory}`;
+      if (cardStripRef.current) cardStripScrollByKey.current[curKey] = cardStripRef.current.scrollLeft;
       setServingsModalOpen(false);
       setBrowseMode(mode);
       const defaultCat = 'All';
@@ -303,13 +316,15 @@ export default function SaladApp({
       }
       router.push(categoryToUrl(defaultCat, { browseModeForAll: mode }), { scroll: false });
     },
-    [browseMode, mealPrepMode, mealPlanIds, router, categoryToUrl, smartPicksEnabled]
+    [browseMode, activeCategory, mealPrepMode, mealPlanIds, router, categoryToUrl, smartPicksEnabled]
   );
 
   const handleSelectCategory = useCallback(
     (cat: string) => {
       setServingsModalOpen(false);
       setSmartPicksTipOpen(false);
+      const curKey = `${browseMode}:${activeCategory}`;
+      if (cardStripRef.current) cardStripScrollByKey.current[curKey] = cardStripRef.current.scrollLeft;
       const visible = recipesForCardStrip(
         browseMode,
         cat,
@@ -325,7 +340,7 @@ export default function SaladApp({
       setSelectedId(nextId);
       router.push(categoryToUrl(cat), { scroll: false });
     },
-    [browseMode, mealPrepMode, mealPlanIds, router, categoryToUrl, smartPicksEnabled]
+    [browseMode, activeCategory, mealPrepMode, mealPlanIds, router, categoryToUrl, smartPicksEnabled]
   );
 
   const handleSelectRecipe = useCallback((id: number) => {
@@ -478,10 +493,13 @@ export default function SaladApp({
       );
       navigator.clipboard
         .writeText(text)
-        .then(() => flash('Ingredients copied!'))
+        .then(() => {
+          pulseCopyBtn('copyIngredientsBtn');
+          flash('Ingredients copied!');
+        })
         .catch(() => flash("Couldn't copy — try again or check permissions."));
     },
-    [recipePortions, showAmounts, unitMode, flash, selectedProteinByRecipe]
+    [recipePortions, showAmounts, unitMode, flash, selectedProteinByRecipe, pulseCopyBtn]
   );
 
   const handleCopyFullRecipe = useCallback(
@@ -497,7 +515,20 @@ export default function SaladApp({
             const pDef = OPTIONAL_PROTEINS.find((p) => p.name === pName);
             if (pDef) {
               const line = showAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
-              block += `\n${line}`;
+              const lines = String(block || '').split('\n');
+              const insertAt = Math.max(
+                0,
+                lines.findIndex((l) => /^\s*(dressing:\s*|DIY\s+)/i.test(String(l || '').trim()))
+              );
+              if (insertAt === 0 && lines.length && !/^\s*(dressing:\s*|DIY\s+)/i.test(String(lines[0] || '').trim())) {
+                // No dressing marker found; append as usual.
+                lines.push(line);
+              } else if (insertAt >= 0) {
+                lines.splice(insertAt, 0, line);
+              } else {
+                lines.push(line);
+              }
+              block = lines.join('\n');
             }
           }
           const selProtein = selectedProteinByRecipe[id] || null;
@@ -510,10 +541,13 @@ export default function SaladApp({
       );
       navigator.clipboard
         .writeText(text)
-        .then(() => flash('Full recipe copied!'))
+        .then(() => {
+          pulseCopyBtn('copyFullRecipeBtn');
+          flash('Full recipe copied!');
+        })
         .catch(() => flash("Couldn't copy — try again or check permissions."));
     },
-    [flash, selectedProteinByRecipe, showAmounts, recipePortions, unitMode]
+    [flash, selectedProteinByRecipe, showAmounts, recipePortions, unitMode, pulseCopyBtn]
   );
 
   const handleCopyMealPlanIngredients = useCallback(() => {
@@ -536,7 +570,9 @@ export default function SaladApp({
             const pDef = OPTIONAL_PROTEINS.find((p) => p.name === pName);
             if (pDef) {
               const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
-              ingLines.push(line);
+              const firstDressIdx = ingLines.findIndex((l) => /^\s*(dressing:\s*|DIY\s+)/i.test(String(l || '').trim()));
+              if (firstDressIdx >= 0) ingLines.splice(firstDressIdx, 0, line);
+              else ingLines.push(line);
             }
           }
           return ingLines;
@@ -588,7 +624,11 @@ export default function SaladApp({
             const pDef = OPTIONAL_PROTEINS.find((p) => p.name === pName);
             if (pDef) {
               const line = mealPlanShowAmounts ? `${formatAmountForDisplay(pDef.amount, pDef.name)} ${pDef.name}` : pDef.name;
-              ingredientsBlock += `\n${line}`;
+              const lines = String(ingredientsBlock || '').split('\n');
+              const firstDressIdx = lines.findIndex((l) => /^\s*(dressing:\s*|DIY\s+)/i.test(String(l || '').trim()));
+              if (firstDressIdx >= 0) lines.splice(firstDressIdx, 0, line);
+              else lines.push(line);
+              ingredientsBlock = lines.join('\n');
             }
           }
           const mealSelProtein = selectedProteinByRecipe[id] || null;
@@ -619,6 +659,16 @@ export default function SaladApp({
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [servingsModalOpen, closeServingsModal]);
+
+  // Restore card strip scroll position per browseMode/category.
+  useLayoutEffect(() => {
+    const key = `${browseMode}:${activeCategory}`;
+    cardStripKeyRef.current = key;
+    const left = cardStripScrollByKey.current[key];
+    if (cardStripRef.current && typeof left === 'number') {
+      cardStripRef.current.scrollLeft = left;
+    }
+  }, [browseMode, activeCategory]);
 
   // Close smart picks tip on outside click
   useEffect(() => {
@@ -698,6 +748,25 @@ export default function SaladApp({
               type="button"
               className={browseMode === mode ? 'active' : ''}
               onClick={() => handleSelectBrowseMode(mode)}
+              onKeyDown={(e) => {
+                if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return;
+                e.preventDefault();
+                const modes: SaladBrowseMode[] = ['cuisine', 'flavor', 'season'];
+                const idx = modes.indexOf(browseMode);
+                const nextIdx =
+                  e.key === 'Home'
+                    ? 0
+                    : e.key === 'End'
+                      ? modes.length - 1
+                      : e.key === 'ArrowLeft'
+                        ? (idx + modes.length - 1) % modes.length
+                        : (idx + 1) % modes.length;
+                const nextMode = modes[nextIdx];
+                handleSelectBrowseMode(nextMode);
+                const btns = (e.currentTarget.parentElement?.querySelectorAll('button') || []) as unknown as HTMLButtonElement[];
+                if (btns && btns[nextIdx]) btns[nextIdx].focus();
+              }}
+              aria-current={browseMode === mode ? 'true' : undefined}
             >
               {mode.charAt(0).toUpperCase() + mode.slice(1)}
             </button>
@@ -760,7 +829,7 @@ export default function SaladApp({
 
       {/* ── Nav ── */}
       <nav className={smartPicksEnabled ? 'nav--smart-picks' : ''}>
-        {navTabs.map((cat) => {
+        {navTabs.map((cat, i) => {
           const accent = accentForNavCat(cat, browseMode);
           return (
             <button
@@ -769,6 +838,23 @@ export default function SaladApp({
               className={cat === activeCategory ? 'active' : ''}
               style={{ '--accent': accent } as React.CSSProperties}
               onClick={() => handleSelectCategory(cat)}
+              onKeyDown={(e) => {
+                if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return;
+                e.preventDefault();
+                const nextIdx =
+                  e.key === 'Home'
+                    ? 0
+                    : e.key === 'End'
+                      ? navTabs.length - 1
+                      : e.key === 'ArrowLeft'
+                        ? (i + navTabs.length - 1) % navTabs.length
+                        : (i + 1) % navTabs.length;
+                const nextCat = navTabs[nextIdx];
+                if (nextCat) handleSelectCategory(nextCat);
+                const btns = (e.currentTarget.parentElement?.querySelectorAll('button') || []) as unknown as HTMLButtonElement[];
+                if (btns && btns[nextIdx]) btns[nextIdx].focus();
+              }}
+              aria-current={cat === activeCategory ? 'page' : undefined}
             >
               {cat}
             </button>
@@ -813,6 +899,13 @@ export default function SaladApp({
                   }
                 }}
               >
+                {r.id === selectedId && (
+                  <span className="card-selected-badge" aria-hidden="true" title="Selected">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </span>
+                )}
                 {smartPicksStripActive && (
                   <span className="card-smart-picks-matches" title="Ingredients overlapping your meal plan">
                     {overlapN} shared
@@ -878,11 +971,21 @@ export default function SaladApp({
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4" /><rect x="9" y="3" width="6" height="5" rx="1" /></svg>
                   <span className="toggle-label">{showAmounts ? 'Hide amounts' : 'Show amounts'}</span>
                 </button>
-                <button type="button" id="copyIngredientsBtn" className="copy-btn" onClick={() => handleCopyIngredients(recipe.id)}>
+                <button
+                  type="button"
+                  id="copyIngredientsBtn"
+                  className={`copy-btn${copySuccessBtn === 'copyIngredientsBtn' ? ' copy-btn--success' : ''}`}
+                  onClick={() => handleCopyIngredients(recipe.id)}
+                >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
                   Copy ingredients
                 </button>
-                <button type="button" id="copyFullRecipeBtn" className="copy-btn" onClick={() => handleCopyFullRecipe(recipe.id)}>
+                <button
+                  type="button"
+                  id="copyFullRecipeBtn"
+                  className={`copy-btn${copySuccessBtn === 'copyFullRecipeBtn' ? ' copy-btn--success' : ''}`}
+                  onClick={() => handleCopyFullRecipe(recipe.id)}
+                >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
                   Copy full recipe
                 </button>
