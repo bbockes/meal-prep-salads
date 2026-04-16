@@ -1611,6 +1611,14 @@
       line-height: 1.4;
       color: color-mix(in srgb, #2b2b28 92%, var(--text));
     }
+
+    /* Meal prep tips: align with DIY dressing rhythm on desktop only */
+    @media (min-width: 901px) {
+      .meal-prep-tips-section {
+        margin-top: 16px;
+        padding-top: 8px;
+      }
+    }
     .step-num {
       flex-shrink: 0;
       width: 24px;
@@ -1908,7 +1916,10 @@
     }
     @media (min-width: 720px) {
       .dressing-diy-ingredients-list .dressing-diy-part-recipe {
-        white-space: nowrap;
+        /* Allow long DIY dressing lines to wrap within the left column
+           (prevents them from visually overlapping the Steps column). */
+        white-space: normal;
+        overflow-wrap: anywhere;
       }
     }
 

@@ -44,6 +44,8 @@ import {
   formatAmountForDisplay,
   adaptStepText,
   recipeStepsForDisplay,
+  recipeMealPrepTips,
+  recipeShelfLifeLabel,
 } from '@/lib/recipe-utils';
 
 const MEAL_PLAN_STORAGE_KEY = 'meal-prep-salads:mealPlanV1';
@@ -939,7 +941,9 @@ export default function SaladApp({
           <div className="recipe-detail" style={{ '--detail-accent': ACCENT[recipe.subCuisine] } as React.CSSProperties}>
             <div className="detail-header">
               <div>
-                <div className="detail-meta" dangerouslySetInnerHTML={{ __html: detailMetaBadgesHtml(recipe, browseMode) }} />
+                <div className="detail-meta">
+                  <span dangerouslySetInnerHTML={{ __html: detailMetaBadgesHtml(recipe, browseMode) }} />
+                </div>
                 <h2 className="detail-title">{recipe.name}</h2>
               </div>
               <div className="copy-actions copy-actions--recipe-detail">
@@ -1115,6 +1119,33 @@ export default function SaladApp({
                     </li>
                   ))}
                 </ul>
+                {(() => {
+                  const tips = recipeMealPrepTips(recipe);
+                  const shelfLife = recipeShelfLifeLabel(recipe);
+                  const all = [...tips, shelfLife].filter((s, i, arr) => {
+                    const key = String(s || '').trim().toLowerCase();
+                    if (!key) return false;
+                    return i === arr.findIndex((x) => String(x || '').trim().toLowerCase() === key);
+                  });
+                  if (!all.length) return null;
+                  return (
+                    <div className="meal-prep-tips-section">
+                      <div className="section-heading">
+                        <div className="section-heading-label">
+                          <span>🧊</span> Meal prep tips
+                        </div>
+                      </div>
+                      <ul className="ingredients-list meal-prep-tips-list">
+                        {all.map((t, i) => (
+                          <li key={`tip-${i}`}>
+                            <span className="bullet" />
+                            <span className="ingredient-body">{t}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

@@ -96,6 +96,238 @@ export function detailMetaBadgesHtml(r, browseMode) {
   return `<span class="cuisine-badge">${escapeHtml(r.subCuisine || r.cuisine)}</span>`;
 }
 
+// ── Freshness / meal-prep pills ───────────────────────────────────────────────
+
+export type RecipeFreshnessPillId = 'shelfLife' | 'wetSalad' | 'dressingOnSide';
+
+export interface RecipeFreshnessPill {
+  id: RecipeFreshnessPillId;
+  label: string;
+  title?: string;
+}
+
+const WET_INGREDIENT_WORDS = [
+  'tomato',
+  'cucumber',
+  'watermelon',
+  'orange segments',
+  'grapefruit',
+  'mango',
+  'peach',
+  'pineapple',
+  'strawberry',
+  'berries',
+  'pico de gallo',
+  'salsa',
+  'kimchi',
+];
+
+const FRAGILE_GREEN_WORDS = [
+  'spring mix',
+  'mixed greens',
+  'baby spinach',
+  'spinach',
+  'arugula',
+  'butter lettuce',
+  'microgreens',
+];
+
+const STURDY_BASE_WORDS = [
+  'kale',
+  'cabbage',
+  'coleslaw',
+  'radicchio',
+  'endive',
+  'frisee',
+  'frisée',
+  'romaine',
+  'iceberg',
+  'bulgur',
+  'quinoa',
+  'farro',
+  'freekeh',
+  'lentil',
+  'lentils',
+  'chickpea',
+  'chickpeas',
+];
+
+const CRUNCH_WORDS = [
+  'crouton',
+  'crispy',
+  'crunch',
+  'chips',
+  'fried onion',
+  'fried onions',
+  'fried shallot',
+  'fried shallots',
+  'plantain chips',
+  'wontons',
+  'nuts',
+  'almond',
+  'almonds',
+  'walnut',
+  'walnuts',
+  'pecan',
+  'pecans',
+  'pistachio',
+  'pistachios',
+  'hazelnut',
+  'hazelnuts',
+  'pumpkin seeds',
+  'pepitas',
+  'sunflower seeds',
+  'sesame seeds',
+];
+
+function recipeIngredientTextForHeuristics(recipe: Recipe): string {
+  const lines = (recipe.ingredients || [])
+    .map((ing: any) => String(ing?.raw || ing?.line || ing?.text || ing?.name || ing || ''))
+    .filter(Boolean);
+  return lines.join(' • ').toLowerCase();
+}
+
+function recipeStepTextForHeuristics(recipe: Recipe): string {
+  return (recipe.steps || []).join(' • ').toLowerCase();
+}
+
+function includesAny(t: string, needles: string[]): boolean {
+  for (const w of needles) {
+    if (t.includes(w)) return true;
+  }
+  return false;
+}
+
+function uniqueStringsPreserveOrder(xs: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of xs) {
+    const s = String(raw || '').trim();
+    if (!s) continue;
+    const key = s.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s);
+  }
+  return out;
+}
+
+function wetIngredientExamplesForRecipe(recipe: Recipe): string[] {
+  const t = recipeIngredientTextForHeuristics(recipe);
+  const found: string[] = [];
+
+  // Veg
+  if (t.includes('tomato')) found.push('tomatoes');
+  if (t.includes('cucumber')) found.push('cucumbers');
+  // Common “fruit” salad add-ins in this dataset
+  if (t.includes('watermelon')) found.push('watermelon');
+  if (t.includes('orange segments') || /\borange\b/.test(t)) found.push('oranges');
+  if (t.includes('grapefruit')) found.push('grapefruit');
+  if (t.includes('mango')) found.push('mango');
+  if (t.includes('peach')) found.push('peaches');
+  if (t.includes('pineapple')) found.push('pineapple');
+  if (t.includes('strawberry')) found.push('strawberries');
+  if (t.includes('berries')) found.push('berries');
+
+  return uniqueStringsPreserveOrder(found);
+}
+
+export function recipeHasWetIngredients(recipe: Recipe): boolean {
+  const t = recipeIngredientTextForHeuristics(recipe);
+  return includesAny(t, WET_INGREDIENT_WORDS);
+}
+
+export function recipeHasCrunchToppings(recipe: Recipe): boolean {
+  const t = recipeIngredientTextForHeuristics(recipe);
+  return includesAny(t, CRUNCH_WORDS);
+}
+
+export function recipeHasFragileGreens(recipe: Recipe): boolean {
+  const t = recipeIngredientTextForHeuristics(recipe);
+  return includesAny(t, FRAGILE_GREEN_WORDS);
+}
+
+export function recipeUsesDressing(recipe: Recipe): boolean {
+  const t = recipeIngredientTextForHeuristics(recipe);
+  if (t.includes('dressing:')) return true;
+  // Some recipes encode dressing only in steps (“whisk ... in bottom of bowl”)
+  const s = recipeStepTextForHeuristics(recipe);
+  if (/\b(dress|dressing|vinaigrette|drizzle)\b/i.test(s)) return true;
+  return false;
+}
+
+/** True when the salad is likely to get soggy / weepy in storage. */
+export function recipeIsWetSalad(recipe: Recipe): boolean {
+  if (recipeHasWetIngredients(recipe)) return true;
+  // Yogurt-heavy “coated” salads (raita/crema) behave like wet salads for meal prep.
+  const t = recipeIngredientTextForHeuristics(recipe);
+  if (t.includes('greek yogurt') || t.includes('yogurt')) return true;
+  return false;
+}
+
+export function recipeShelfLifeLabel(recipe: Recipe): 'Best in 1–2 days.' | 'Best in 3–4 days.' {
+  const ing = recipeIngredientTextForHeuristics(recipe);
+  const wet = recipeIsWetSalad(recipe);
+  const fragile = recipeHasFragileGreens(recipe);
+  const sturdy = includesAny(ing, STURDY_BASE_WORDS);
+  // Conservative by default: only mark 3–4 when it’s obviously prep-friendly.
+  if (!wet && !fragile && sturdy) return 'Best in 3–4 days.';
+  return 'Best in 1–2 days.';
+}
+
+export function recipeShouldRecommendDressingOnSide(recipe: Recipe): boolean {
+  if (!recipeUsesDressing(recipe)) return false;
+  // Show when it meaningfully improves leftovers: wet salads, fragile greens, or crunch toppings.
+  return recipeIsWetSalad(recipe) || recipeHasFragileGreens(recipe) || recipeHasCrunchToppings(recipe);
+}
+
+export function recipeMealPrepTips(recipe: Recipe): string[] {
+  const tips: string[] = [];
+  const wet = recipeIsWetSalad(recipe);
+  const crunch = recipeHasCrunchToppings(recipe);
+  const dressingOnSide = recipeShouldRecommendDressingOnSide(recipe);
+  if (dressingOnSide) {
+    tips.push('Pack dressing on the side and toss right before eating.');
+  }
+  if (wet) {
+    const examples = wetIngredientExamplesForRecipe(recipe);
+    if (examples.length) {
+      tips.push(`Keep juicy ingredients (${examples.join('/')}) separate until serving.`);
+    } else {
+      tips.push('Keep juicy ingredients separate until serving.');
+    }
+  }
+  if (crunch) {
+    tips.push('Add crunchy toppings right before eating so they stay crisp.');
+  }
+  return tips;
+}
+
+export function recipeFreshnessPills(recipe: Recipe): RecipeFreshnessPill[] {
+  const pills: RecipeFreshnessPill[] = [
+    {
+      id: 'shelfLife',
+      label: recipeShelfLifeLabel(recipe),
+      title: 'How long this salad tastes best in the fridge.',
+    },
+  ];
+  if (recipeIsWetSalad(recipe)) {
+    pills.push({
+      id: 'wetSalad',
+      label: 'Keep wet ingredients separate until serving.',
+      title: 'More likely to get soggy—pack wet items/dressing separately if meal prepping.',
+    });
+  }
+  if (recipeShouldRecommendDressingOnSide(recipe)) {
+    pills.push({
+      id: 'dressingOnSide',
+      label: 'Pack dressing separately and toss before eating.',
+      title: 'Pack dressing separately; toss just before eating for best texture.',
+    });
+  }
+  return pills;
+}
+
 // ── Navigation helpers ────────────────────────────────────────────────────────
 
 export function getNavTabs(browseMode) {
@@ -1176,6 +1408,8 @@ export function displayComboSegmentLabel(raw) {
 export function displayDressingPartLabel(raw) {
   const t = String(raw || '').trim();
   if (!t) return t;
+  // Preserve common acronyms even when authored as "BBQ" etc.
+  if (t.toLowerCase() === 'bbq') return 'BBQ';
   // Prefer nice-looking acronyms for short labels like bbq, blt, etc.
   if (/^[a-z]{2,4}$/.test(t)) return t.toUpperCase();
   return displayComboSegmentLabel(t.toLowerCase());
