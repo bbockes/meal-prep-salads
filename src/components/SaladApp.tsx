@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, type DragEvent } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import SiteHeader from '@/components/SiteHeader';
 import { ACCENT, FLAVOR_KEYS, SEASON_KEYS, FLAVOR_ACCENTS, SEASON_ACCENTS } from '@/data/constants';
 import { OPTIONAL_PROTEINS } from '@/data/diet-config';
 import type { SaladBrowseMode } from '@/data/salad-routes';
@@ -725,20 +725,7 @@ export default function SaladApp({
 
   return (
     <>
-      {/* ── Header ── */}
-      <header className="site-header">
-        <Link href="/salads" className="site-brand">
-          Ease
-        </Link>
-        {pageHeading ? (
-          <>
-            <span className="site-header-sep" aria-hidden="true" />
-            <h1 id="page-seo-heading" className="page-seo-heading">
-              {pageHeading}
-            </h1>
-          </>
-        ) : null}
-      </header>
+      <SiteHeader pageHeading={pageHeading} />
 
       {/* ── Browse Mode Bar ── */}
       <div className="browse-mode" id="browseModeBar">
