@@ -1359,7 +1359,10 @@ const RECIPE_SEED: RecipeSeed[] = [
       '1 cup cherry tomatoes or pico de gallo',
       'Jalapeño slices (optional)',
       '½ cup jicama sticks',
-      'Taco "meat": 8 oz shiitake mushrooms + ½ cup walnuts + 1 tbsp tamari + 1 tsp taco seasoning',
+      '8 oz shiitake mushrooms',
+      '½ cup walnuts',
+      '1 tbsp tamari',
+      '1 tsp taco seasoning',
       'Dressing: avocado (ripe avocado) + crema (Greek yogurt) + lime (lime juice) + cilantro (cilantro) + garlic (garlic clove) // ½ avocado + ¼ cup Greek yogurt + 1 lime + handful cilantro + 1 garlic clove (½ mashed avocado + ¼ cup Greek yogurt + juice of lime + chopped cilantro + grated garlic)',
     ],
     steps: [

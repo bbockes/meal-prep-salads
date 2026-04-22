@@ -406,6 +406,9 @@ function cleanupStepPunctuation(s: string): string {
   t = t.replace(/\bAdd\s+,/gi, 'Add');
   t = t.replace(/\bTop\s+,/gi, 'Top');
   t = t.replace(/\bPlace\s+,/gi, 'Place');
+  t = t.replace(/\bToss\s+,/gi, 'Toss');
+  t = t.replace(/\bMix\s+,/gi, 'Mix');
+  t = t.replace(/\bCoat\s+,/gi, 'Coat');
 
   t = t.replace(/,\s*and\s*\./g, '.');
   t = t.replace(/\s+and\s*\.\s*$/g, '.');

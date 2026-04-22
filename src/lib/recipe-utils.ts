@@ -1532,6 +1532,8 @@ export function formatDressingDiyComboPartLine(chunk) {
     `<span class="ingredient-body dressing-diy-line-body">` +
     innerRecipeHtml +
     `</span></li>`;
+
+  const isComplexSubRecipe = (s: string) => /\s\+\s/.test(String(s || ''));
   if (!region) {
     // Avoid "Sumac: sumac" style repetition for simple add-ons.
     if (labelCore && chunkCore && labelCore === chunkCore) {
@@ -1554,6 +1556,12 @@ export function formatDressingDiyComboPartLine(chunk) {
   }
   if (afterForDisplay) {
     recipe += `<span class="dressing-diy-part-recipe-tail">${innerForDisplay ? ' ' : ''}${boldCompositeDressingBody(afterForDisplay)}</span>`;
+  }
+
+  // For ingredient-token DIY dressings (e.g. "avocado (ripe avocado)"), don't show "Avocado: ripe avocado".
+  // Keep labels only for true sub-recipes (e.g. "ranch (mayo + sour cream + ...)").
+  if (!isComplexSubRecipe(innerForDisplay) && !isComplexSubRecipe(afterForDisplay)) {
+    return rowBody(`<span class="dressing-diy-part-recipe">${recipe}</span>`);
   }
   return rowBody(
     `<span class="dressing-diy-part-label">${labelDisp}:</span> ` + `<span class="dressing-diy-part-recipe">${recipe}</span>`
@@ -1633,6 +1641,33 @@ export function dressingDiyHeadingTitle(fullDressingLine) {
   let trimmed = body;
   if (/^or\s+/i.test(trimmed)) trimmed = trimmed.replace(/^or\s+/i, '');
   const chunks = splitPlusAtDepthZero(trimmed);
+  // If a dressing is authored as a long list of ingredient-names (each chunk has parens),
+  // collapse the DIY title to a short, name-like label (avoids "Avocado + Crema + Lime + ...").
+  const tryCollapseLongIngredientTitle = (rawChunks) => {
+    if (!rawChunks || rawChunks.length < 3) return null;
+    const labels = rawChunks
+      .map((ch) => String(ch || '').trim())
+      .filter(Boolean)
+      .map((ch) => titleCaseWordsPreservingAcronyms(displayDressingPartLabel(dressingChunkLabel(ch))))
+      .filter(Boolean);
+    if (labels.length < 3) return null;
+    if (labels.some((l) => /\b(dressing|vinaigrette|sauce|aioli|marinade|glaze)\b/i.test(l))) return null;
+    // Only collapse when each chunk looks like a DIY ingredient token ("x (y)"), not a real named dressing.
+    if (rawChunks.some((c) => !findFirstBalancedParenRegion(String(c || '').trim()))) return null;
+
+    const keySet = new Set(labels.map((l) => l.toLowerCase()));
+    const creamy = ['crema', 'yogurt', 'greek yogurt', 'sour cream', 'mayo', 'mayonnaise'].find((w) =>
+      keySet.has(w)
+    );
+    if (creamy) {
+      const first = labels[0];
+      const creamyLabel = labels.find((l) => l.toLowerCase() === creamy);
+      if (first && creamyLabel && first.toLowerCase() !== creamyLabel.toLowerCase()) {
+        return `${first} ${creamyLabel}`.trim();
+      }
+    }
+    return `${labels[0]} ${labels[1]}`.trim();
+  };
   const tryCollapseComboTitle = (rawChunks) => {
     if (!rawChunks || rawChunks.length < 2) return null;
     // Only collapse when the first chunk is a real "named dressing recipe" (has parens),
@@ -1660,7 +1695,7 @@ export function dressingDiyHeadingTitle(fullDressingLine) {
     return collapsed;
   };
 
-  const collapsed = tryCollapseComboTitle(chunks);
+  const collapsed = tryCollapseLongIngredientTitle(chunks) || tryCollapseComboTitle(chunks);
   if (collapsed) return collapsed;
   const segTitle = (ch) => {
     let c = ch.trim();
@@ -2304,19 +2339,15 @@ export function buildSyntheticSelectedProteinStep(selectedFullName: string): str
 export function recipeStepsForDisplay(recipe: Recipe, selectedProtein: string | null): string[] {
   const base = (recipe.steps || [])
     .filter((st) => !isOptionalProteinUpsellStep(st))
-    .filter((st) => (selectedProtein ? true : !isProteinOnlyStep(st)))
+    .filter((st) => !isProteinOnlyStep(st))
     .map((st) => cleanServeImmediatelyStep(st))
     .filter((x) => x.keep)
     .map((x) => x.text);
 
-  const steps = !selectedProtein
-    ? base.filter((st) => !isStepUnusableWithoutOptionalProtein(st, recipe))
-    : base;
+  // We strip swappable protein tokens from authored steps, so always omit steps that become unusable.
+  const steps = base.filter((st) => !isStepUnusableWithoutOptionalProtein(st, recipe));
 
   if (!selectedProtein) return steps;
-  if (adaptedStepsAlreadyMentionSelectedProtein(steps, recipe, selectedProtein)) {
-    return steps;
-  }
   const synthetic = buildSyntheticSelectedProteinStep(selectedProtein);
   const idx = findIndexForSyntheticProteinStep(steps);
   if (idx >= 0) {
@@ -2325,12 +2356,37 @@ export function recipeStepsForDisplay(recipe: Recipe, selectedProtein: string | 
   return [...steps, synthetic];
 }
 
-export function adaptStepText(stepText, recipe) {
-  const selectedProtein = formatState.selectedProteinByRecipe[recipe.id] || null;
-  if (formatState.activeDiet) {
-    return adaptStepForDiet(stepText, recipe, formatState.activeDiet, selectedProtein);
+function recipePrimaryDressingShopperLine(recipe: Recipe): string {
+  const ings = Array.isArray(recipe?.ingredients) ? recipe.ingredients : [];
+  for (const ing of ings) {
+    const s = normalizeTextPunctuation(resolveIngredientDisplayLine(ing, formatState.activeDiet));
+    if (/^Dressing:\s*/i.test(s)) {
+      const shopper = dressingShopperLineText(s);
+      if (shopper && String(shopper).trim()) return String(shopper).trim();
+    }
   }
-  return adaptStepForProteinSwap(stepText, selectedProtein);
+  return '';
+}
+
+function adaptStepForDressingName(stepText: string, recipe: Recipe): string {
+  const shopper = recipePrimaryDressingShopperLine(recipe);
+  if (!shopper) return stepText;
+  const s = String(stepText || '');
+  if (!/\bdressing\b/i.test(s)) return s;
+  if (new RegExp(`\\b${escapeRegExp(shopper)}\\b`, 'i').test(s)) return s;
+  // Replace "cilantro dressing", "ranch dressing", etc with the recipe's dressing name.
+  let out = s.replace(/\b[a-z][a-z-]*\s+dressing\b/gi, shopper);
+  // Replace generic "dressing" references ("drizzle dressing") with the specific dressing.
+  out = out.replace(/\bdressing\b/gi, shopper);
+  return normalizeTextPunctuation(out);
+}
+
+export function adaptStepText(stepText, recipe) {
+  if (formatState.activeDiet) {
+    // Keep original steps protein-free; protein is appended as a synthetic final step.
+    return adaptStepForDressingName(adaptStepForDiet(stepText, recipe, formatState.activeDiet, null), recipe);
+  }
+  return adaptStepForDressingName(adaptStepForProteinSwap(stepText, null), recipe);
 }
 
 export function formatStepLineHtml(stepText, recipe) {
